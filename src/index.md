@@ -1,6 +1,6 @@
 ---
 home: true
-heroImage: https://v1.vuepress.vuejs.org/hero.png
+heroImage: /images/curvednebula.png
 tagline: 
 actionText: Photo Curves - Color Grading →
 actionLink: /photocurves/
