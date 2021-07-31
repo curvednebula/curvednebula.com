@@ -22,13 +22,13 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **RGB curves** - control red, green, and blue channels independently.
 
-- **LAB curves** - unlike RGB, LAB color space allows you to manipulate color channels separately from brightness component. This gives you much more creative freedom to play with colors.
+- **LAB curves** - unlike RGB, LAB color space allows you to manipulate color channels separately from brightness component.
 
-- **Hue vs Saturation curve** - make one color more vibrant than others, or leave one or two colors only, making the rest of the picture black and white.
+- **Hue vs Saturation curve** - enhance specified colors or leave one color only, making the rest of the picture black and white.
 
-- **Hue vs Hue curve** - replace colors or color ranges with another color(s) by shifting their hue. I.e. you can change the color of the blue sky or green grass, which can completely change the mood of your photo.
+- **Hue vs Hue curve** - replace color or color ranges with another color(s) by shifting their hue. I.e. you can change the color of the blue sky or green grass, which can completely change the mood of your photos.
 
-- **Hue vs Luma curve** - adjust brightness of selected colors or color ranges. This allows you to brighten or dim parts of your image creating interesting creative effects.
+- **Hue vs Luma curve** - adjust brightness of a color or color ranges. I.e. you can dim blue sky and brighten green grass which can create an interesting effect.
 
 - **Luma vs Saturation curve** - adjust saturation of shades, midtones, or highlights.
 
