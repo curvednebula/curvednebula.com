@@ -33,12 +33,12 @@ module.exports = {
     docsDir: '',
     editLinkText: '',
     lastUpdated: false,
-    /*nav: [
+    nav: [
       {
-        text: 'Photo Curves',
-        link: 'https://play.google.com/store/apps/details?id=com.foreachi.photocurves',
+        text: 'Contact Us',
+        link: '/contacts.html',
       }
-    ],*/
+    ],
     sidebar: {
       '/photocurves/': [
         {
