@@ -1,8 +1,12 @@
 # Photo Curves - Color Grading
 
-Photo Curves is a photo editing app with focus on color grading. Experiment with your photos using flexible color correction and tuning tools. Create your own filters instead of searching through hundreds of apps with predefined filters, which you can't adjust. With this app you can also enhance, tune or replace colors, create famous cinematic Orange Teal look, adjust white balance, resize photos or save them with different jpeg quality to optimize file size.
+Photo Curves is a photo editing app with focus on color grading. Experiment with your photos using flexible color grading tools. Create your own filters/LUTs instead of searching through hundreds of apps with predefined presets, which you can't adjust. Each preset in Photo Curves is fully adjustable. You can easily create your custom presets too. With this app you can also correct, enhance or replace colors, fix white balance, create LUTs, resize images and more.
+
+*Currently the app is only available for Android. iOS is coming.*
 
 [Photo Curves for Android](https://play.google.com/store/apps/details?id=com.foreachi.photocurves)
+
+![alt text](./pcurves_screen.png)
 
 ## Presets Library
 
