@@ -1,8 +1,8 @@
 ---
 home: true
 heroImage: /images/curvednebula.png
-tagline:
-actionText: Photo Curves →
+tagline: We develop
+actionText: Photo Curves App →
 actionLink: /photocurves/
 features:
   - title: Color Grading

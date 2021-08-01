@@ -1,4 +1,4 @@
-# Photo Curves - Color Grading
+# Photo Curves - Color Grading App
 
 Photo Curves is a photo editing app with focus on color grading. Experiment with your photos using flexible color grading tools. Create your own filters/LUTs instead of searching through hundreds of apps with predefined presets, which you can't adjust. Each preset in Photo Curves is fully adjustable. You can easily create your custom presets too. With this app you can also correct, enhance or replace colors, fix white balance, create LUTs, resize images and more.
 
