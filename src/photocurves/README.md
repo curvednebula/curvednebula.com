@@ -4,7 +4,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 *Currently the app is only available for Android. iOS is coming.*
 
-[Photo Curves for Android](https://play.google.com/store/apps/details?id=com.foreachi.photocurves)
+[<img src="./google-play-badge.png" alt="Get it on Google Play" width="300"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves)
 
 ![Screenshot](./Screenshot_1_small.jpg) ![Screenshot](./Screenshot_6_small.jpg)
 
