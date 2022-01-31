@@ -6,7 +6,7 @@ actionText: Photo Curves App →
 actionLink: /photocurves/
 features:
   - title: Color Grading
-    details: RGB/LAB/HSL curves and Color Wheels
+    details: RGB/CMYK/LAB/HSL curves and Color Wheels
   - title: Create LUTs
     details: Export color grading as 3DLUTs (.cube)
   - title: Preset Library

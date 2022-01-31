@@ -6,13 +6,13 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 [Photo Curves for Android](https://play.google.com/store/apps/details?id=com.foreachi.photocurves)
 
-![alt text](./pcurves_screen.png)
+![alt text](./Screenshot_1_small.jpg)
 
 ## Presets Library
 
 - Create your own presets or edit existing
 - Export presets to .pcurv file to share or import presets created by others
-- Export current editing to LUT (3DLUT .cube files)
+- Export current editing as 3DLUT (.cube) files
 
 ## Color Grading Tools
 
@@ -20,7 +20,11 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **Color wheels** - add color to shadows, midtones, or highlights.
 
+- **Layer Masks** - adjustment layers with masks.
+
 - **RGB curves** - control red, green, and blue channels independently.
+
+- **CMYK curves** - control cyan, magenta, yellow, and key channels of CMYK color space.
 
 - **LAB curves** - unlike RGB, LAB color space allows you to manipulate color channels separately from brightness component.
 
