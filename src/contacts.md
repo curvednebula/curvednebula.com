@@ -1,3 +1,4 @@
 # Contacts
 
-You can contact us at **curvednebula@gmail.com**
+Email: **curvednebula@gmail.com**
+Instagram: **[@photo_curves](https://www.instagram.com/photo_curves)**
