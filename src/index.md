@@ -8,11 +8,9 @@ features:
   - title: Color Grading
     details: RGB/CMYK/LAB/HSL curves and Color Wheels
   - title: Create LUTs
-    details: Export color grading as 3DLUTs (.cube)
-  - title: Preset Library
-    details: Create and share your preset library
+    details: Export presets as 3DLUTs (.cube)
+  - title: Multiplatform
+    details: Android, iOS, macOS
 
-
-
-# footer: Made with ❤️
+footer: Curved Nebula
 ---
