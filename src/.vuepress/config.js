@@ -8,7 +8,7 @@ module.exports = {
   /**
    * Ref：https://v1.vuepress.vuejs.org/config/#description
    */
-  description: 'Developer of Photo Curves - color grading app',
+  description: 'Developer of Photo Curves color grading app for Android, iOS, macOS',
   dest: 'dist',
 
   /**
@@ -43,7 +43,7 @@ module.exports = {
     lastUpdated: false,
     nav: [
       {
-        text: 'Contact Us',
+        text: 'Contacts',
         link: '/contacts.html',
       }
     ],
