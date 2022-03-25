@@ -4,18 +4,18 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 [<img src="./google-play-badge.png" alt="Get it on Google Play" width="300"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on App Store" width="300"/>](https://apps.apple.com/app/id1606599231#?platform=iphone)
 
-More downloads:
+**Other Platforms:**
 
 - **[Photo Curves for macOS (Beta)](/downloads/PhotoCurves-1.2.17-beta.dmg)**
 
 
 <img src="./Screenshot_1_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="150"/>
 
-## Presets Library
+## LUTs & Presets Library
 
-- Create your own presets or edit existing
-- Export presets to .pcurv file to share or import presets created by others
-- Export current editing as 3DLUT (.cube) files
+- Create new presets or edit existing
+- Export presets as 3DLUT (.cube files)
+- Export or import entire preset library (.pcurv file)
 
 ## Color Grading Tools
 
