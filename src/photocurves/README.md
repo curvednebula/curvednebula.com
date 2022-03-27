@@ -23,7 +23,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **Basic controls** - brightness, contrast, shadows, highlights, saturation.
 
-- **Color wheels** - mix any color into shadows, midtones, or highlights or an image.
+- **Color wheels** - mix any color into shadows, midtones, or highlights of an image.
 
 - **Layer Masks** - create adjustment layers and draw masks to apply color grading manipulations to a selected area of an image.
 
