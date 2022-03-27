@@ -17,9 +17,10 @@ module.exports = {
    * ref：https://v1.vuepress.vuejs.org/config/#head
    */
   head: [
-    ['meta', { name: 'theme-color', content: '#883388' }],
-    ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
-    ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }],
+    ['meta', {name: 'theme-color', content: '#883388'}],
+    ['meta', {name: 'apple-mobile-web-app-capable', content: 'yes'}],
+    ['meta', {name: 'apple-mobile-web-app-status-bar-style', content: 'black'}],
+    ['link', {rel: 'shortcut icon', type: 'image/x-icon', href: 'favicon.ico'}],
     // Google Analytics
     ['script', {'async src': 'https://www.googletagmanager.com/gtag/js?id=G-Z40PJ8416Z'}, ''],
     ['script', {}, `
