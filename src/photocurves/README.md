@@ -23,7 +23,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **Basic controls** - brightness, contrast, shadows, highlights, saturation.
 
-- **Color wheels** - add color to shadows, midtones, or highlights.
+- **Color wheels** - mix any color into shadows, midtones, or highlights or an image.
 
 - **Layer Masks** - create adjustment layers and draw masks to apply color grading manipulations to a selected area of an image.
 
@@ -33,7 +33,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **LAB curves** - manipulate brightness (L), and A, B color channels of LAB color space - unlike RGB, LAB color channels don't affect brightness component, enabling more creative color manipulations.
 
-- **Hue vs Saturation curve** - increase or decrease saturation of certain colors.
+- **Hue vs Saturation curve** - adjust saturation of a color or a HUE range.
 
 - **Hue vs Hue curve** - change colors by selective HUE shift.
 
