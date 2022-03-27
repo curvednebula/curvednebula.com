@@ -25,7 +25,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **Color wheels** - add color to shadows, midtones, or highlights.
 
-- **Layer Masks** - adjustment layers with masks.
+- **Layer Masks** - create adjustment layers and draw masks to apply color grading manipulations to a selected area of an image.
 
 - **RGB curves** - control red, green, and blue channels independently.
 
@@ -33,14 +33,14 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **LAB curves** - unlike RGB, LAB color space allows you to manipulate color channels separately from brightness component.
 
-- **Hue vs Saturation curve** - enhance specified colors or leave one color only, making the rest of the picture black and white.
+- **Hue vs Saturation curve** - increase or decrease saturation of certain colors.
 
-- **Hue vs Hue curve** - replace color or color ranges with another color(s) by shifting their hue. I.e. you can change the color of the blue sky or green grass, which can completely change the mood of your photos.
+- **Hue vs Hue curve** - change colors by selective HUE shift.
 
-- **Hue vs Luma curve** - adjust brightness of a color or color ranges. I.e. you can dim blue sky and brighten green grass which can create an interesting effect.
+- **Hue vs Luma curve** - adjust brightness of a color or a HUE range.
 
-- **Luma vs Saturation curve** - adjust saturation of shades, midtones, or highlights.
+- **Luma vs Saturation curve** - adjust saturation of shades, midtones, and highlights.
 
-- **Luma vs Hue curve** - shift hue of shades, midtones, or highlights.
+- **Luma vs Hue curve** - shift HUE of shades, midtones, or highlights.
 
-- **Saturation vs Saturation curve** - boost saturation of unsaturated parts of your picture and decrease over-saturated areas to create evenly saturated HDR like pictures.
+- **Saturation vs Saturation curve** - boost unsaturated and decrease over-saturated colors to create evenly saturated HDR like images.
