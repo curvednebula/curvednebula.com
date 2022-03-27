@@ -31,7 +31,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **CMYK curves** - control cyan, magenta, yellow, and key channels of CMYK color space.
 
-- **LAB curves** - manipulate brightness (L), and A, B color channels of LAB color space - unlike RGB, LAB color channels don't affect brightness componet at all, enabling more creative color manipulations.
+- **LAB curves** - manipulate brightness (L), and A, B color channels of LAB color space - unlike RGB, LAB color channels don't affect brightness component, enabling more creative color manipulations.
 
 - **Hue vs Saturation curve** - increase or decrease saturation of certain colors.
 
