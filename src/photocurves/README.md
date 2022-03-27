@@ -13,7 +13,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 <img src="./Screenshot_1_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="150"/>
 
-## LUTs & Presets Library
+## LUTs & Preset Library
 
 - Create new presets or edit existing
 - Export presets as 3DLUT (.cube files)
