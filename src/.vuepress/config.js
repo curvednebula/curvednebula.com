@@ -43,10 +43,8 @@ module.exports = {
     editLinkText: '',
     lastUpdated: false,
     nav: [
-      {
-        text: 'Contacts',
-        link: '/contacts.html',
-      }
+      { text: 'DocBaker for OpenAPI', link: '/docbaker/' },
+      { text: 'Contacts', link: '/contacts.html' },
     ],
     sidebar: {
       '/photocurves/': [
@@ -56,6 +54,15 @@ module.exports = {
           children: [
             '',
             'privacy_policy'
+          ]
+        }
+      ],
+      '/docbaker/': [
+        {
+          title: 'DocBaker',
+          collapsable: false,
+          children: [
+            ''
           ]
         }
       ],
