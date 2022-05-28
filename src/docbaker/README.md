@@ -1,6 +1,6 @@
 # DocBaker for OpenAPI
 
-DocBaker (Alpha) is OpenAPI JSON to PDF document generator. It supports OpenAPI spec. 3.0.0+.
+DocBaker is OpenAPI JSON to PDF document generator. Supports OpenAPI spec 3.0.0+.
 
 **[Try DocBaker Online](https://apidoc.curvednebula.com)**
 
