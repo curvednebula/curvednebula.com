@@ -19,3 +19,7 @@ Options:
     --[no-]merge-schemas    When multiple API files parsed merge all schemas into one section.
 -h, --help                  Show this help page.
 ```
+
+Source Code:
+
+**[https://github.com/curvednebula/docbaker-cli](https://github.com/curvednebula/docbaker-cli)**
