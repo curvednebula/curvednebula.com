@@ -8,7 +8,7 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 **Other Platforms:**
 
-- **[Photo Curves for macOS (Beta)](/downloads/PhotoCurves-1.2.17-beta.dmg)**
+**[Photo Curves for macOS](/downloads/PhotoCurves-1.2.20.dmg)**
 
 
 <img src="./Screenshot_1_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="150"/>
