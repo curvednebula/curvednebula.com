@@ -29,7 +29,7 @@ Create custom filters instead of searching through hundreds of predefined LUTs. 
 
 - **Layer Masks** - create adjustment layers and draw masks to apply color grading effects to a selected area of an image.
 
-- **RGB curves** - adjust red/green/blue channels independently.
+- **RGB curves** - adjust red/green/blue channels of RGB color space.
 
 - **CMYK curves** - adjust cyan/magenta/yellow/key channels of CMYK color space.
 
