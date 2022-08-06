@@ -4,7 +4,7 @@
 
 Photo Curves is a color grading app for photos with basic video support. Available for Android, iOS and macOS. 
 
-Create custom filters instead of searching through hundreds of predefined LUTs. Photo Curves comes with example LUTs too, which are fully editable using RGB, CMYK, LAB, HSL curves, color wheels, and other tools. Correct, enhance or replace colors, change hue, fix white balance or create cinematic orange and teal look, create 3D LUTs or presets library, resize images, and more.
+Create custom filters instead of searching through hundreds of predefined LUTs. Photo Curves comes with example LUTs too, which are fully editable using RGB, CMYK, LAB, HSL curves, color wheels, and other tools. Correct, enhance or replace colors, shift HUE, fix white balance or create cinematic orange and teal look, create 3D LUTs or presets library, resize images, and more.
 
 [<img src="./google-play-badge.png" alt="Get it on Google Play" width="300"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on App Store" width="300"/>](https://apps.apple.com/app/id1606599231#?platform=iphone)
 
