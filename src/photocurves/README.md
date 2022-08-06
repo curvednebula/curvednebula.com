@@ -2,7 +2,9 @@
 
 ## Overview
 
-Photo Curves is a photo editing app with focus on color grading. Experiment with flexible color grading tools (RGB/CMYK/LAB/HSL Curves, Color Wheels, Layer Masks). Create your own filters/LUTs instead of searching through hundreds of apps with predefined presets. Each preset in Photo Curves is fully adjustable. You can easily create your custom presets too. With this app you can also correct, enhance or replace colors, shift HUE, fix white balance, create 3DLUTs, resize images and more.
+Photo Curves is a color grading app for photos with basic video support too. Available for Android, iOS and macOS. 
+
+Create custom filters instead of searching through hundreds of predefined LUTs. Photo Curves comes with example LUTs too, which are fully editable using RGB, CMYK, LAB, HSL curves, color wheels, and other tools. Correct, enhance or replace colors, change hue, fix white balance or create cinematic orange and teal look, create 3D LUTs or presets library, resize images, and more.
 
 [<img src="./google-play-badge.png" alt="Get it on Google Play" width="300"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on App Store" width="300"/>](https://apps.apple.com/app/id1606599231#?platform=iphone)
 
@@ -23,24 +25,24 @@ Photo Curves is a photo editing app with focus on color grading. Experiment with
 
 - **Basic controls** - brightness, contrast, shadows, highlights, saturation.
 
-- **Color wheels** - mix a color into shadows, midtones, or highlights of an image.
+- **Color wheels** - mix color tones into shadows, midtones, or highlights.
 
-- **Layer Masks** - create adjustment layers and draw masks to apply color grading manipulations to a selected area of an image.
+- **Layer Masks** - create adjustment layers and draw masks to apply color grading effects to a selected area of an image.
 
-- **RGB curves** - control red, green, and blue channels independently.
+- **RGB curves** - adjust red/green/blue channels independently.
 
-- **CMYK curves** - control cyan, magenta, yellow, and key channels of CMYK color space.
+- **CMYK curves** - adjust cyan/magenta/yellow/key channels of CMYK color space.
 
-- **LAB curves** - manipulate brightness (L), and A, B color channels of LAB color space - unlike RGB, LAB color channels don't affect brightness component, enabling more creative color manipulations.
+- **LAB curves** - LAB color space gives yet another level of creative freedom.
 
-- **Hue vs Saturation curve** - adjust saturation of a color or a HUE range.
+- **Hue vs Saturation curve** - select HUE range and change saturation: i.e., turn the entire image black and white while preserving one color only.
 
-- **Hue vs Hue curve** - change colors by selective HUE shift.
+- **Hue vs Hue curve** - select HUE range and change colors: i.e., change the blue sky into purple or green grass into orange to dramatically change the mood of your photos.
 
-- **Hue vs Luma curve** - adjust brightness of a color or a HUE range.
+- **Hue vs Luma curve** - select HUE range and change brightness.
 
 - **Luma vs Saturation curve** - adjust saturation of shades, midtones, and highlights.
 
 - **Luma vs Hue curve** - shift HUE of shades, midtones, or highlights.
 
-- **Saturation vs Saturation curve** - boost unsaturated and decrease over-saturated colors to create evenly saturated HDR like images.
+- **Saturation vs Saturation curve** - boost unsaturated and decrease oversaturated colors to create evenly saturated HDR-like images.
