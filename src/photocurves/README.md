@@ -8,7 +8,7 @@ Photo Curves is a color grading app for photos with basic video support. Availab
 
 Create custom filters instead of searching through hundreds of predefined LUTs. Photo Curves comes with example LUTs too, which are fully editable using RGB, CMYK, LAB, HSL curves, color wheels, and other tools. Correct, enhance or replace colors, shift HUE, fix white balance or create cinematic orange and teal look, create 3D LUTs or presets library, resize images, and more.
 
-<img src="./Screenshot_1_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="145"/>
+<img src="./Screenshot_1_small.jpg" alt="Screenshot" width="142"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="142"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="142"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="142"/>
 
 <img src="./PhotoCurvesMac-2.png" alt="Screenshot" width="600"/>
 
