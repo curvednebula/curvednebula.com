@@ -6,7 +6,7 @@ Photo Curves is a color grading app for photos with basic video support. Availab
 
 Create custom filters instead of searching through hundreds of predefined LUTs. Photo Curves comes with example LUTs too, which are fully editable using RGB, CMYK, LAB, HSL curves, color wheels, and other tools. Correct, enhance or replace colors, shift HUE, fix white balance or create cinematic orange and teal look, create 3D LUTs or presets library, resize images, and more.
 
-[<img src="./google-play-badge.png" alt="Get it on Google Play" height="80"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on the App Store" height="80"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="./mac-store-badge.png" alt="Get it on the Mac Store" height="80"/>](https://apps.apple.com/app/id1638484562)
+[<img src="./google-play-badge.png" alt="Get it on Google Play" height="70"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on the App Store" height="70"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="./mac-store-badge.png" alt="Get it on the Mac Store" height="70"/>](https://apps.apple.com/app/id1638484562)
 
 
 <img src="./Screenshot_1_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="145"/>
