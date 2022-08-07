@@ -9,7 +9,7 @@ Create custom filters instead of searching through hundreds of predefined LUTs. 
 [<img src="./google-play-badge.png" alt="Get it on Google Play" height="80"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on the App Store" height="80"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="./mac-store-badge.png" alt="Get it on the Mac Store" height="80"/>](https://apps.apple.com/app/id1638484562)
 
 
-<img src="./Screenshot_1_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="150"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="150"/>
+<img src="./Screenshot_1_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_6_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_4_small.jpg" alt="Screenshot" width="145"/><img src="./Screenshot_2_small.jpg" alt="Screenshot" width="145"/>
 
 <img src="./PhotoCurvesMac-2.png" alt="Screenshot" width="600"/>
 
