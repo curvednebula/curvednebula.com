@@ -12,5 +12,5 @@ features:
   - title: Multiplatform
     details: Android, iOS, macOS
 
-footer: © Curved Nebula 2020-2022
+footer: © Curved Nebula 2020-2023
 ---
