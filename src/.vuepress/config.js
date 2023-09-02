@@ -43,7 +43,7 @@ module.exports = {
     editLinkText: '',
     lastUpdated: false,
     nav: [
-      { text: 'DocBaker for OpenAPI', link: '/docbaker/' },
+      { text: 'ApiBake', link: '/docbaker/' },
       { text: 'Contacts', link: '/contacts.html' },
     ],
     sidebar: {

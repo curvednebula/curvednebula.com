@@ -1,25 +1,28 @@
-# DocBaker for OpenAPI
+# ApiBake - OpenAPI to PDF
 
-DocBaker is OpenAPI JSON to PDF document generator. Supports OpenAPI spec 3.0.0+.
+ApiBake is OpenAPI to PDF generator. Supports OpenAPI spec 3.0.0+.
 
-**[Try DocBaker Online](https://apidoc.curvednebula.com)**
+**Quick Start:**
 
-Or download DocBaker CLI tool:
-
-**[for Windows](/downloads/docbaker-win.zip)** | **[for macOS](/downloads/docbaker-mac.zip)**
+Requires Node.js.
 
 ```
-Usage: docbaker <openapi.json> [<api2.json> <api3.json> ...] [<options>]
-Options:
--o, --output                Output file.
-                            (defaults to "api-spec.pdf")
-    --title                 Document title.
-                            (defaults to "API Spec")
-    --subtitle              Document sub title.
-    --[no-]merge-schemas    When multiple API files parsed merge all schemas into one section.
--h, --help                  Show this help page.
+npm install -g apibake
+
+apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]
 ```
 
-Source Code:
+**Options:**
 
-**[https://github.com/curvednebula/docbaker-cli](https://github.com/curvednebula/docbaker-cli)**
+```
+-out <string>: Output file.
+-title <string>: Document title.
+-subtitle <string>: Document sub title.
+-separate-schemas: When multiple API files parsed create separate schemas section for each file.
+-h: Show this help.
+```
+
+# Links
+
+NPM: [apibake](https://www.npmjs.com/package/apibake)
+Github: [api-docbaker-js](https://github.com/curvednebula/api-docbaker-js)
