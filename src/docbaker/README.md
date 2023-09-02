@@ -12,6 +12,7 @@ npm install -g apibake
 
 **Usage:**
 
+```
 apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]
 
 Options:
