@@ -2,12 +2,15 @@
 
 ApiBake is OpenAPI to PDF generator. Supports OpenAPI spec 3.0.0+.
 
-**Quick Start:**
+**How to install:**
 
 Requires Node.js.
 
 ```
 npm install -g apibake
+```
+
+**Usage:**
 
 apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]
 
