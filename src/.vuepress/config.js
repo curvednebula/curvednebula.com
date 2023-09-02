@@ -59,7 +59,7 @@ module.exports = {
       ],
       '/docbaker/': [
         {
-          title: 'DocBaker',
+          title: 'ApiBake',
           collapsable: false,
           children: [
             ''
