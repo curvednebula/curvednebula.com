@@ -4,8 +4,8 @@ ApiBake is a cli tool to convert OpenAPI specs into PDF document. Supports OpenA
 
 The goal is to produce clean (less cluttered) - yet useful API documents:
  - PDF has bookmarks and type cross-references for quick navigation.
- - Customizable color schema.
- - Easy to copy and paste schema definitions from PDF into TypeScript code.
+ - Customizable colors.
+ - Easy to copy and paste API schema definitions from PDF into TypeScript code.
 
 **How to install:**
 
