@@ -1,8 +1,11 @@
 # ApiBake - OpenAPI to PDF
 
-ApiBake is a cli tool to convert OpenAPI specs into PDF document. Supports OpenAPI spec 3.0.0+.
+ApiBake is a cli tool to convert OpenAPI specs into PDF document. Supports OpenAPI 3.0.0+.
 
-The focus of the tool is to produce simple (less cluttered) API PDFs. It is easy to copy and paste schema definitions from PDF into TypeScript code.
+The goal is to produce simple (less cluttered) - yet useful API documents:
+ - PDF has navigation bookmarks and type links.
+ - Customizable color schema.
+ - Easy to copy and paste schema definitions from PDF into TypeScript code.
 
 **How to install:**
 
