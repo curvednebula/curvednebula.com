@@ -43,7 +43,7 @@ module.exports = {
     editLinkText: '',
     lastUpdated: false,
     nav: [
-      { text: 'ApiBake', link: '/docbaker/' },
+      { text: 'ApiBake', link: '/apibake/' },
       { text: 'Contacts', link: '/contacts.html' },
     ],
     sidebar: {
@@ -57,7 +57,7 @@ module.exports = {
           ]
         }
       ],
-      '/docbaker/': [
+      '/apibake/': [
         {
           title: 'ApiBake',
           collapsable: false,

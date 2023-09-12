@@ -1,29 +1,6 @@
 # ApiBake - OpenAPI to PDF
 
-ApiBake is a cli tool to convert OpenAPI specs into PDF document. Supports OpenAPI 3.0.0+.
-
-The goal is to produce clean (less cluttered) - yet useful API documents:
- - PDF has bookmarks and type cross-references for quick navigation.
- - Easy to copy and paste API schema definitions from PDF into TypeScript code.
- - Customizable colors.
-
-**How to install:**
-
-Requires Node.js.
-
-```
-npm install -g apibake
-```
-
-**Usage:**
-
-```
-apibake <openapi.json|.yaml|folder-name> [<file-or-folder2> <file-or-folder3> ...] [<options>]
-```
-
-Check **apibake -h** for details.
-
-# Links
+ApiBake is a cli tool to convert OpenAPI json/yaml specs into PDF document.
 
 NPM: [apibake](https://www.npmjs.com/package/apibake)
 
