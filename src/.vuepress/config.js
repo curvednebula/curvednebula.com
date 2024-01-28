@@ -52,8 +52,7 @@ module.exports = {
           title: 'Photo Curves',
           collapsable: false,
           children: [
-            '',
-            'privacy_policy'
+            ''
           ]
         }
       ],
