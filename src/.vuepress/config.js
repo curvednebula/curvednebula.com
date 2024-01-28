@@ -44,7 +44,8 @@ module.exports = {
     lastUpdated: false,
     nav: [
       { text: 'ApiBake', link: '/apibake/' },
-      { text: 'Contacts', link: '/contacts.html' },
+      { text: 'Privacy Policy', link: '/privacy_policy.html' },
+      { text: 'Contacts', link: '/contacts.html' }
     ],
     sidebar: {
       '/photocurves/': [
