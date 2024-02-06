@@ -1,7 +1,7 @@
 ---
 home: true
 heroImage: /images/curvednebula.png
-tagline: Developer of Photo Curves - color grading app for Android, iOS and macOS
+tagline: Photo Curves - color grading app for Android, iOS and macOS
 actionText: Photo Curves →
 actionLink: /photocurves/
 features:
@@ -12,5 +12,5 @@ features:
   - title: Multiplatform
     details: Android, iOS, macOS
 
-footer: © Curved Nebula 2020-2023
+footer: © Curved Nebula 2020-2024
 ---
