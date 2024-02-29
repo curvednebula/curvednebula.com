@@ -43,6 +43,7 @@ module.exports = {
     editLinkText: '',
     lastUpdated: false,
     nav: [
+      { text: 'Photo Curves', link: '/photocurves/' },
       { text: 'ApiBake', link: '/apibake/' },
       { text: 'Privacy Policy', link: '/privacy_policy.html' },
       { text: 'Contacts', link: '/contacts.html' }
