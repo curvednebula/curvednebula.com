@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>AWS DynamoDB with JS | Curved Nebula</title>
+    <meta name="generator" content="VuePress 1.9.10">
+    <link rel="shortcut icon" type="image/x-icon" href="favicon.ico">
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Z40PJ8416Z"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-Z40PJ8416Z');
+    </script>
+    <meta name="description" content="Developer of Photo Curves color grading app for Android, iOS, macOS">
+    <meta name="theme-color" content="#883388">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    
+    <link rel="preload" href="/assets/css/0.styles.7c586de7.css" as="style"><link rel="preload" href="/assets/js/app.54cd6d3e.js" as="script"><link rel="preload" href="/assets/js/2.d8fd335d.js" as="script"><link rel="preload" href="/assets/js/1.643d371b.js" as="script"><link rel="preload" href="/assets/js/28.6ed1d434.js" as="script"><link rel="prefetch" href="/assets/js/10.b4f38fcf.js"><link rel="prefetch" href="/assets/js/11.223db8e4.js"><link rel="prefetch" href="/assets/js/12.6984b0ef.js"><link rel="prefetch" href="/assets/js/13.4f86729d.js"><link rel="prefetch" href="/assets/js/14.b4bc23d3.js"><link rel="prefetch" href="/assets/js/15.81b6c8b5.js"><link rel="prefetch" href="/assets/js/16.adf0befb.js"><link rel="prefetch" href="/assets/js/17.bada972c.js"><link rel="prefetch" href="/assets/js/18.c36d9be8.js"><link rel="prefetch" href="/assets/js/19.d6620149.js"><link rel="prefetch" href="/assets/js/20.a728a170.js"><link rel="prefetch" href="/assets/js/21.8f6f4046.js"><link rel="prefetch" href="/assets/js/22.6180816b.js"><link rel="prefetch" href="/assets/js/23.97ee77c0.js"><link rel="prefetch" href="/assets/js/24.f7907e88.js"><link rel="prefetch" href="/assets/js/25.9f72a7ea.js"><link rel="prefetch" href="/assets/js/26.8137174d.js"><link rel="prefetch" href="/assets/js/27.67d1654c.js"><link rel="prefetch" href="/assets/js/29.7b541dd6.js"><link rel="prefetch" href="/assets/js/3.bd89fe37.js"><link rel="prefetch" href="/assets/js/30.16fdeca8.js"><link rel="prefetch" href="/assets/js/31.6dbd53f7.js"><link rel="prefetch" href="/assets/js/32.497f8523.js"><link rel="prefetch" href="/assets/js/4.c883e8d3.js"><link rel="prefetch" href="/assets/js/5.1b98b5d2.js"><link rel="prefetch" href="/assets/js/6.f959d42d.js"><link rel="prefetch" href="/assets/js/7.b0488cc8.js"><link rel="prefetch" href="/assets/js/vendors~docsearch.5cff1987.js">
+    <link rel="stylesheet" href="/assets/css/0.styles.7c586de7.css">
+  </head>
+  <body>
+    <div id="app" data-server-rendered="true"><div class="theme-container"><header class="navbar"><div class="sidebar-button"><svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" role="img" viewBox="0 0 448 512" class="icon"><path fill="currentColor" d="M436 124H12c-6.627 0-12-5.373-12-12V80c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12zm0 160H12c-6.627 0-12-5.373-12-12v-32c0-6.627 5.373-12 12-12h424c6.627 0 12 5.373 12 12v32c0 6.627-5.373 12-12 12z"></path></svg></div> <a href="/" class="home-link router-link-active"><!----> <span class="site-name">Curved Nebula</span></a> <div class="links"><div class="search-box"><input aria-label="Search" autocomplete="off" spellcheck="false" value=""> <!----></div> <nav class="nav-links can-hide"><div class="nav-item"><a href="/photocurves/" class="nav-link">
+  Photo Curves
+</a></div><div class="nav-item"><div class="dropdown-wrapper"><button type="button" aria-label="Tech Hub" class="dropdown-title"><span class="title">Tech Hub</span> <span class="arrow down"></span></button> <button type="button" aria-label="Tech Hub" class="mobile-dropdown-title"><span class="title">Tech Hub</span> <span class="arrow right"></span></button> <ul class="nav-dropdown" style="display:none;"><li class="dropdown-item"><!----> <a href="/apibake/" class="nav-link">
+  ApiBake - OpenAPI to PDF
+</a></li><li class="dropdown-item"><!----> <a href="/blog/js/" class="nav-link">
+  JS, TS, and Node.js
+</a></li></ul></div></div><div class="nav-item"><a href="/privacy_policy.html" class="nav-link">
+  Privacy Policy
+</a></div><div class="nav-item"><a href="/contacts.html" class="nav-link">
+  Contacts
+</a></div> <!----></nav></div></header> <div class="sidebar-mask"></div> <aside class="sidebar"><nav class="nav-links"><div class="nav-item"><a href="/photocurves/" class="nav-link">
+  Photo Curves
+</a></div><div class="nav-item"><div class="dropdown-wrapper"><button type="button" aria-label="Tech Hub" class="dropdown-title"><span class="title">Tech Hub</span> <span class="arrow down"></span></button> <button type="button" aria-label="Tech Hub" class="mobile-dropdown-title"><span class="title">Tech Hub</span> <span class="arrow right"></span></button> <ul class="nav-dropdown" style="display:none;"><li class="dropdown-item"><!----> <a href="/apibake/" class="nav-link">
+  ApiBake - OpenAPI to PDF
+</a></li><li class="dropdown-item"><!----> <a href="/blog/js/" class="nav-link">
+  JS, TS, and Node.js
+</a></li></ul></div></div><div class="nav-item"><a href="/privacy_policy.html" class="nav-link">
+  Privacy Policy
+</a></div><div class="nav-item"><a href="/contacts.html" class="nav-link">
+  Contacts
+</a></div> <!----></nav>  <ul class="sidebar-links"><li><section class="sidebar-group depth-0"><p class="sidebar-heading open"><span>JS, TS, and Node.js</span> <!----></p> <ul class="sidebar-links sidebar-group-items"><li><a href="/js/aws-dynamodb-javascript/" aria-current="page" class="active sidebar-link">AWS DynamoDB with JS</a></li><li><a href="/js/aws-serverless-websockets/" class="sidebar-link">AWS Serverless Websockets</a></li></ul></section></li></ul> </aside> <main class="page"> <div class="theme-default-content content__default"><h1 id="using-aws-dynamodb-with-javascript"><a href="#using-aws-dynamodb-with-javascript" class="header-anchor">#</a> Using AWS DynamoDB with JavaScript</h1> <p>The following are examples of using CosmosDB from a Lambda function.</p> <p>Initialization:</p> <div class="language-js extra-class"><pre class="language-js"><code><span class="token keyword">const</span> <span class="token constant">AWS</span> <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'aws-sdk'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">const</span> ddb <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">AWS<span class="token punctuation">.</span>DynamoDB<span class="token punctuation">.</span>DocumentClient</span><span class="token punctuation">(</span><span class="token punctuation">{</span> <span class="token literal-property property">apiVersion</span><span class="token operator">:</span> <span class="token string">'2012-08-10'</span><span class="token punctuation">,</span> <span class="token literal-property property">region</span><span class="token operator">:</span> process<span class="token punctuation">.</span>env<span class="token punctuation">.</span><span class="token constant">AWS_REGION</span> <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token punctuation">{</span> <span class="token constant">CONNECTIONS_TABLE</span> <span class="token punctuation">}</span> <span class="token operator">=</span> process<span class="token punctuation">.</span>env<span class="token punctuation">;</span>
+</code></pre></div><p>Create item:</p> <div class="language-js extra-class"><pre class="language-js"><code><span class="token comment">/**
+ * @param {string} connectionId
+ */</span>
+<span class="token keyword">const</span> <span class="token function-variable function">createConnection</span> <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token parameter">connectionId</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+  <span class="token keyword">await</span> ddb<span class="token punctuation">.</span><span class="token function">put</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    <span class="token literal-property property">TableName</span><span class="token operator">:</span> <span class="token constant">CONNECTIONS_TABLE</span><span class="token punctuation">,</span>
+    <span class="token literal-property property">Item</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token literal-property property">connectionId</span><span class="token operator">:</span> connectionId
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">promise</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre></div><p>Delete item:</p> <div class="language-js extra-class"><pre class="language-js"><code><span class="token comment">/**
+ * @param {string} connectionId 
+ */</span>
+<span class="token keyword">const</span> <span class="token function-variable function">deleteConnection</span> <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token parameter">connectionId</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+  <span class="token keyword">await</span> ddb<span class="token punctuation">.</span><span class="token function">delete</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    <span class="token literal-property property">TableName</span><span class="token operator">:</span> <span class="token constant">CONNECTIONS_TABLE</span><span class="token punctuation">,</span>
+    <span class="token literal-property property">Key</span><span class="token operator">:</span> <span class="token punctuation">{</span>
+      <span class="token literal-property property">connectionId</span><span class="token operator">:</span> connectionId
+    <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">promise</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre></div><p>Get all items. You generally don't want to use the following scan command for production, because it extremely inefficient and will scan your entire database.
+You can probably only use it if you 100% sure that your database is going to be very small.</p> <div class="language-js extra-class"><pre class="language-js"><code><span class="token comment">/**
+ * @returns {Promise&lt;Array&lt;{connectionId:string}&gt;&gt;}
+ */</span>
+<span class="token keyword">const</span> <span class="token function-variable function">getConnectionIds</span> <span class="token operator">=</span> <span class="token keyword">async</span> <span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">=&gt;</span> <span class="token punctuation">{</span>
+  <span class="token keyword">let</span> scanData <span class="token operator">=</span> <span class="token keyword">await</span> ddb<span class="token punctuation">.</span><span class="token function">scan</span><span class="token punctuation">(</span><span class="token punctuation">{</span>
+    <span class="token literal-property property">TableName</span><span class="token operator">:</span> <span class="token constant">CONNECTIONS_TABLE</span><span class="token punctuation">,</span>
+    <span class="token literal-property property">ProjectionExpression</span><span class="token operator">:</span> <span class="token string">'connectionId'</span> 
+  <span class="token punctuation">}</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">promise</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+  <span class="token keyword">return</span> scanData<span class="token punctuation">.</span>Items<span class="token punctuation">;</span>
+<span class="token punctuation">}</span><span class="token punctuation">;</span>
+</code></pre></div></div> <footer class="page-edit"><!----> <!----></footer> <div class="page-nav"><p class="inner"><!----> <span class="next"><a href="/js/aws-serverless-websockets/">
+        AWS Serverless Websockets
+      </a>
+      →
+    </span></p></div> </main></div><div class="global-ui"></div></div>
+    <script src="/assets/js/app.54cd6d3e.js" defer></script><script src="/assets/js/2.d8fd335d.js" defer></script><script src="/assets/js/1.643d371b.js" defer></script><script src="/assets/js/28.6ed1d434.js" defer></script>
+  </body>
+</html>
