@@ -10,7 +10,7 @@
   "repository": "/",
   "scripts": {
     "dev": "vuepress dev src",
-    "build": "vuepress build src",
+    "build": "rm -rf dist && vuepress build src",
     "push-master": "git add -A && git commit -m 'new deployment' && git push",
     "push-gh": "git subtree push --prefix dist origin gh-pages",
     "push-gh-force": "git push origin `git subtree split --prefix dist master`:gh-pages --force",

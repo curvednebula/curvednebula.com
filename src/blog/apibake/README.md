@@ -1,3 +1,8 @@
+---
+title: ApiBake - OpenAPI to PDF
+permalink: /apibake
+---
+
 # ApiBake - OpenAPI to PDF
 
 ApiBake is a cli tool that converts OpenAPI json/yaml specs into PDF document. Supports OpenAPI 3.0.0+.
