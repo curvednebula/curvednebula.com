@@ -2,13 +2,11 @@
 
 ## Overview
 
-Photo Curves is a color grading app for photos with basic video support. Available for Android, iOS and macOS.
-
-You can use it online: [Photo Curves for Web](https://photocurves.curvednebula.com)
-
-Or as a standalone app:
+Photo Curves is a color grading app for photos with basic video support. Available for Android, iOS and macOS:
 
 [<img src="./google-play-badge.png" alt="Get it on Google Play" height="70"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on the App Store" height="70"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="./mac-store-badge.png" alt="Get it on the Mac Store" height="70"/>](https://apps.apple.com/app/id1638484562)
+
+You can use it online (desktop only): [Photo Curves for Web](https://photocurves.curvednebula.com)
 
 Create custom filters instead of searching through hundreds of predefined LUTs. Photo Curves comes with example LUTs too, which are fully editable using RGB, CMYK, LAB, HSL curves, color wheels, and other tools. Correct, enhance or replace colors, shift HUE, fix white balance or create cinematic orange and teal look, create 3D LUTs or presets library, resize images, and more.
 
