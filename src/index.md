@@ -1,7 +1,7 @@
 ---
 home: true
 heroImage: /images/curvednebula.png
-tagline: Photo Curves - color grading app for Android, iOS and macOS
+tagline: Photo Curves - color grading app for Android, iOS, macOS and web
 actionText: Photo Curves →
 actionLink: /photocurves/
 features:
@@ -10,7 +10,7 @@ features:
   - title: Create LUTs
     details: Export presets as 3DLUTs (.cube)
   - title: Multiplatform
-    details: Android, iOS, macOS
+    details: Android, iOS, macOS, Windows (via web app)
 
 footer: © Curved Nebula 2020-2024
 ---
