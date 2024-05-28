@@ -10,7 +10,7 @@ features:
   - title: Create LUTs
     details: Export presets as 3DLUTs (.cube)
   - title: Multiplatform
-    details: Android, iOS, macOS, Windows (via web app)
+    details: Android, iOS, macOS, Windows (web app)
 
 footer: © Curved Nebula 2020-2024
 ---
