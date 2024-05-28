@@ -2,7 +2,7 @@
 
 ## Overview
 
-Photo Curves is a color grading image editing tool and 3D LUTs creator with basic video support. It's multiplatform: Android, iOS, macOS, and as a web app - Windows and Linux.
+Photo Curves is a color grading image editing tool and 3D LUTs creator with basic video support. It's multiplatform: Android, iOS, macOS, and using web app - Windows and Linux.
 
 [<img src="./google-play-badge.png" alt="Get it on Google Play" height="70"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on the App Store" height="70"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="./mac-store-badge.png" alt="Get it on the Mac Store" height="70"/>](https://apps.apple.com/app/id1638484562)
 
