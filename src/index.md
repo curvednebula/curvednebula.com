@@ -1,7 +1,7 @@
 ---
 home: true
 heroImage: /images/curvednebula.png
-tagline: Photo Curves - color grading photo editor
+tagline: Photo Curves - color grading image editor
 actionText: Photo Curves →
 actionLink: /photocurves/
 features:
