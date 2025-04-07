@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([[31],{350:function(t,e,n){"use strict";n.r(e);var s=n(25),r=Object(s.a)({},(function(){var t=this._self._c;return t("ContentSlotsDistributor",{attrs:{"slot-key":this.$parent.slotKey}},[t("meta",{attrs:{"http-equiv":"refresh",content:"0; url=/photocurves"}})])}),[],!1,null,null,null);e.default=r.exports}}]);
