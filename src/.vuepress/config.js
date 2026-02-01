@@ -1,5 +1,3 @@
-const { description } = require('../../package')
-
 module.exports = {
   /**
    * Ref：https://v1.vuepress.vuejs.org/config/#title
@@ -44,30 +42,17 @@ module.exports = {
     lastUpdated: false,
     nav: [
       { text: 'Photo Curves', link: '/photocurves/' },
+      { text: 'Lullwave', link: '/lullwave/' },
       {
-        text: "Tech Hub",
+        text: "Other",
         items: [
-          { text: 'ApiBake - OpenAPI to PDF', link: '/apibake/' },
-          { text: 'JS, TS, and Node.js', link: '/blog/js/' },
+          { text: 'ApiBake - OpenAPI to PDF', link: '/apibake/' }
         ]
       },
       { text: 'Privacy Policy', link: '/privacy_policy.html' },
       { text: 'Contacts', link: '/contacts.html' }
     ],
-    sidebar: {
-      '/photocurves/': [
-        { title: 'Photo Curves', collapsable: false, children: [''] }
-      ],
-      '/apibake/': [
-        { title: 'ApiBake', collapsable: false, children: [''] }
-      ],
-      '/blog/js/': [
-        { title: 'JS, TS, and Node.js', collapsable: false, children: [
-          'aws-dynamodb-js',
-          'aws-serverless-websockets'
-        ]}
-      ],
-    }
+    sidebar: {}
   },
 
   /**

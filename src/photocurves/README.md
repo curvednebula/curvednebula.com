@@ -1,12 +1,14 @@
 # Photo Curves - Color Grading App
 
+<img src="/images/photocurves_icon_rounded_256x256.png" alt="Get it on Google Play" height="100"/>
+
 ## Overview
 
-Photo Curves is a color grading image editor and 3D LUTs creator with basic video support. It's multiplatform: Android, iOS, macOS. Windows and Linux - using online web app.
+**Photo Curves** is a color grading image editor and 3D LUTs creator with basic video support. It's multiplatform: Android, iOS, macOS. Windows and Linux - using online web app.
 
 **Web app** (Windows, macOS, Linux): [Photo Curves for Web](https://photocurves.curvednebula.com)
 
-[<img src="./google-play-badge.png" alt="Get it on Google Play" height="70"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="./apple-store-badge.png" alt="Get it on the App Store" height="70"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="./mac-store-badge.png" alt="Get it on the Mac Store" height="70"/>](https://apps.apple.com/app/id1638484562)
+[<img src="/images/google-play-badge.png" alt="Get it on Google Play" height="70"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="/images/apple-store-badge.png" alt="Get it on the App Store" height="70"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="/images/mac-store-badge.png" alt="Get it on the Mac Store" height="70"/>](https://apps.apple.com/app/id1638484562)
 
 Create your own LUTs (.cube files). Photo Curves comes with example presets, which unlike regular LUTs are fully editable. Correct, enhance, replace colors, shift HUE, fix white balance or create cinematic orange and teal look.
 
