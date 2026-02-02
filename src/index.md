@@ -2,25 +2,25 @@
 .apps-container {
   display: flex;
   flex-direction: column;
-  gap: 40px;
-  margin: 40px auto;
-  max-width: 700px;
+  gap: 2.5rem;
+  margin: 2.5rem auto;
+  max-width: 42rem;
 }
 .app-item {
   display: flex;
-  gap: 20px;
+  gap: 1.25rem;
   align-items: center;
 }
 .app-icon {
-  width: 128px;
-  height: 128px;
-  min-width: 128px;
-  min-height: 128px;
+  width: 8rem;
+  height: 8rem;
+  min-width: 8rem;
+  min-height: 8rem;
   flex-shrink: 0;
 }
 .app-info h3 {
   margin-top: 0;
-  margin-bottom: 10px;
+  margin-bottom: 0.625rem;
 }
 .app-info p {
   margin: 0;
@@ -32,6 +32,17 @@
 }
 .app-info a:hover {
   opacity: 0.8;
+}
+.copyright {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+  background-color: white;
+  padding: 0.625rem 0;
 }
 </style>
 
@@ -54,4 +65,8 @@
       <p>Noises and sounds for sleep and relaxation. Calming sounds and a full range of colored noises.</p>
     </div>
   </div>
+</div>
+
+<div class="copyright">
+  © 2020-2026 Curved Nebula
 </div>
