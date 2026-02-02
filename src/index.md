@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 2.5rem;
   margin: 2.5rem auto;
-  max-width: 42rem;
+  max-width: 45rem;
 }
 .app-item {
   display: flex;
