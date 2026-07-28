@@ -46,7 +46,7 @@ module.exports = {
       {
         text: "Other",
         items: [
-          { text: 'Crop Image', link: '/cropimage/' },
+          { text: 'Crop & Resize Image', link: '/cropimage/' },
           { text: 'ApiBake - OpenAPI to PDF', link: '/apibake/' }
         ]
       },

@@ -21,7 +21,7 @@
           <path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/>
         </svg>
       </div>
-      <h2>Choose an image to crop</h2>
+      <h2>Choose an image to crop or resize</h2>
       <p>Drop an image here, or select one from your device.</p>
       <button class="primary-button" type="button" @click="openFilePicker">
         Select image
@@ -132,6 +132,49 @@
           <div class="divider" />
 
           <div class="setting-group">
+            <label class="check-control">
+              <input
+                v-model="resizeEnabled"
+                type="checkbox"
+                @change="toggleResize"
+              >
+              <span>Resize output</span>
+            </label>
+            <template v-if="resizeEnabled">
+              <div class="number-grid resize-grid">
+                <label>
+                  <span>Width</span>
+                  <input
+                    :value="resizeWidth"
+                    type="number"
+                    min="1"
+                    :max="maxOutputDimension"
+                    @change="updateOutputDimension('w', $event)"
+                  >
+                </label>
+                <label>
+                  <span>Height</span>
+                  <input
+                    :value="resizeHeight"
+                    type="number"
+                    min="1"
+                    :max="maxOutputDimension"
+                    @change="updateOutputDimension('h', $event)"
+                  >
+                </label>
+              </div>
+              <label class="check-control resize-lock">
+                <input
+                  v-model="resizeAspectLocked"
+                  type="checkbox"
+                  @change="updateResizeLock"
+                >
+                <span>Keep aspect ratio</span>
+              </label>
+            </template>
+          </div>
+
+          <div class="setting-group">
             <label for="output-format">File format</label>
             <select id="output-format" v-model="outputFormat">
               <option value="image/png">PNG</option>
@@ -157,8 +200,8 @@
           </div>
 
           <div class="output-summary">
-            <span>Output size</span>
-            <strong>{{ roundedCrop.w }} × {{ roundedCrop.h }} px</strong>
+            <span>Output Resolution:</span>
+            <strong>{{ outputSize.w }} × {{ outputSize.h }} px</strong>
           </div>
 
           <button
@@ -170,7 +213,7 @@
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/>
             </svg>
-            {{ isSaving ? 'Saving…' : 'Save cropped image' }}
+            {{ isSaving ? 'Saving…' : 'Save Image' }}
           </button>
         </aside>
       </div>
@@ -195,7 +238,13 @@ export default {
       aspect: 'free',
       outputFormat: 'image/png',
       quality: 0.92,
-      display: { width: 0, height: 0, scale: 1 },
+      resizeEnabled: false,
+      resizeWidth: 0,
+      resizeHeight: 0,
+      resizeAspectLocked: true,
+      resizeRatio: 1,
+      maxOutputDimension: 8192,
+      display: { width: 0, height: 0, scale: 1, pad: 0 },
       interaction: null,
       isDraggingOver: false,
       isSaving: false,
@@ -216,6 +265,19 @@ export default {
 
     aspectValue () {
       return this.aspect === 'free' ? null : Number(this.aspect)
+    },
+
+    outputSize () {
+      if (!this.resizeEnabled) {
+        return {
+          w: this.roundedCrop.w,
+          h: this.roundedCrop.h
+        }
+      }
+      return {
+        w: this.clamp(Math.round(this.resizeWidth), 1, this.maxOutputDimension),
+        h: this.clamp(Math.round(this.resizeHeight), 1, this.maxOutputDimension)
+      }
     },
 
     outputExtension () {
@@ -265,8 +327,11 @@ export default {
         this.imageWidth = nextImage.naturalWidth
         this.imageHeight = nextImage.naturalHeight
         this.outputFormat = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png'
+        this.resizeEnabled = false
+        this.resizeAspectLocked = true
         this.message = ''
         this.resetCrop()
+        this.setResizeSizeFromCrop()
         this.$nextTick(() => {
           this.layoutCanvas()
           if (typeof ResizeObserver !== 'undefined') {
@@ -288,8 +353,9 @@ export default {
     layoutCanvas () {
       if (!this.image || !this.$refs.stage || !this.$refs.canvas) return
 
-      const availableWidth = Math.max(280, this.$refs.stage.clientWidth)
-      const availableHeight = Math.min(640, Math.max(320, window.innerHeight * 0.58))
+      const pad = 12
+      const availableWidth = Math.max(280, this.$refs.stage.clientWidth) - pad * 2
+      const availableHeight = Math.min(640, Math.max(320, window.innerHeight * 0.58)) - pad * 2
       const scale = Math.min(
         availableWidth / this.imageWidth,
         availableHeight / this.imageHeight,
@@ -300,11 +366,11 @@ export default {
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
       const canvas = this.$refs.canvas
 
-      this.display = { width, height, scale: width / this.imageWidth }
-      canvas.style.width = `${width}px`
-      canvas.style.height = `${height}px`
-      canvas.width = Math.round(width * pixelRatio)
-      canvas.height = Math.round(height * pixelRatio)
+      this.display = { width, height, scale: width / this.imageWidth, pad }
+      canvas.style.width = `${width + pad * 2}px`
+      canvas.style.height = `${height + pad * 2}px`
+      canvas.width = Math.round((width + pad * 2) * pixelRatio)
+      canvas.height = Math.round((height + pad * 2) * pixelRatio)
       canvas._pixelRatio = pixelRatio
       this.draw()
     },
@@ -315,21 +381,27 @@ export default {
 
       const ratio = canvas._pixelRatio || 1
       const ctx = canvas.getContext('2d')
+      const pad = this.display.pad
       const width = this.display.width
       const height = this.display.height
       const box = this.displayCrop()
 
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
-      ctx.clearRect(0, 0, width, height)
-      ctx.drawImage(this.image, 0, 0, width, height)
+      ctx.clearRect(0, 0, width + pad * 2, height + pad * 2)
+      ctx.save()
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.28)'
+      ctx.shadowBlur = 24
+      ctx.shadowOffsetY = 8
+      ctx.drawImage(this.image, pad, pad, width, height)
+      ctx.restore()
       ctx.fillStyle = 'rgba(13, 18, 28, 0.62)'
-      ctx.fillRect(0, 0, width, height)
+      ctx.fillRect(pad, pad, width, height)
 
       ctx.save()
       ctx.beginPath()
       ctx.rect(box.x, box.y, box.w, box.h)
       ctx.clip()
-      ctx.drawImage(this.image, 0, 0, width, height)
+      ctx.drawImage(this.image, pad, pad, width, height)
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)'
       ctx.lineWidth = 1
@@ -381,8 +453,8 @@ export default {
 
     displayCrop () {
       return {
-        x: this.crop.x * this.display.scale,
-        y: this.crop.y * this.display.scale,
+        x: this.crop.x * this.display.scale + this.display.pad,
+        y: this.crop.y * this.display.scale + this.display.pad,
         w: this.crop.w * this.display.scale,
         h: this.crop.h * this.display.scale
       }
@@ -601,9 +673,8 @@ export default {
 
     resetCrop () {
       if (!this.image) return
-      const margin = 0.08
-      let width = this.imageWidth * (1 - margin * 2)
-      let height = this.imageHeight * (1 - margin * 2)
+      let width = this.imageWidth
+      let height = this.imageHeight
 
       if (this.aspectValue) {
         if (width / height > this.aspectValue) width = height * this.aspectValue
@@ -647,11 +718,67 @@ export default {
       this.draw()
     },
 
+    setResizeSizeFromCrop () {
+      const crop = this.roundedCrop
+      const scale = Math.min(
+        1,
+        this.maxOutputDimension / crop.w,
+        this.maxOutputDimension / crop.h
+      )
+      this.resizeWidth = Math.max(1, Math.round(crop.w * scale))
+      this.resizeHeight = Math.max(1, Math.round(crop.h * scale))
+      this.resizeRatio = this.resizeWidth / this.resizeHeight
+    },
+
+    toggleResize () {
+      if (this.resizeEnabled) this.setResizeSizeFromCrop()
+      this.message = ''
+    },
+
+    updateResizeLock () {
+      if (this.resizeAspectLocked) {
+        this.resizeRatio = this.resizeWidth / this.resizeHeight
+      }
+    },
+
+    setResizeDimensions (width, height) {
+      const scale = Math.min(
+        1,
+        this.maxOutputDimension / width,
+        this.maxOutputDimension / height
+      )
+      this.resizeWidth = Math.max(1, Math.round(width * scale))
+      this.resizeHeight = Math.max(1, Math.round(height * scale))
+    },
+
+    updateOutputDimension (key, event) {
+      const current = key === 'w' ? this.resizeWidth : this.resizeHeight
+      const value = Number(event.target.value)
+      if (!Number.isFinite(value) || value < 1) {
+        event.target.value = current
+        return
+      }
+
+      const next = this.clamp(Math.round(value), 1, this.maxOutputDimension)
+      if (key === 'w') {
+        if (this.resizeAspectLocked) {
+          this.setResizeDimensions(next, next / this.resizeRatio)
+        } else this.resizeWidth = next
+      } else {
+        if (this.resizeAspectLocked) {
+          this.setResizeDimensions(next * this.resizeRatio, next)
+        } else this.resizeHeight = next
+      }
+      event.target.value = key === 'w' ? this.resizeWidth : this.resizeHeight
+      this.message = ''
+    },
+
     async saveImage () {
       if (!this.image || this.isSaving) return
       this.isSaving = true
       this.message = ''
       const crop = this.roundedCrop
+      const outputSize = this.outputSize
       const filename = this.makeOutputName()
 
       try {
@@ -674,7 +801,7 @@ export default {
           }
         }
 
-        const blob = await this.createCroppedBlob(crop)
+        const blob = await this.createCroppedBlob(crop, outputSize)
         if (fileHandle) {
           const writable = await fileHandle.createWritable()
           await writable.write(blob)
@@ -699,11 +826,11 @@ export default {
       }
     },
 
-    createCroppedBlob (crop) {
+    createCroppedBlob (crop, outputSize) {
       return new Promise((resolve, reject) => {
         const output = document.createElement('canvas')
-        output.width = crop.w
-        output.height = crop.h
+        output.width = outputSize.w
+        output.height = outputSize.h
         const ctx = output.getContext('2d')
 
         if (this.outputFormat === 'image/jpeg') {
@@ -720,8 +847,8 @@ export default {
           crop.h,
           0,
           0,
-          crop.w,
-          crop.h
+          outputSize.w,
+          outputSize.h
         )
         output.toBlob(
           blob => blob ? resolve(blob) : reject(new Error('Image encoding failed')),
@@ -860,10 +987,11 @@ button {
 }
 
 .toolbar {
-  min-height: 3.8rem;
-  padding: 0.65rem 0.85rem;
+  min-height: 2.8rem;
+  padding: 0.4rem 0.75rem;
   border: 1px solid var(--line);
   border-radius: 0.85rem 0.85rem 0 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -908,7 +1036,7 @@ button {
   border-top: 0;
   border-radius: 0 0 0.85rem 0.85rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 17rem;
+  grid-template-columns: minmax(0, 1fr) 12rem;
   overflow: hidden;
   background: #fff;
   box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
@@ -939,11 +1067,10 @@ canvas {
   display: block;
   touch-action: none;
   outline: 0;
-  box-shadow: 0 9px 32px rgba(0, 0, 0, 0.28);
 }
 
 canvas:focus-visible {
-  box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8), 0 9px 32px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8);
 }
 
 .canvas-help {
@@ -1023,6 +1150,35 @@ select:focus,
   padding: 0 0.55rem;
 }
 
+.check-control {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  color: #4d4651;
+  font-size: 0.8rem;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.check-control input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.resize-grid {
+  margin-top: 0.65rem;
+}
+
+.resize-lock {
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
 .divider {
   height: 1px;
   margin: 1.25rem 0;
@@ -1040,18 +1196,20 @@ select:focus,
 
 .output-summary {
   margin: 1.25rem 0 0.85rem;
-  padding: 0.8rem;
-  border: 1px solid var(--line);
-  border-radius: 0.55rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: #fff;
   font-size: 0.8rem;
 }
 
 .output-summary span {
-  color: var(--muted);
+  margin-bottom: 0.3rem;
+  display: block;
+  color: #4d4651;
+  font-weight: 650;
+}
+
+.output-summary strong {
+  display: block;
+  color: var(--ink);
+  font-size: 0.9rem;
 }
 
 .save-button {

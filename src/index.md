@@ -103,15 +103,15 @@ meta:
     </div>
   </div>
   <div class="app-item">
-    <a href="/cropimage/" aria-label="Open the free online image cropper">
-      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop Image online tool icon">
+    <a href="/cropimage/" aria-label="Open the free online image cropper and resizer">
+      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop and Resize Image online tool icon">
         <rect width="128" height="128" rx="28" fill="#883388"/>
         <path d="M38 24v58c0 5 4 8 8 8h58M24 38h58c5 0 8 4 8 8v58" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
     <div class="app-info">
-      <a href="/cropimage/"><h3>Crop Image Online</h3></a>
-      <p>Crop PNG, JPEG, and WebP images to exact dimensions or common aspect ratios. Images are processed privately in your browser.</p>
+      <a href="/cropimage/"><h3>Crop and Resize Image Online</h3></a>
+      <p>Crop and resize PNG, JPEG, and WebP images to exact output dimensions or common aspect ratios. Images are processed privately in your browser.</p>
     </div>
   </div>
   <div class="app-item">
