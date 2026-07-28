@@ -9,6 +9,28 @@ module.exports = {
   description: 'Creative apps and online tools for photo editing, color grading, relaxation, and everyday image tasks.',
   dest: 'dist',
 
+  // VuePress 1's webpack parser predates the modern syntax used by webm-muxer.
+  // Transpile only that dependency instead of widening Babel processing to all node_modules.
+  chainWebpack: (config) => {
+    config.module
+      .rule('transpile-webm-muxer')
+      .test(/webm-muxer[\\/]build[\\/]webm-muxer\.m?js$/)
+      .use('babel-loader')
+      .loader('babel-loader')
+      .options({
+        presets: [require.resolve('@babel/preset-env')]
+      })
+
+    config.module
+      .rule('transpile-web-demuxer')
+      .test(/web-demuxer[\\/]dist[\\/]web-demuxer\.js$/)
+      .use('babel-loader')
+      .loader('babel-loader')
+      .options({
+        presets: [require.resolve('@babel/preset-env')]
+      })
+  },
+
   /**
    * Extra tags to be injected to the page HTML `<head>`
    *
@@ -47,6 +69,7 @@ module.exports = {
         text: "Other",
         items: [
           { text: 'Crop & Resize Image', link: '/cropimage/' },
+          { text: 'Crop & Resize Video', link: '/cropvideo/' },
           { text: 'ApiBake - OpenAPI to PDF', link: '/apibake/' }
         ]
       },

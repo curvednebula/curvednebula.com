@@ -1,0 +1,94 @@
+---
+title: Free Online Video Cropper and Resizer
+description: Crop and resize MP4, WebM, MOV, and AVI videos to a new aspect ratio or exact resolution. Export a private, browser-processed WebM video.
+permalink: /cropvideo/
+canonicalUrl: https://curvednebula.com/cropvideo/
+meta:
+  - name: keywords
+    content: crop video online, resize video online, AVI video cropper, crop AVI video, change video aspect ratio, video resolution converter, WebCodecs video editor, crop video to 9:16, crop video to 16:9
+  - property: og:title
+    content: Free Online Video Cropper and Resizer
+  - property: og:description
+    content: Crop videos to a different aspect ratio or exact resolution and save as WebM. Private, local, and powered by WebCodecs.
+  - property: og:type
+    content: website
+  - property: og:url
+    content: https://curvednebula.com/cropvideo/
+  - name: twitter:card
+    content: summary
+  - name: twitter:title
+    content: Free Online Video Cropper and Resizer
+  - name: twitter:description
+    content: Change a video's crop, aspect ratio, and resolution privately in your browser.
+---
+
+# Crop and Resize Videos Online
+
+<VideoCropper />
+
+## About
+
+Crop a video to a custom area or a common aspect ratio, resize it to an exact output resolution, and save the result as a WebM file. MP4, WebM, MOV, and AVI files are supported. Processing happens locally in your browser—your video is never uploaded.
+
+## How to crop a video
+
+1. Select a video from your device or drag and drop it into the cropper.
+2. Drag inside the crop area to reposition it, then drag the handles to resize it.
+3. Choose an aspect ratio such as 16:9, 1:1, 4:5, or 9:16.
+4. Keep the crop resolution, choose a long-edge preset, or enter a custom width and height.
+5. Select a frame rate and quality level, then choose **Save Video**.
+
+The editor previews any point in the video with the same crop. Exported dimensions are kept even for broad WebM codec compatibility.
+
+## Common video aspect ratios
+
+| Aspect ratio | Typical use |
+| --- | --- |
+| 16:9 | YouTube, presentations, and landscape video |
+| 9:16 | Reels, Shorts, Stories, and vertical mobile video |
+| 1:1 | Square social posts |
+| 4:5 | Portrait feed posts |
+| 4:3 | Classic video and presentations |
+| 2.35:1 | Cinematic widescreen |
+
+## Private WebCodecs video processing
+
+The source file stays on your device. Frames are cropped and resized in the browser, encoded with the browser's WebCodecs implementation, and packaged into a downloadable WebM file. No account, watermark, or server upload is involved.
+
+Audio is preserved as Opus when your browser can decode the source audio track and supports WebCodecs audio encoding. If it cannot, the tool still exports the cropped video without audio and tells you after export.
+
+### AVI support
+
+Browsers cannot reliably preview AVI containers directly, so the tool uses a small demuxer hosted with this site to read AVI packets and sends them to WebCodecs one frame at a time. It does not convert the entire source into a temporary in-memory video, so large AVI files do not need to fit inside a WebAssembly heap. Motion JPEG AVI has a dedicated local decoder path.
+
+AVI is a container and can hold many video codecs. The tool supports AVI video tracks that the browser's WebCodecs implementation can decode, plus Motion JPEG. It reports the codec name when an AVI uses an unsupported codec. AVI exports currently omit the source audio track.
+
+## Browser compatibility
+
+Video export requires a browser with the WebCodecs `VideoEncoder` API. Recent Chromium-based browsers such as Chrome and Edge offer the broadest support. The tool selects VP9 when available and falls back to VP8.
+
+## Frequently asked questions
+
+### Can I crop a landscape video into a vertical video?
+
+Yes. Choose **Vertical · 9:16**, move the selection over the important part of the frame, and select a suitable output resolution such as a 1080-pixel long edge.
+
+### Can I enter an exact video resolution?
+
+Yes. Choose **Custom** under Output resolution, then enter the width and height. Keep the aspect ratio option enabled to avoid stretching.
+
+### What format does the tool export?
+
+The tool exports a WebM file encoded with VP9 or VP8. Audio is encoded as Opus when it can be preserved.
+
+### Can I crop an AVI video?
+
+Yes. Select the `.avi` file normally. The browser reads it incrementally and opens it in the same crop editor without first creating a full temporary copy. Compatibility depends on the video codec stored inside the AVI container.
+
+### Why can video export take a while?
+
+Every frame must be decoded, cropped, resized, and encoded on your device. Longer videos, higher resolutions, and 60 fps exports require more processing.
+
+### Is there a file-size limit?
+
+The tool does not impose an upload limit because the video is not uploaded. AVI input is read incrementally. When Chrome or Edge offers a save-file dialog, output is also written progressively to disk; the download fallback must hold the completed output in browser memory. Available storage, video duration, resolution, and device performance still set practical limits.

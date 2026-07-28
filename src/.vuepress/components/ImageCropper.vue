@@ -201,7 +201,7 @@
           </div>
 
           <div class="output-summary">
-            <span class="output-label">Output Resolution:</span>
+            <span class="output-label">Output resolution</span>
             <span class="output-value">{{ outputSize.w }} × {{ outputSize.h }} px</span>
           </div>
 

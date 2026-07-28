@@ -20,5 +20,9 @@
   "devDependencies": {
     "@vuepress/plugin-google-analytics": "^1.9.10",
     "vuepress": "^1.9.10"
+  },
+  "dependencies": {
+    "web-demuxer": "^4.0.0",
+    "webm-muxer": "^5.1.3"
   }
 }

@@ -115,6 +115,19 @@ meta:
     </div>
   </div>
   <div class="app-item">
+    <a href="/cropvideo/" aria-label="Open the free online video cropper and resizer">
+      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop and Resize Video online tool icon">
+        <rect width="128" height="128" rx="28" fill="#883388"/>
+        <path d="M33 28v58c0 5 4 9 9 9h58M24 37h58c5 0 9 4 9 9v58" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M55 52l24 14-24 14z" fill="#fff"/>
+      </svg>
+    </a>
+    <div class="app-info">
+      <a href="/cropvideo/"><h3>Crop and Resize Video Online</h3></a>
+      <p>Change a video's crop, aspect ratio, or exact resolution and export it as WebM with private browser-based WebCodecs processing.</p>
+    </div>
+  </div>
+  <div class="app-item">
     <a href="/lullwave/">
       <img src="/images/lullwave_icon_rounded_256x256.png" alt="Lullwave sleep sounds app" class="app-icon" />
     </a>
