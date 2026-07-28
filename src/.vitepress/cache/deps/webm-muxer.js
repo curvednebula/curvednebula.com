@@ -1,3 +1,5 @@
+import "./chunk-5WRI5ZAA.js";
+
 // node_modules/webm-muxer/build/webm-muxer.mjs
 var __accessCheck = (obj, member, msg) => {
   if (!member.has(obj))

@@ -1,12 +1,12 @@
 ---
 title: Free Online Video Cropper, Trimmer, and Resizer
-description: Crop, trim, and resize MP4, WebM, MOV, and AVI videos to a new duration, aspect ratio, or exact resolution. Export a private, browser-processed WebM video.
+description: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos to a new duration, aspect ratio, or exact resolution. Export a private, browser-processed WebM video.
 pageClass: crop-tool-layout
 permalink: /cropvideo/
 canonicalUrl: https://curvednebula.com/cropvideo/
 meta:
   - name: keywords
-    content: crop video online, trim video online, resize video online, AVI video cropper, crop AVI video, change video aspect ratio, video resolution converter, WebCodecs video editor, crop video to 9:16, crop video to 16:9
+    content: crop video online, trim video online, resize video online, MKV video cropper, AVI video cropper, crop AVI video, change video aspect ratio, video resolution converter, WebCodecs video editor, crop video to 9:16, crop video to 16:9
   - property: og:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - property: og:description
@@ -29,7 +29,7 @@ meta:
 
 ## About
 
-Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as a WebM file. MP4, WebM, MOV, and AVI files are supported. Processing happens locally in your browser—your video is never uploaded.
+Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as a WebM file. MP4, WebM, MKV, MOV, and AVI files are supported. Processing happens locally in your browser—your video is never uploaded.
 
 ## How to crop a video
 
@@ -41,6 +41,8 @@ Crop a video to a custom area or a common aspect ratio, trim unwanted time from 
 6. Select a frame rate and quality level, then choose **Save Video**.
 
 The editor previews only the selected time range with the same crop. Exported dimensions are kept even for broad WebM codec compatibility.
+
+MP4, MOV, WebM, and MKV exports use a sequential decode pipeline instead of seeking separately for every output frame. This is substantially faster for many inter-frame video codecs and keeps memory use bounded.
 
 ### AVI support
 

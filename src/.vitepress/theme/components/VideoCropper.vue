@@ -13,7 +13,7 @@
         ref="fileInput"
         class="visually-hidden"
         type="file"
-        accept="video/*,.avi,video/x-msvideo"
+        accept="video/*,.avi,.mkv,video/x-msvideo,video/x-matroska"
         @change="onFileSelected"
       >
       <div class="upload-icon" aria-hidden="true">
@@ -44,7 +44,7 @@
           ref="fileInput"
           class="visually-hidden"
           type="file"
-          accept="video/*,.avi,video/x-msvideo"
+          accept="video/*,.avi,.mkv,video/x-msvideo,video/x-matroska"
           @change="onFileSelected"
         >
       </div>
@@ -340,6 +340,7 @@ export default {
       isPlaying: false,
       isExporting: false,
       cancelRequested: false,
+      activeConversion: null,
       exportProgress: 0,
       exportStage: 'Preparing',
       message: '',
@@ -499,7 +500,8 @@ export default {
       const isAvi = /\.avi$/i.test(file.name) ||
         file.type === 'video/x-msvideo' ||
         file.type === 'video/avi'
-      if ((!file.type || !file.type.startsWith('video/')) && !isAvi) {
+      const hasSupportedVideoExtension = /\.(?:avi|mkv|webm|mp4|m4v|mov)$/i.test(file.name)
+      if ((!file.type || !file.type.startsWith('video/')) && !isAvi && !hasSupportedVideoExtension) {
         this.setMessage('Please choose a valid video file.', true)
         return
       }
@@ -520,7 +522,7 @@ export default {
 
       const onLoadError = () => {
         URL.revokeObjectURL(nextUrl)
-        this.setMessage('This video could not be opened. Try an MP4, WebM, or MOV file supported by your browser.', true)
+        this.setMessage('This video could not be opened. Try an MP4, WebM, MKV, or MOV file supported by your browser.', true)
       }
 
       nextVideo.addEventListener('loadedmetadata', () => {
@@ -1328,6 +1330,7 @@ export default {
       if (this.isExporting) {
         this.cancelRequested = true
         this.exportStage = 'Canceling'
+        if (this.activeConversion) this.activeConversion.cancel().catch(() => {})
         return
       }
       if (!this.hasSource || !this.webCodecsSupported) return
@@ -1367,7 +1370,7 @@ export default {
         if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
 
         if (writable) {
-          await writable.close()
+          if (!result.writableClosed) await writable.close()
           writable = null
           this.setMessage(`Saved ${filename}${result.audioWarning ? ' without audio' : ''}`)
         } else {
@@ -1396,6 +1399,7 @@ export default {
       } finally {
         this.isExporting = false
         this.cancelRequested = false
+        this.activeConversion = null
         this.exportProgress = 0
         this.exportStage = 'Preparing'
         if (this.isAviSource) {
@@ -1410,6 +1414,156 @@ export default {
 
     async encodeVideo (writable = null) {
       if (this.isAviSource) return this.encodeAviVideo(writable)
+      if (this.canUseMediabunnyExport()) {
+        const result = await this.encodeMediabunnyVideo(writable)
+        if (result) return result
+      }
+      return this.encodeBrowserVideoLegacy(writable)
+    },
+
+    canUseMediabunnyExport () {
+      return Boolean(
+        this.sourceFile &&
+        /\.(?:mkv|webm|mp4|m4v|mov)$/i.test(this.sourceName)
+      )
+    },
+
+    async encodeMediabunnyVideo (writable = null) {
+      const {
+        BlobSource,
+        BufferTarget,
+        Conversion,
+        ConversionCanceledError,
+        Input,
+        MATROSKA,
+        MP4,
+        Output,
+        QTFF,
+        StreamTarget,
+        WEBM,
+        WebMOutputFormat
+      } = await import('mediabunny')
+      const size = this.outputSize
+      const crop = this.roundedCrop
+      const encoderConfig = await this.chooseVideoConfig(size)
+      const videoCodec = encoderConfig.codec.startsWith('vp09') ? 'vp9' : 'vp8'
+      const input = new Input({
+        source: new BlobSource(this.sourceFile),
+        formats: [MP4, QTFF, WEBM, MATROSKA]
+      })
+      let conversion = null
+
+      try {
+        this.exportStage = 'Reading media'
+        const videoTrack = await input.getPrimaryVideoTrack()
+        if (!videoTrack) {
+          console.warn('Mediabunny did not find a primary video track; using the compatibility exporter.')
+          return null
+        }
+
+        const sourceAudioTrack = this.preserveAudio && this.audioEncodingSupported
+          ? await input.getPrimaryAudioTrack()
+          : null
+        const target = writable
+          ? new StreamTarget(writable, { chunked: true, chunkSize: 8 * 1024 * 1024 })
+          : new BufferTarget()
+        const output = new Output({
+          format: new WebMOutputFormat(),
+          target
+        })
+
+        try {
+          conversion = await Conversion.init({
+            input,
+            output,
+            tracks: 'primary',
+            trim: {
+              start: this.trimStart,
+              end: this.trimEnd
+            },
+            video: {
+              width: size.w,
+              height: size.h,
+              fit: 'fill',
+              crop: {
+                left: crop.x,
+                top: crop.y,
+                width: crop.w,
+                height: crop.h
+              },
+              frameRate: this.frameRate,
+              codec: videoCodec,
+              bitrate: this.bitrate,
+              keyFrameInterval: 4,
+              forceTranscode: true,
+              allowRotationMetadata: false
+            },
+            audio: sourceAudioTrack
+              ? async track => {
+                  const channels = Math.min(await track.getNumberOfChannels(), 2)
+                  return {
+                    codec: 'opus',
+                    sampleRate: 48000,
+                    numberOfChannels: channels,
+                    bitrate: channels === 1 ? 96000 : 160000,
+                    forceTranscode: true
+                  }
+                }
+              : { discard: true },
+            showWarnings: false
+          })
+        } catch (error) {
+          console.warn('Mediabunny could not initialize this file; using the compatibility exporter.', error)
+          return null
+        }
+
+        const videoIsUsed = conversion.utilizedTracks.some(track => track === videoTrack)
+        if (!conversion.isValid || !videoIsUsed) {
+          console.warn(
+            'Mediabunny could not create a compatible video conversion; using the compatibility exporter.',
+            conversion.discardedTracks
+          )
+          return null
+        }
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+
+        const audioIsUsed = sourceAudioTrack &&
+          conversion.utilizedTracks.some(track => track === sourceAudioTrack)
+        const audioWarning = this.preserveAudio &&
+          (!this.audioEncodingSupported || !sourceAudioTrack || !audioIsUsed)
+
+        this.activeConversion = conversion
+        this.exportStage = audioIsUsed ? 'Encoding video and audio' : 'Encoding video'
+        conversion.onProgress = progress => {
+          this.exportProgress = Math.min(96, Math.round(progress * 96))
+        }
+
+        try {
+          await conversion.execute()
+        } catch (error) {
+          if (error instanceof ConversionCanceledError || this.cancelRequested) {
+            throw new Error('EXPORT_CANCELED')
+          }
+          throw error
+        } finally {
+          this.activeConversion = null
+        }
+
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+        this.exportStage = 'Finishing file'
+        this.exportProgress = 100
+        if (!writable && !target.buffer) throw new Error('The converted video file is empty.')
+        return {
+          buffer: writable ? null : target.buffer,
+          audioWarning,
+          writableClosed: Boolean(writable)
+        }
+      } finally {
+        input.dispose()
+      }
+    },
+
+    async encodeBrowserVideoLegacy (writable = null) {
       const size = this.outputSize
       const crop = this.roundedCrop
       const config = await this.chooseVideoConfig(size)

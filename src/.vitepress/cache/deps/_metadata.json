@@ -1,55 +1,61 @@
 {
-  "hash": "97ff9961",
+  "hash": "2f3ff741",
   "configHash": "fed207e7",
-  "lockfileHash": "d863b678",
-  "browserHash": "bc77231b",
+  "lockfileHash": "d77dc57a",
+  "browserHash": "e516ef07",
   "optimized": {
     "vue": {
       "src": "../../../../node_modules/vitepress/node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "1d71de2a",
+      "fileHash": "c9d93878",
       "needsInterop": false
     },
     "vitepress > @vue/devtools-api": {
       "src": "../../../../node_modules/@vue/devtools-api/dist/index.js",
       "file": "vitepress___@vue_devtools-api.js",
-      "fileHash": "bdb136c9",
+      "fileHash": "278b7bca",
       "needsInterop": false
     },
     "vitepress > @vueuse/core": {
       "src": "../../../../node_modules/@vueuse/core/index.mjs",
       "file": "vitepress___@vueuse_core.js",
-      "fileHash": "62f5dc92",
+      "fileHash": "8ae8ec6f",
       "needsInterop": false
     },
     "vitepress > @vueuse/integrations/useFocusTrap": {
       "src": "../../../../node_modules/@vueuse/integrations/useFocusTrap.mjs",
       "file": "vitepress___@vueuse_integrations_useFocusTrap.js",
-      "fileHash": "abe34611",
+      "fileHash": "4c1334a6",
       "needsInterop": false
     },
     "vitepress > mark.js/src/vanilla.js": {
       "src": "../../../../node_modules/mark.js/src/vanilla.js",
       "file": "vitepress___mark__js_src_vanilla__js.js",
-      "fileHash": "f43374eb",
+      "fileHash": "0dc68ba3",
       "needsInterop": false
     },
     "vitepress > minisearch": {
       "src": "../../../../node_modules/minisearch/dist/es/index.js",
       "file": "vitepress___minisearch.js",
-      "fileHash": "a49c38d7",
+      "fileHash": "83622999",
       "needsInterop": false
     },
     "webm-muxer": {
       "src": "../../../../node_modules/webm-muxer/build/webm-muxer.mjs",
       "file": "webm-muxer.js",
-      "fileHash": "d8e92cec",
+      "fileHash": "1106bcdd",
       "needsInterop": false
     },
     "web-demuxer": {
       "src": "../../../../node_modules/web-demuxer/dist/web-demuxer.js",
       "file": "web-demuxer.js",
-      "fileHash": "6c8294d9",
+      "fileHash": "d078dc90",
+      "needsInterop": false
+    },
+    "mediabunny": {
+      "src": "../../../../node_modules/mediabunny/dist/modules/src/index.js",
+      "file": "mediabunny.js",
+      "fileHash": "160bdccd",
       "needsInterop": false
     }
   },
@@ -59,6 +65,9 @@
     },
     "chunk-4LYZ2IQQ": {
       "file": "chunk-4LYZ2IQQ.js"
+    },
+    "chunk-5WRI5ZAA": {
+      "file": "chunk-5WRI5ZAA.js"
     }
   }
 }
