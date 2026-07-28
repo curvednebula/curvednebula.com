@@ -62,20 +62,3 @@ These sounds can provide a consistent audio backdrop for winding down, reading, 
 
 Lullwave focuses on quick access to its sound library. You do not need to create an account, register, or manage a subscription before choosing a noise or ambient sound.
 
-## Frequently asked questions
-
-### What colored noises are included?
-
-Lullwave includes brown, pink, white, blue, and purple noise, along with mixes of noise waves and noise pulses.
-
-### Does Lullwave include nature sounds?
-
-Yes. The ambient library includes rain, water streams, sea waves, water droplets, boiling water, train, and fireplace sounds.
-
-### Do I need to register or subscribe?
-
-No. Lullwave does not require registration or a subscription.
-
-### Which devices support Lullwave?
-
-Lullwave is available for Android devices through Google Play.
