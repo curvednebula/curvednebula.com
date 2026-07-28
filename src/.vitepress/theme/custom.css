@@ -9,6 +9,11 @@
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+.VPNavBarTitle .logo {
+  margin-right: 16px;
+  height: calc(var(--vp-nav-logo-height) * 1.5);
+}
+
 .crop-tool-layout .VPDoc:not(.has-sidebar) .container {
   max-width: 1152px !important;
 }

@@ -31,6 +31,10 @@ export default defineConfig({
   ],
 
   themeConfig: {
+    logo: {
+      src: '/images/curvednebula_80.png',
+      alt: 'Curved Nebula'
+    },
     nav: [
       { text: 'Photo Curves', link: '/photocurves/' },
       { text: 'Lullwave', link: '/lullwave/' },
@@ -45,9 +49,6 @@ export default defineConfig({
       { text: 'Privacy Policy', link: '/privacy_policy.html' },
       { text: 'Contacts', link: '/contacts.html' }
     ],
-    search: {
-      provider: 'local'
-    },
     outline: false
   },
 
