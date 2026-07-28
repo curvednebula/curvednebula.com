@@ -293,7 +293,7 @@
             <svg v-else viewBox="0 0 24 24" aria-hidden="true">
               <path d="M7 7h10v10H7z"/>
             </svg>
-            {{ isExporting ? 'Cancel export' : 'Save Video' }}
+            {{ isExporting ? 'Cancel' : 'Save Video' }}
           </button>
         </aside>
       </div>
