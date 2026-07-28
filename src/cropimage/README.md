@@ -40,32 +40,6 @@ Crop and resize a photo or image to the exact size you need. Choose a custom cro
 5. To resize the cropped result, enable **Resize output** and enter its width or height. Keep the aspect ratio locked to avoid distortion.
 6. Select PNG, JPEG, or WebP and save the cropped image.
 
-## Choose the right crop aspect ratio
-
-- **Freeform** lets you create a crop of any width and height.
-- **1:1 square** works well for avatars, profile photos, and product thumbnails.
-- **4:3 and 3:2** are common ratios for digital and printed photography.
-- **16:9 landscape** is suited to video thumbnails, presentations, and wide banners.
-- **3:4 portrait and 9:16 story** are useful for vertical photos and mobile content.
-
-The crop aspect ratio controls the shape of the selection. By default, your result uses the original pixels inside that selection. Enable **Resize output** when you need different output dimensions.
-
-## Supported image formats
-
-The cropper opens image formats supported by your browser and can export:
-
-| Format | Best for |
-| --- | --- |
-| PNG | Graphics, screenshots, transparency, and lossless quality |
-| JPEG | Photographs and smaller file sizes |
-| WebP | Modern web images with efficient compression |
-
-For JPEG and WebP files, use the quality control to balance image detail and file size.
-
-## Private browser-based image cropping and resizing
-
-Your source image and cropped result stay on your device. The tool processes images directly in the browser without sending them to a server, creating an account, or adding a watermark.
-
 ## Frequently asked questions
 
 ### Does cropping reduce image quality?

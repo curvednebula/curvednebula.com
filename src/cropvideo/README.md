@@ -42,23 +42,6 @@ Crop a video to a custom area or a common aspect ratio, trim unwanted time from 
 
 The editor previews only the selected time range with the same crop. Exported dimensions are kept even for broad WebM codec compatibility.
 
-## Common video aspect ratios
-
-| Aspect ratio | Typical use |
-| --- | --- |
-| 16:9 | YouTube, presentations, and landscape video |
-| 9:16 | Reels, Shorts, Stories, and vertical mobile video |
-| 1:1 | Square social posts |
-| 4:5 | Portrait feed posts |
-| 4:3 | Classic video and presentations |
-| 2.35:1 | Cinematic widescreen |
-
-## Private WebCodecs video processing
-
-The source file stays on your device. Frames are cropped and resized in the browser, encoded with the browser's WebCodecs implementation, and packaged into a downloadable WebM file. No account, watermark, or server upload is involved.
-
-Audio is preserved as Opus when your browser can decode the source audio track and supports WebCodecs audio encoding. If it cannot, the tool still exports the cropped video without audio and tells you after export.
-
 ### AVI support
 
 Browsers cannot reliably preview AVI containers directly, so the tool uses a small demuxer hosted with this site to read AVI packets and sends them to WebCodecs one frame at a time. It does not convert the entire source into a temporary in-memory video, so large AVI files do not need to fit inside a WebAssembly heap. Motion JPEG AVI has a dedicated local decoder path.
