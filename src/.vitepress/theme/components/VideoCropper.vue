@@ -90,11 +90,20 @@
                 aria-label="Video position"
                 @input="scrubVideo"
               >
-              <div class="trim-range" :style="trimRangeStyle">
+              <div
+                ref="trimRange"
+                class="trim-range"
+                :style="trimRangeStyle"
+                @pointerdown="onTrimPointerDown"
+                @pointermove="onTrimPointerMove"
+                @pointerup="onTrimPointerUp"
+                @pointercancel="onTrimPointerUp"
+              >
                 <div class="trim-track" aria-hidden="true"><span /></div>
                 <i class="trim-guide trim-guide-start" aria-hidden="true" />
                 <i class="trim-guide trim-guide-end" aria-hidden="true" />
                 <input
+                  ref="trimStartRange"
                   type="range"
                   min="0"
                   :max="duration || 0"
@@ -105,6 +114,7 @@
                   @input="updateTrimStart"
                 >
                 <input
+                  ref="trimEndRange"
                   type="range"
                   min="0"
                   :max="duration || 0"
@@ -263,8 +273,12 @@
 
           <div class="setting-group">
             <label class="check-control">
-              <input v-model="preserveAudio" type="checkbox" :disabled="isExporting || !audioEncodingSupported || isAviSource">
-              <span>{{ isAviSource ? 'AVI audio export is not available yet' : 'Preserve audio when supported' }}</span>
+              <input
+                v-model="preserveAudio"
+                type="checkbox"
+                :disabled="isExporting || !audioEncodingSupported || (isAviSource && !aviAudioExportSupported)"
+              >
+              <span>{{ audioOptionLabel }}</span>
             </label>
           </div>
 
@@ -307,7 +321,6 @@
 </template>
 
 <script>
-import { Muxer, ArrayBufferTarget, FileSystemWritableFileStreamTarget } from 'webm-muxer'
 import { WebDemuxer } from 'web-demuxer'
 
 export default {
@@ -336,6 +349,7 @@ export default {
       preserveAudio: true,
       display: { width: 0, height: 0, scale: 1, pad: 0 },
       interaction: null,
+      trimInteraction: null,
       isDraggingOver: false,
       isPlaying: false,
       isExporting: false,
@@ -354,9 +368,12 @@ export default {
       aviDemuxer: null,
       aviDecoderConfig: null,
       aviVideoStream: null,
+      aviAudioDecoderConfig: null,
+      aviAudioStream: null,
       aviFrame: null,
       aviDecodeMode: '',
       aviDecodeGeneration: 0,
+      aviDecodeOperations: [],
       aviSeekTimer: null,
       aviPlaybackStartedAt: 0,
       isAviSource: false
@@ -379,6 +396,17 @@ export default {
       return typeof window !== 'undefined' &&
         typeof window.AudioEncoder !== 'undefined' &&
         typeof window.AudioData !== 'undefined'
+    },
+
+    aviAudioExportSupported () {
+      return Boolean(this.aviAudioStream && this.aviAudioDecoderConfig)
+    },
+
+    audioOptionLabel () {
+      if (!this.isAviSource) return 'Preserve audio when supported'
+      if (!this.aviAudioStream) return 'This AVI has no audio track'
+      if (!this.aviAudioExportSupported) return 'This AVI audio codec is not supported by this browser'
+      return 'Preserve AVI audio'
     },
 
     roundedCrop () {
@@ -597,6 +625,9 @@ export default {
         const videoStream = mediaInfo.streams && mediaInfo.streams.find(stream =>
           stream.codec_type === 0 || stream.codec_type_string === 'video'
         )
+        const audioStream = mediaInfo.streams && mediaInfo.streams.find(stream =>
+          stream.codec_type === 1 || stream.codec_type_string === 'audio'
+        )
         if (!videoStream || !videoStream.width || !videoStream.height) {
           throw new Error('No readable video track was found.')
         }
@@ -622,10 +653,30 @@ export default {
         }
         if (this.aviCancelRequested) throw new Error('AVI_CANCELED')
 
+        let audioDecoderConfig = null
+        if (audioStream && this.audioEncodingSupported && typeof window.AudioDecoder !== 'undefined') {
+          const candidate = demuxer.genDecoderConfig('audio', audioStream)
+          try {
+            const decodeSupport = await AudioDecoder.isConfigSupported(candidate)
+            const channels = Math.min(Math.max(1, Number(audioStream.channels) || 1), 2)
+            const encodeSupport = await AudioEncoder.isConfigSupported({
+              codec: 'opus',
+              sampleRate: 48000,
+              numberOfChannels: channels,
+              bitrate: channels === 1 ? 96000 : 160000
+            })
+            if (decodeSupport.supported && encodeSupport.supported) audioDecoderConfig = candidate
+          } catch (error) {
+            console.warn('AVI audio is not supported by this browser.', error)
+          }
+        }
+
         this.aviDemuxer = demuxer
         demuxer = null
         this.aviDecoderConfig = decoderConfig
         this.aviVideoStream = videoStream
+        this.aviAudioDecoderConfig = audioDecoderConfig
+        this.aviAudioStream = audioStream || null
         this.aviDecodeMode = decodeMode
         this.isAviSource = true
         this.sourceFile = file
@@ -639,7 +690,7 @@ export default {
         this.aspect = 'free'
         this.resolutionPreset = 'crop'
         this.outputAspectLocked = true
-        this.preserveAudio = false
+        this.preserveAudio = Boolean(audioDecoderConfig)
         this.isPlaying = false
         this.frameRate = this.closestFrameRate(this.parseFrameRate(videoStream.avg_frame_rate || videoStream.r_frame_rate))
         this.resetCrop()
@@ -652,7 +703,12 @@ export default {
         this.isPreparingAvi = false
         this.aviCancelRequested = false
         this.preparationStage = ''
-        this.setMessage(`AVI opened with streaming ${decodeMode === 'mjpeg' ? 'Motion JPEG' : 'WebCodecs'} decoding. AVI audio is not included in export.`)
+        const audioNotice = audioDecoderConfig
+          ? ' Its audio can be preserved.'
+          : audioStream
+            ? ` Its ${audioStream.codec_name || 'audio'} track is not supported by this browser, so export will be video-only.`
+            : ' It has no audio track.'
+        this.setMessage(`AVI opened with streaming ${decodeMode === 'mjpeg' ? 'Motion JPEG' : 'WebCodecs'} decoding.${audioNotice}`)
         this.$nextTick(() => {
           this.layoutCanvas()
           if (typeof ResizeObserver !== 'undefined') {
@@ -691,7 +747,18 @@ export default {
       this.setMessage('Opening AVI canceled.')
     },
 
-    async decodeAviFrameAt (time) {
+    decodeAviFrameAt (time) {
+      const operation = this.performAviFrameDecode(time)
+      this.aviDecodeOperations.push(operation)
+      const removeOperation = () => {
+        const index = this.aviDecodeOperations.indexOf(operation)
+        if (index >= 0) this.aviDecodeOperations.splice(index, 1)
+      }
+      operation.then(removeOperation, removeOperation)
+      return operation
+    },
+
+    async performAviFrameDecode (time) {
       if (!this.aviDemuxer) throw new Error('AVI source is unavailable.')
       const generation = ++this.aviDecodeGeneration
       const targetTime = this.clamp(Number(time) || 0, 0, Math.max(0, this.duration - 0.001))
@@ -733,11 +800,21 @@ export default {
       this.draw()
     },
 
+    async finishPendingAviPreview () {
+      if (!this.isAviSource) return
+      if (this.aviSeekTimer) clearTimeout(this.aviSeekTimer)
+      this.aviSeekTimer = null
+      this.aviDecodeGeneration++
+      const pending = [...this.aviDecodeOperations]
+      if (pending.length) await Promise.allSettled(pending)
+    },
+
     cleanUpVideo () {
       this.stopPreviewLoop()
       this.aviDecodeGeneration++
       if (this.aviSeekTimer) clearTimeout(this.aviSeekTimer)
       this.aviSeekTimer = null
+      this.aviDecodeOperations = []
       if (this.video) {
         this.video.pause()
         this.video.removeEventListener('timeupdate', this.onVideoTimeUpdate)
@@ -756,6 +833,8 @@ export default {
       this.aviDemuxer = null
       this.aviDecoderConfig = null
       this.aviVideoStream = null
+      this.aviAudioDecoderConfig = null
+      this.aviAudioStream = null
       this.aviDecodeMode = ''
       this.isAviSource = false
     },
@@ -1160,6 +1239,67 @@ export default {
       this.clearMessage()
     },
 
+    trimPositionFromClientX (clientX) {
+      if (!this.$refs.trimRange || !this.duration) return 0
+      const rect = this.$refs.trimRange.getBoundingClientRect()
+      const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16
+      const railPadding = Math.min(rootFontSize, rect.width / 2)
+      const railWidth = Math.max(1, rect.width - railPadding * 2)
+      const ratio = this.clamp((clientX - rect.left - railPadding) / railWidth, 0, 1)
+      return ratio * this.duration
+    },
+
+    trimClientXFromTime (time) {
+      if (!this.$refs.trimRange || !this.duration) return 0
+      const rect = this.$refs.trimRange.getBoundingClientRect()
+      const rootFontSize = parseFloat(window.getComputedStyle(document.documentElement).fontSize) || 16
+      const railPadding = Math.min(rootFontSize, rect.width / 2)
+      return rect.left + railPadding +
+        (this.clamp(time, 0, this.duration) / this.duration) * Math.max(1, rect.width - railPadding * 2)
+    },
+
+    onTrimPointerDown (event) {
+      if (this.isExporting || !this.duration || event.button !== 0) return
+      event.preventDefault()
+      this.pausePlayback()
+
+      const startX = this.trimClientXFromTime(this.trimStart)
+      const endX = this.trimClientXFromTime(this.trimEnd)
+      let boundary
+      if (event.clientX <= startX) boundary = 'start'
+      else if (event.clientX >= endX) boundary = 'end'
+      else boundary = event.clientX - startX <= endX - event.clientX ? 'start' : 'end'
+
+      const tipX = boundary === 'start' ? startX : endX
+      this.trimInteraction = {
+        boundary,
+        pointerId: event.pointerId,
+        pointerOffset: event.clientX - tipX
+      }
+      this.$refs.trimRange.setPointerCapture(event.pointerId)
+      const input = boundary === 'start' ? this.$refs.trimStartRange : this.$refs.trimEndRange
+      if (input) input.focus({ preventScroll: true })
+    },
+
+    onTrimPointerMove (event) {
+      const interaction = this.trimInteraction
+      if (!interaction || interaction.pointerId !== event.pointerId) return
+      event.preventDefault()
+      const value = this.trimPositionFromClientX(event.clientX - interaction.pointerOffset)
+      const mockEvent = { target: { value } }
+      if (interaction.boundary === 'start') this.updateTrimStart(mockEvent)
+      else this.updateTrimEnd(mockEvent)
+    },
+
+    onTrimPointerUp (event) {
+      const interaction = this.trimInteraction
+      if (!interaction || interaction.pointerId !== event.pointerId) return
+      if (this.$refs.trimRange.hasPointerCapture(event.pointerId)) {
+        this.$refs.trimRange.releasePointerCapture(event.pointerId)
+      }
+      this.trimInteraction = null
+    },
+
     updateTrimEnd (event) {
       this.pausePlayback()
       const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
@@ -1350,6 +1490,7 @@ export default {
       const originalTime = this.isAviSource ? this.currentTime : this.video.currentTime
 
       try {
+        await this.finishPendingAviPreview()
         if (typeof window.showSaveFilePicker === 'function') {
           try {
             fileHandle = await window.showSaveFilePicker({
@@ -1585,35 +1726,6 @@ export default {
       }
       if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
 
-      const target = writable
-        ? new FileSystemWritableFileStreamTarget(writable, { chunkSize: 8 * 1024 * 1024 })
-        : new ArrayBufferTarget()
-      const muxerOptions = {
-        target,
-        video: {
-          codec: config.codec.startsWith('vp09') ? 'V_VP9' : 'V_VP8',
-          width: size.w,
-          height: size.h,
-          frameRate: this.frameRate
-        },
-        firstTimestampBehavior: 'offset'
-      }
-      if (audioBuffer) {
-        muxerOptions.audio = {
-          codec: 'A_OPUS',
-          numberOfChannels: audioBuffer.numberOfChannels,
-          sampleRate: audioBuffer.sampleRate
-        }
-      }
-      const muxer = new Muxer(muxerOptions)
-
-      let encoderError = null
-      const videoEncoder = new VideoEncoder({
-        output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
-        error: error => { encoderError = error }
-      })
-      videoEncoder.configure(config)
-
       const outputCanvas = document.createElement('canvas')
       outputCanvas.width = size.w
       outputCanvas.height = size.h
@@ -1622,59 +1734,66 @@ export default {
       ctx.imageSmoothingQuality = 'high'
 
       const totalFrames = Math.max(1, Math.ceil(this.trimDuration * this.frameRate))
-      const frameDuration = Math.round(1000000 / this.frameRate)
-      this.exportStage = 'Encoding video'
+      const frameDuration = 1 / this.frameRate
+      const session = await this.createManualWebMExport(
+        writable,
+        outputCanvas,
+        config,
+        audioBuffer ? audioBuffer.numberOfChannels : 0
+      )
+      this.exportStage = audioBuffer ? 'Encoding video and audio' : 'Encoding video'
 
       try {
-        for (let index = 0; index < totalFrames; index++) {
-          if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-          const time = Math.min(
-            this.trimStart + index / this.frameRate,
-            Math.max(this.trimStart, this.trimEnd - 0.001)
-          )
-          await this.seekVideo(time)
-          ctx.drawImage(
-            this.video,
-            crop.x, crop.y, crop.w, crop.h,
-            0, 0, size.w, size.h
-          )
-          const frame = new VideoFrame(outputCanvas, {
-            timestamp: index * frameDuration,
-            duration: Math.min(
-              frameDuration,
-              Math.max(1, Math.round(this.trimDuration * 1000000) - index * frameDuration)
-            )
-          })
-          videoEncoder.encode(frame, { keyFrame: index % (this.frameRate * 4) === 0 })
-          frame.close()
+        const videoTask = (async () => {
+          try {
+            for (let index = 0; index < totalFrames; index++) {
+              if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+              const time = Math.min(
+                this.trimStart + index / this.frameRate,
+                Math.max(this.trimStart, this.trimEnd - 0.001)
+              )
+              await this.seekVideo(time)
+              ctx.drawImage(
+                this.video,
+                crop.x, crop.y, crop.w, crop.h,
+                0, 0, size.w, size.h
+              )
+              await session.videoSource.add(
+                index * frameDuration,
+                Math.min(frameDuration, Math.max(0, this.trimDuration - index * frameDuration)),
+                { keyFrame: index % (this.frameRate * 4) === 0 }
+              )
 
-          while (videoEncoder.encodeQueueSize > 12) {
-            if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-            await this.nextTask()
+              if (index % 3 === 0 || index === totalFrames - 1) {
+                this.exportProgress = Math.round(((index + 1) / totalFrames) * 96)
+                await this.nextTask()
+              }
+            }
+          } finally {
+            session.videoSource.close()
           }
-          if (index % 3 === 0 || index === totalFrames - 1) {
-            this.exportProgress = Math.round(((index + 1) / totalFrames) * (audioBuffer ? 85 : 96))
-            await this.nextTask()
-          }
-          if (encoderError) throw encoderError
-        }
-        await videoEncoder.flush()
+        })()
+        const audioTask = audioBuffer
+          ? this.addAudioBufferRange(
+              audioBuffer,
+              session.audioSource,
+              session.AudioSample,
+              this.trimStart,
+              this.trimEnd
+            ).finally(() => session.audioSource.close())
+          : Promise.resolve()
+
+        await Promise.all([videoTask, audioTask])
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+
+        return await this.finalizeManualWebMExport(session, writable, audioWarning)
+      } catch (error) {
+        await this.cancelManualWebMExport(session)
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+        throw error
       } finally {
-        videoEncoder.close()
+        if (this.activeConversion === session.output) this.activeConversion = null
       }
-      if (encoderError) throw encoderError
-
-      if (audioBuffer) {
-        this.exportStage = 'Encoding audio'
-        await this.encodeAudio(audioBuffer, muxer, this.trimStart, this.trimEnd)
-      }
-      if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-
-      this.exportStage = 'Finishing file'
-      this.exportProgress = 98
-      muxer.finalize()
-      this.exportProgress = 100
-      return { buffer: writable ? null : target.buffer, audioWarning }
     },
 
     async encodeAviVideo (writable = null) {
@@ -1682,27 +1801,6 @@ export default {
       const size = this.outputSize
       const crop = this.roundedCrop
       const config = await this.chooseVideoConfig(size)
-      const target = writable
-        ? new FileSystemWritableFileStreamTarget(writable, { chunkSize: 8 * 1024 * 1024 })
-        : new ArrayBufferTarget()
-      const muxer = new Muxer({
-        target,
-        video: {
-          codec: config.codec.startsWith('vp09') ? 'V_VP9' : 'V_VP8',
-          width: size.w,
-          height: size.h,
-          frameRate: this.frameRate
-        },
-        firstTimestampBehavior: 'offset'
-      })
-
-      let encoderError = null
-      const videoEncoder = new VideoEncoder({
-        output: (chunk, metadata) => muxer.addVideoChunk(chunk, metadata),
-        error: error => { encoderError = error }
-      })
-      videoEncoder.configure(config)
-
       const outputCanvas = document.createElement('canvas')
       outputCanvas.width = size.w
       outputCanvas.height = size.h
@@ -1711,11 +1809,18 @@ export default {
       ctx.imageSmoothingQuality = 'high'
 
       const totalFrames = Math.max(1, Math.ceil(this.trimDuration * this.frameRate))
-      const frameDuration = Math.round(1000000 / this.frameRate)
+      const frameDuration = 1 / this.frameRate
       const sourceStart = Number(this.aviVideoStream.start_time) || 0
       let nextOutputIndex = 0
       let decodedFrameCount = 0
-      this.exportStage = 'Streaming AVI frames'
+      const audioEnabled = this.preserveAudio && this.aviAudioExportSupported
+      const session = await this.createManualWebMExport(
+        writable,
+        outputCanvas,
+        config,
+        audioEnabled ? Math.min(Math.max(1, Number(this.aviAudioStream.channels) || 1), 2) : 0
+      )
+      this.exportStage = audioEnabled ? 'Exporting video and audio' : 'Exporting video'
 
       const encodeSourceFrame = async (source, timestamp) => {
         try {
@@ -1733,23 +1838,17 @@ export default {
               crop.x, crop.y, crop.w, crop.h,
               0, 0, size.w, size.h
             )
-            const outputFrame = new VideoFrame(outputCanvas, {
-              timestamp: nextOutputIndex * frameDuration,
-              duration: Math.min(
+            await session.videoSource.add(
+              nextOutputIndex * frameDuration,
+              Math.min(
                 frameDuration,
-                Math.max(1, Math.round(this.trimDuration * 1000000) - nextOutputIndex * frameDuration)
-              )
-            })
-            videoEncoder.encode(outputFrame, {
-              keyFrame: nextOutputIndex % (this.frameRate * 4) === 0
-            })
-            outputFrame.close()
+                Math.max(0, this.trimDuration - nextOutputIndex * frameDuration)
+              ),
+              {
+                keyFrame: nextOutputIndex % (this.frameRate * 4) === 0
+              }
+            )
             nextOutputIndex++
-
-            while (videoEncoder.encodeQueueSize > 12) {
-              if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-              await this.nextTask()
-            }
           }
 
           decodedFrameCount++
@@ -1757,93 +1856,303 @@ export default {
             this.exportProgress = Math.min(96, Math.round((nextOutputIndex / totalFrames) * 96))
             await this.nextTask()
           }
-          if (encoderError) throw encoderError
         } finally {
           source.close()
         }
       }
 
       try {
-        const reader = this.aviDemuxer.read('video', this.trimStart, this.trimEnd).getReader()
-        try {
-          if (this.aviDecodeMode === 'mjpeg') {
-            while (true) {
-              if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-              const item = await reader.read()
-              if (item.done) break
-              const chunk = item.value
-              const bytes = new Uint8Array(chunk.byteLength)
-              chunk.copyTo(bytes)
-              const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }))
-              await encodeSourceFrame(bitmap, chunk.timestamp)
-            }
-          } else {
-            let decoderError = null
-            let processingError = null
-            let pendingFrames = 0
-            let processing = Promise.resolve()
-            const decoder = new VideoDecoder({
-              output: frame => {
-                pendingFrames++
-                processing = processing.then(async () => {
-                  if (processingError) {
-                    frame.close()
-                    pendingFrames--
-                    return
-                  }
-                  try {
-                    await encodeSourceFrame(frame, frame.timestamp)
-                  } catch (error) {
-                    processingError = error
-                  } finally {
-                    pendingFrames--
-                  }
-                })
-              },
-              error: error => { decoderError = error }
-            })
-            try {
-              decoder.configure(this.aviDecoderConfig)
+        const videoTask = (async () => {
+          const reader = this.aviDemuxer.read('video', this.trimStart, this.trimEnd).getReader()
+          try {
+            if (this.aviDecodeMode === 'mjpeg') {
               while (true) {
                 if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
                 const item = await reader.read()
                 if (item.done) break
-                decoder.decode(item.value)
-                while (decoder.decodeQueueSize > 12 || pendingFrames > 4) {
-                  if (decoderError || processingError) throw decoderError || processingError
-                  await this.nextTask()
-                }
+                const chunk = item.value
+                const bytes = new Uint8Array(chunk.byteLength)
+                chunk.copyTo(bytes)
+                const bitmap = await createImageBitmap(new Blob([bytes], { type: 'image/jpeg' }))
+                await encodeSourceFrame(bitmap, chunk.timestamp)
               }
-              await decoder.flush()
-              await processing
-            } finally {
-              decoder.close()
+            } else {
+              let decoderError = null
+              let processingError = null
+              let pendingFrames = 0
+              let processing = Promise.resolve()
+              const decoder = new VideoDecoder({
+                output: frame => {
+                  pendingFrames++
+                  processing = processing.then(async () => {
+                    if (processingError) {
+                      frame.close()
+                      pendingFrames--
+                      return
+                    }
+                    try {
+                      await encodeSourceFrame(frame, frame.timestamp)
+                    } catch (error) {
+                      processingError = error
+                    } finally {
+                      pendingFrames--
+                    }
+                  })
+                },
+                error: error => { decoderError = error }
+              })
+              try {
+                decoder.configure(this.aviDecoderConfig)
+                while (true) {
+                  if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+                  const item = await reader.read()
+                  if (item.done) break
+                  decoder.decode(item.value)
+                  while (decoder.decodeQueueSize > 12 || pendingFrames > 4) {
+                    if (decoderError || processingError) throw decoderError || processingError
+                    await this.nextTask()
+                  }
+                }
+                await decoder.flush()
+                await processing
+              } finally {
+                decoder.close()
+              }
+              if (decoderError || processingError) throw decoderError || processingError
             }
-            if (decoderError || processingError) throw decoderError || processingError
+          } finally {
+            await reader.cancel().catch(() => {})
+            reader.releaseLock()
+            session.videoSource.close()
           }
+
+          if (!decodedFrameCount || !nextOutputIndex) {
+            throw new Error('No AVI video frames could be decoded.')
+          }
+        })()
+        const audioTask = audioEnabled
+          ? this.encodeAviAudio(session.audioSource, session.AudioSample)
+              .finally(() => session.audioSource.close())
+          : Promise.resolve()
+
+        await Promise.all([videoTask, audioTask])
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+
+        return await this.finalizeManualWebMExport(
+          session,
+          writable,
+          Boolean(this.aviAudioStream && !audioEnabled)
+        )
+      } catch (error) {
+        await this.cancelManualWebMExport(session)
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+        throw error
+      } finally {
+        if (this.activeConversion === session.output) this.activeConversion = null
+      }
+    },
+
+    async createManualWebMExport (writable, outputCanvas, videoConfig, audioChannels = 0) {
+      const {
+        AudioSample,
+        AudioSampleSource,
+        BufferTarget,
+        CanvasSource,
+        Output,
+        StreamTarget,
+        WebMOutputFormat
+      } = await import('mediabunny')
+      const target = writable
+        ? new StreamTarget(writable, { chunked: true, chunkSize: 8 * 1024 * 1024 })
+        : new BufferTarget()
+      const output = new Output({
+        format: new WebMOutputFormat(),
+        target
+      })
+      const videoSource = new CanvasSource(outputCanvas, {
+        codec: videoConfig.codec.startsWith('vp09') ? 'vp9' : 'vp8',
+        bitrate: this.bitrate,
+        keyFrameInterval: 4,
+        latencyMode: 'quality'
+      })
+      output.addVideoTrack(videoSource)
+
+      const channels = Math.min(Math.max(0, Number(audioChannels) || 0), 2)
+      const audioSource = channels
+        ? new AudioSampleSource({
+            codec: 'opus',
+            bitrate: channels === 1 ? 96000 : 160000,
+            transform: {
+              sampleRate: 48000,
+              numberOfChannels: channels
+            }
+          })
+        : null
+      if (audioSource) output.addAudioTrack(audioSource)
+
+      await output.start()
+      this.activeConversion = output
+      return { AudioSample, audioSource, output, target, videoSource }
+    },
+
+    async finalizeManualWebMExport (session, writable, audioWarning) {
+      this.exportStage = 'Finishing file'
+      this.exportProgress = 98
+      await session.output.finalize()
+      this.exportProgress = 100
+      if (!writable && !session.target.buffer) throw new Error('The converted video file is empty.')
+      return {
+        buffer: writable ? null : session.target.buffer,
+        audioWarning,
+        writableClosed: Boolean(writable)
+      }
+    },
+
+    async cancelManualWebMExport (session) {
+      if (!session || !session.output || !['pending', 'started'].includes(session.output.state)) return
+      await session.output.cancel().catch(() => {})
+    },
+
+    async addAudioBufferRange (audioBuffer, audioSource, AudioSample, startTime, endTime) {
+      const samples = AudioSample.fromAudioBuffer(audioBuffer, 0)
+      for (const sample of samples) {
+        if (this.cancelRequested) {
+          sample.close()
+          throw new Error('EXPORT_CANCELED')
+        }
+        const overlapStart = Math.max(startTime, sample.timestamp)
+        const overlapEnd = Math.min(endTime, sample.timestamp + sample.duration)
+        if (overlapEnd <= overlapStart) {
+          sample.close()
+          continue
+        }
+
+        const startFrame = this.clamp(
+          Math.round((overlapStart - sample.timestamp) * sample.sampleRate),
+          0,
+          sample.numberOfFrames
+        )
+        const endFrame = this.clamp(
+          Math.round((overlapEnd - sample.timestamp) * sample.sampleRate),
+          startFrame,
+          sample.numberOfFrames
+        )
+        let finalSample = sample
+        if (startFrame > 0 || endFrame < sample.numberOfFrames) {
+          finalSample = sample.trim(startFrame, endFrame)
+          sample.close()
+        }
+        try {
+          if (!finalSample.numberOfFrames) continue
+          finalSample.setTimestamp(Math.max(0, finalSample.timestamp - startTime))
+          await audioSource.add(finalSample)
         } finally {
+          finalSample.close()
+        }
+      }
+    },
+
+    async encodeAviAudio (audioSource, AudioSample) {
+      if (!this.aviDemuxer || !this.aviAudioDecoderConfig || !this.aviAudioStream) return
+      const streamStart = Number(this.aviAudioStream.start_time) || 0
+      let stage = 'opening the audio stream'
+      let audioDemuxer = null
+      let reader = null
+      let decoderError = null
+      let processingError = null
+      let pendingSamples = 0
+      let decodedSamples = 0
+      let processing = Promise.resolve()
+      const decoder = new AudioDecoder({
+        output: audioData => {
+          pendingSamples++
+          processing = processing.then(async () => {
+            if (processingError) {
+              audioData.close()
+              pendingSamples--
+              return
+            }
+            let sample = null
+            try {
+              sample = new AudioSample(audioData)
+              const sourceStart = sample.timestamp - streamStart
+              const sourceEnd = sourceStart + sample.duration
+              const overlapStart = Math.max(this.trimStart, sourceStart)
+              const overlapEnd = Math.min(this.trimEnd, sourceEnd)
+              if (overlapEnd <= overlapStart) return
+
+              const startFrame = this.clamp(
+                Math.round((overlapStart - sourceStart) * sample.sampleRate),
+                0,
+                sample.numberOfFrames
+              )
+              const endFrame = this.clamp(
+                Math.round((overlapEnd - sourceStart) * sample.sampleRate),
+                startFrame,
+                sample.numberOfFrames
+              )
+              if (startFrame > 0 || endFrame < sample.numberOfFrames) {
+                const trimmed = sample.trim(startFrame, endFrame)
+                sample.close()
+                sample = trimmed
+              }
+              if (!sample.numberOfFrames) return
+              sample.setTimestamp(Math.max(0, overlapStart - this.trimStart))
+              await audioSource.add(sample)
+              decodedSamples++
+            } catch (error) {
+              processingError = error
+            } finally {
+              if (sample) sample.close()
+              else audioData.close()
+              pendingSamples--
+            }
+          })
+        },
+        error: error => { decoderError = error }
+      })
+
+      try {
+        audioDemuxer = new WebDemuxer({
+          wasmFilePath: new URL('/web-demuxer/web-demuxer.wasm', window.location.origin).href
+        })
+        await audioDemuxer.load(this.sourceFile)
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+        reader = audioDemuxer.read('audio', this.trimStart, this.trimEnd).getReader()
+        stage = 'configuring the decoder'
+        decoder.configure(this.aviAudioDecoderConfig)
+        stage = 'reading audio packets'
+        while (true) {
+          if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+          const item = await reader.read()
+          if (item.done) break
+          stage = 'decoding audio packets'
+          decoder.decode(item.value)
+          while (decoder.decodeQueueSize > 24 || pendingSamples > 8) {
+            if (decoderError || processingError) throw decoderError || processingError
+            await this.nextTask()
+          }
+          stage = 'reading audio packets'
+        }
+        stage = 'flushing decoded audio'
+        await decoder.flush()
+        stage = 'encoding audio'
+        await processing
+        if (decoderError || processingError) throw decoderError || processingError
+      } catch (error) {
+        if (this.cancelRequested || (error && error.message === 'EXPORT_CANCELED')) throw error
+        const detail = error && (error.message || error.name)
+        console.error(`AVI audio export failed while ${stage}.`, error)
+        throw new Error(`AVI audio export failed while ${stage}${detail ? `: ${detail}` : ''}.`)
+      } finally {
+        decoder.close()
+        if (reader) {
           await reader.cancel().catch(() => {})
           reader.releaseLock()
         }
-
-        if (!decodedFrameCount || !nextOutputIndex) {
-          throw new Error('No AVI video frames could be decoded.')
-        }
-        await videoEncoder.flush()
-      } finally {
-        videoEncoder.close()
+        if (audioDemuxer) audioDemuxer.destroy()
       }
-      if (encoderError) throw encoderError
-      if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-
-      this.exportStage = 'Finishing file'
-      this.exportProgress = 98
-      muxer.finalize()
-      this.exportProgress = 100
-      return {
-        buffer: writable ? null : target.buffer,
-        audioWarning: false
-      }
+      if (!decodedSamples) throw new Error('The AVI audio track did not contain decodable samples in the selected range.')
     },
 
     async chooseVideoConfig (size) {
@@ -1888,63 +2197,6 @@ export default {
       } finally {
         await context.close().catch(() => {})
       }
-    },
-
-    async encodeAudio (audioBuffer, muxer, startTime = 0, endTime = audioBuffer.duration) {
-      const config = {
-        codec: 'opus',
-        sampleRate: audioBuffer.sampleRate,
-        numberOfChannels: audioBuffer.numberOfChannels,
-        bitrate: audioBuffer.numberOfChannels === 1 ? 96000 : 160000
-      }
-      const support = await AudioEncoder.isConfigSupported(config)
-      if (!support.supported) throw new Error('Opus audio encoding is not supported.')
-
-      let encoderError = null
-      const encoder = new AudioEncoder({
-        output: (chunk, metadata) => muxer.addAudioChunk(chunk, metadata),
-        error: error => { encoderError = error }
-      })
-      encoder.configure(config)
-      const blockSize = 960
-      const startOffset = this.clamp(Math.floor(startTime * audioBuffer.sampleRate), 0, audioBuffer.length)
-      const endOffset = this.clamp(Math.ceil(endTime * audioBuffer.sampleRate), startOffset, audioBuffer.length)
-      const total = Math.max(1, endOffset - startOffset)
-
-      try {
-        for (let offset = startOffset; offset < endOffset; offset += blockSize) {
-          if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-          const frameCount = Math.min(blockSize, endOffset - offset)
-          const planar = new Float32Array(frameCount * audioBuffer.numberOfChannels)
-          for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-            planar.set(
-              audioBuffer.getChannelData(channel).subarray(offset, offset + frameCount),
-              channel * frameCount
-            )
-          }
-          const audioData = new AudioData({
-            format: 'f32-planar',
-            sampleRate: audioBuffer.sampleRate,
-            numberOfFrames: frameCount,
-            numberOfChannels: audioBuffer.numberOfChannels,
-            timestamp: Math.round(((offset - startOffset) / audioBuffer.sampleRate) * 1000000),
-            data: planar
-          })
-          encoder.encode(audioData)
-          audioData.close()
-
-          while (encoder.encodeQueueSize > 24) await this.nextTask()
-          if ((offset - startOffset) % (blockSize * 20) === 0) {
-            this.exportProgress = 85 + Math.round(((offset - startOffset) / total) * 12)
-            await this.nextTask()
-          }
-          if (encoderError) throw encoderError
-        }
-        await encoder.flush()
-      } finally {
-        encoder.close()
-      }
-      if (encoderError) throw encoderError
     },
 
     seekVideo (time) {
@@ -2309,7 +2561,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   top: 0;
   right: 0.5rem;
   left: 0.5rem;
-  z-index: 3;
+  z-index: 5;
   width: auto;
   height: 1.25rem;
   margin: 0;
@@ -2395,7 +2647,10 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   top: 0.8rem;
   right: 0;
   left: 0;
+  z-index: 4;
   height: 1.7rem;
+  cursor: ew-resize;
+  touch-action: none;
 }
 
 .trim-track {
@@ -2406,6 +2661,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   z-index: 1;
   height: 0.3rem;
   border-radius: 1rem;
+  pointer-events: none;
   background: transparent;
 }
 
@@ -2462,7 +2718,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   border: 0;
   border-radius: 0;
   appearance: none;
-  pointer-events: auto;
+  pointer-events: none;
   background-color: transparent;
   background-position: center;
   background-repeat: no-repeat;
@@ -2479,7 +2735,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   height: 1.25rem;
   border: 0;
   border-radius: 0;
-  pointer-events: auto;
+  pointer-events: none;
   background-color: transparent;
   background-position: center;
   background-repeat: no-repeat;
