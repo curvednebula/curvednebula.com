@@ -10,7 +10,7 @@ meta:
   - property: og:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - property: og:description
-    content: Crop, trim, and resize videos, then save as WebM. Private, local, and powered by WebCodecs.
+    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM.
   - property: og:type
     content: website
   - property: og:url
@@ -20,7 +20,7 @@ meta:
   - name: twitter:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - name: twitter:description
-    content: Change a video's duration, crop, aspect ratio, and resolution privately in your browser.
+    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM.
 ---
 
 # Crop, Trim, and Resize Videos Online

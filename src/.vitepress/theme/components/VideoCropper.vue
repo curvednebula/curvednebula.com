@@ -27,7 +27,7 @@
         {{ isPreparingAvi ? 'Cancel opening' : 'Select video' }}
       </button>
       <span class="privacy-note">
-        {{ isPreparingAvi ? 'Reading the file locally without loading it all into memory.' : 'Your video never leaves your device. AVI files are supported.' }}
+        {{ isPreparingAvi ? 'Reading the file locally without loading it all into memory.' : 'Supports MP4, WebM, MKV, MOV, and AVI · Exports WebM · Your video stays on your device.' }}
       </span>
     </section>
 
