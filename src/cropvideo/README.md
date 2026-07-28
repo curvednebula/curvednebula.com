@@ -29,7 +29,7 @@ meta:
 
 ## About
 
-Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as a WebM file. MP4, WebM, MKV, MOV, and AVI files are supported. Processing happens locally in your browser—your video is never uploaded.
+Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as a WebM file. MP4, WebM, MKV, MOV, and AVI files are supported. Processing happens locally in your browser — your video is never uploaded.
 
 ## How to crop a video
 
