@@ -1820,7 +1820,7 @@ export default {
         config,
         audioEnabled ? Math.min(Math.max(1, Number(this.aviAudioStream.channels) || 1), 2) : 0
       )
-      this.exportStage = audioEnabled ? 'Exporting video and audio' : 'Exporting video'
+      this.exportStage = audioEnabled ? 'Encoding video and audio' : 'Encoding video'
 
       const encodeSourceFrame = async (source, timestamp) => {
         try {
