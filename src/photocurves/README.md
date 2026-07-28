@@ -16,7 +16,7 @@ Create your own LUTs (.cube files). Photo Curves comes with example presets, whi
 
 <img src="./PhotoCurvesMac-2.png" alt="Screenshot" width="600"/>
 
-## Color Grading Tools
+## Color Grading Tools Supported
 
 - **Basic controls** - brightness, contrast, shadows, highlights, saturation.
 
