@@ -1,15 +1,15 @@
 ---
 title: Creative Apps and Online Tools
-description: Curved Nebula creates color grading, photo editing, sleep sound and browser-based image tools for Android, iOS, macOS and the web.
+description: Curved Nebula creates color grading, photo editing, sleep sound, and private browser-based image and video tools for Android, iOS, macOS, and the web.
 permalink: /
 canonicalUrl: https://curvednebula.com/
 meta:
   - name: keywords
-    content: Curved Nebula, Photo Curves, Lullwave, image tools, color grading app, sleep sounds
+    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, sleep sounds
   - property: og:title
     content: Curved Nebula Creative Apps and Online Tools
   - property: og:description
-    content: Discover Photo Curves for color grading, Lullwave for calming sounds, and private browser-based image tools.
+    content: Discover Photo Curves for color grading, Lullwave for calming sounds, and private browser-based image and video tools.
   - property: og:type
     content: website
   - property: og:url
@@ -105,26 +105,26 @@ meta:
   <div class="app-item">
     <a href="/cropimage/" aria-label="Open the free online image cropper and resizer">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop and Resize Image online tool icon">
-        <rect width="128" height="128" rx="28" fill="#883388"/>
+        <rect width="128" height="128" rx="28" fill="#333333"/>
         <path d="M38 24v58c0 5 4 8 8 8h58M24 38h58c5 0 8 4 8 8v58" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
     <div class="app-info">
-      <a href="/cropimage/"><h3>Crop and Resize Image Online</h3></a>
+      <a href="/cropimage/"><h3>Crop and Resize Images Online</h3></a>
       <p>Crop and resize PNG, JPEG, and WebP images to exact output dimensions or common aspect ratios. Images are processed privately in your browser.</p>
     </div>
   </div>
   <div class="app-item">
-    <a href="/cropvideo/" aria-label="Open the free online video cropper and resizer">
-      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop and Resize Video online tool icon">
-        <rect width="128" height="128" rx="28" fill="#883388"/>
+    <a href="/cropvideo/" aria-label="Open the free online video cropper, trimmer, and resizer">
+      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop, Trim, and Resize Video online tool icon">
+        <rect width="128" height="128" rx="28" fill="#333333"/>
         <path d="M33 28v58c0 5 4 9 9 9h58M24 37h58c5 0 9 4 9 9v58" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M55 52l24 14-24 14z" fill="#fff"/>
       </svg>
     </a>
     <div class="app-info">
-      <a href="/cropvideo/"><h3>Crop and Resize Video Online</h3></a>
-      <p>Change a video's crop, aspect ratio, or exact resolution and export it as WebM with private browser-based WebCodecs processing.</p>
+      <a href="/cropvideo/"><h3>Crop, Trim, and Resize Videos Online</h3></a>
+      <p>Crop, trim, and resize MP4, WebM, MOV, and AVI videos privately in your browser.</p>
     </div>
   </div>
   <div class="app-item">

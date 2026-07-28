@@ -4,6 +4,10 @@
 /tmp
 /.out-tsc
 
+# VitePress generated cache
+/src/.vitepress/.temp/
+/src/.vitepress/cache/
+
 # dependencies
 /node_modules
 

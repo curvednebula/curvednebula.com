@@ -79,17 +79,89 @@
                 <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
               </svg>
             </button>
-            <input
-              class="timeline"
-              type="range"
-              min="0"
-              :max="duration || 0"
-              step="0.01"
-              :value="currentTime"
-              aria-label="Video position"
-              @input="scrubVideo"
-            >
+            <div class="timeline-stack">
+              <input
+                class="timeline"
+                type="range"
+                min="0"
+                :max="duration || 0"
+                step="0.01"
+                :value="currentTime"
+                aria-label="Video position"
+                @input="scrubVideo"
+              >
+              <div class="trim-range" :style="trimRangeStyle">
+                <div class="trim-track" aria-hidden="true"><span /></div>
+                <i class="trim-guide trim-guide-start" aria-hidden="true" />
+                <i class="trim-guide trim-guide-end" aria-hidden="true" />
+                <input
+                  type="range"
+                  min="0"
+                  :max="duration || 0"
+                  step="0.01"
+                  :value="trimStart"
+                  :disabled="isExporting"
+                  aria-label="Trim start"
+                  @input="updateTrimStart"
+                >
+                <input
+                  type="range"
+                  min="0"
+                  :max="duration || 0"
+                  step="0.01"
+                  :value="trimEnd"
+                  :disabled="isExporting"
+                  aria-label="Trim end"
+                  @input="updateTrimEnd"
+                >
+              </div>
+            </div>
             <span class="timecode">{{ formatTime(currentTime) }} / {{ formattedDuration }}</span>
+          </div>
+          <div class="trim-editor">
+            <div class="trim-heading">
+              <span>Trim clip</span>
+              <span>{{ formattedTrimDuration }} selected</span>
+            </div>
+            <div class="trim-fields">
+              <label>
+                <span>Start</span>
+                <span class="trim-time">{{ formatTimePrecise(trimStart) }}</span>
+                <input
+                  :value="trimStart.toFixed(2)"
+                  type="number"
+                  min="0"
+                  :max="Math.max(0, trimEnd - minimumTrimDuration)"
+                  step="0.01"
+                  :disabled="isExporting"
+                  aria-label="Trim start in seconds"
+                  @change="updateTrimStart"
+                >
+                <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('start')">
+                  Set to playhead
+                </button>
+              </label>
+              <label>
+                <span>End</span>
+                <span class="trim-time">{{ formatTimePrecise(trimEnd) }}</span>
+                <input
+                  :value="trimEnd.toFixed(2)"
+                  type="number"
+                  :min="Math.min(duration, trimStart + minimumTrimDuration)"
+                  :max="duration"
+                  step="0.01"
+                  :disabled="isExporting"
+                  aria-label="Trim end in seconds"
+                  @change="updateTrimEnd"
+                >
+                <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('end')">
+                  Set to playhead
+                </button>
+              </label>
+              <button class="trim-reset-button" type="button" :disabled="isExporting || !hasTrim" @click="resetTrim">
+                Reset trim
+              </button>
+            </div>
           </div>
           <p class="canvas-help">
             Drag inside to move · Drag handles to resize · Double-click for full video · Arrow keys nudge
@@ -199,7 +271,7 @@
           <div class="output-summary">
             <span class="output-label">Output</span>
             <span class="output-value">{{ outputSize.w }} × {{ outputSize.h }} px · WebM</span>
-            <span class="output-detail">{{ frameRate }} fps · {{ formattedBitrate }}</span>
+            <span class="output-detail">{{ formattedTrimDuration }} · {{ frameRate }} fps · {{ formattedBitrate }}</span>
           </div>
 
           <div v-if="isExporting" class="progress-wrap" aria-live="polite">
@@ -251,6 +323,8 @@ export default {
       videoHeight: 0,
       duration: 0,
       currentTime: 0,
+      trimStart: 0,
+      trimEnd: 0,
       crop: { x: 0, y: 0, w: 0, h: 0 },
       aspect: 'free',
       resolutionPreset: 'crop',
@@ -330,6 +404,32 @@ export default {
       return this.formatTime(this.duration)
     },
 
+    minimumTrimDuration () {
+      return Math.min(this.duration, Math.max(0.01, 1 / this.frameRate))
+    },
+
+    trimDuration () {
+      return Math.max(0, this.trimEnd - this.trimStart)
+    },
+
+    formattedTrimDuration () {
+      return this.formatTimePrecise(this.trimDuration)
+    },
+
+    hasTrim () {
+      return this.trimStart > 0.005 || this.trimEnd < this.duration - 0.005
+    },
+
+    trimRangeStyle () {
+      const duration = this.duration || 1
+      const startRatio = this.trimStart / duration
+      const endRatio = this.trimEnd / duration
+      return {
+        '--trim-start-position': `calc(${startRatio * 100}% + ${1 - startRatio * 2}rem)`,
+        '--trim-end-position': `calc(${endRatio * 100}% + ${1 - endRatio * 2}rem)`
+      }
+    },
+
     bitrate () {
       const pixelsPerSecond = this.outputSize.w * this.outputSize.h * this.frameRate
       const qualityFactor = 0.035 + this.quality * 0.095
@@ -344,6 +444,17 @@ export default {
       if (this.quality < 0.62) return 'Compact'
       if (this.quality < 0.86) return 'Balanced'
       return 'High'
+    }
+  },
+
+  watch: {
+    frameRate () {
+      if (!this.duration || this.trimDuration >= this.minimumTrimDuration) return
+      if (this.trimStart + this.minimumTrimDuration <= this.duration) {
+        this.trimEnd = this.trimStart + this.minimumTrimDuration
+      } else {
+        this.trimStart = Math.max(0, this.trimEnd - this.minimumTrimDuration)
+      }
     }
   },
 
@@ -429,6 +540,8 @@ export default {
         this.videoHeight = nextVideo.videoHeight
         this.duration = nextVideo.duration
         this.currentTime = 0
+        this.trimStart = 0
+        this.trimEnd = nextVideo.duration
         this.aspect = 'free'
         this.resolutionPreset = 'crop'
         this.outputAspectLocked = true
@@ -519,6 +632,8 @@ export default {
         this.videoHeight = videoStream.height
         this.duration = Number(mediaInfo.duration) || Number(videoStream.duration) || 0
         this.currentTime = 0
+        this.trimStart = 0
+        this.trimEnd = this.duration
         this.aspect = 'free'
         this.resolutionPreset = 'crop'
         this.outputAspectLocked = true
@@ -1034,6 +1149,61 @@ export default {
       this.clearMessage()
     },
 
+    updateTrimStart (event) {
+      this.pausePlayback()
+      const limit = Math.max(0, this.trimEnd - this.minimumTrimDuration)
+      this.trimStart = this.clamp(Number(event.target.value) || 0, 0, limit)
+      event.target.value = this.trimStart
+      this.seekPreview(this.trimStart)
+      this.clearMessage()
+    },
+
+    updateTrimEnd (event) {
+      this.pausePlayback()
+      const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
+      const value = Number(event.target.value)
+      this.trimEnd = this.clamp(Number.isFinite(value) ? value : this.duration, minimum, this.duration)
+      event.target.value = this.trimEnd
+      this.seekPreview(this.trimEnd)
+      this.clearMessage()
+    },
+
+    setTrimBoundary (boundary) {
+      const mockEvent = { target: { value: this.currentTime } }
+      if (boundary === 'start') this.updateTrimStart(mockEvent)
+      else this.updateTrimEnd(mockEvent)
+    },
+
+    resetTrim () {
+      this.pausePlayback()
+      this.trimStart = 0
+      this.trimEnd = this.duration
+      this.clearMessage()
+    },
+
+    pausePlayback () {
+      if (this.video) this.video.pause()
+      this.isPlaying = false
+      this.stopPreviewLoop()
+    },
+
+    seekPreview (time) {
+      const target = this.clamp(Number(time) || 0, this.trimStart, this.trimEnd)
+      this.currentTime = target
+      if (this.isAviSource) {
+        if (this.aviSeekTimer) clearTimeout(this.aviSeekTimer)
+        this.aviSeekTimer = setTimeout(() => {
+          this.aviSeekTimer = null
+          this.decodeAviFrameAt(target).catch(error => {
+            console.error(error)
+            this.setMessage(`AVI preview failed: ${error.message}`, true)
+          })
+        }, 80)
+      } else if (this.video) {
+        this.video.currentTime = Math.min(target, Math.max(0, this.duration - 0.001))
+      }
+    },
+
     async togglePlayback () {
       if (!this.hasSource || this.isExporting) return
       if (this.isAviSource) {
@@ -1042,8 +1212,8 @@ export default {
           this.stopPreviewLoop()
           return
         }
-        if (this.currentTime >= this.duration - 0.01) {
-          await this.decodeAviFrameAt(0)
+        if (this.currentTime < this.trimStart || this.currentTime >= this.trimEnd - 0.01) {
+          await this.decodeAviFrameAt(this.trimStart)
         }
         this.isPlaying = true
         this.aviPlaybackStartedAt = performance.now() - this.currentTime * 1000
@@ -1052,6 +1222,10 @@ export default {
       }
       if (this.video.paused) {
         try {
+          if (this.video.currentTime < this.trimStart || this.video.currentTime >= this.trimEnd - 0.01) {
+            await this.seekVideo(this.trimStart)
+            this.currentTime = this.trimStart
+          }
           await this.video.play()
           this.isPlaying = true
           this.startPreviewLoop()
@@ -1068,10 +1242,10 @@ export default {
 
     scrubVideo (event) {
       if (!this.hasSource || this.isExporting) return
+      const target = this.clamp(Number(event.target.value), 0, this.duration)
       if (this.isAviSource) {
         this.isPlaying = false
         this.stopPreviewLoop()
-        const target = Number(event.target.value)
         this.currentTime = target
         if (this.aviSeekTimer) clearTimeout(this.aviSeekTimer)
         this.aviSeekTimer = setTimeout(() => {
@@ -1083,12 +1257,19 @@ export default {
         }, 80)
         return
       }
-      this.video.currentTime = Number(event.target.value)
+      this.video.currentTime = Math.min(target, Math.max(0, this.duration - 0.001))
       this.currentTime = this.video.currentTime
     },
 
     onVideoTimeUpdate () {
       this.currentTime = this.video ? this.video.currentTime : 0
+      if (this.video && this.isPlaying && this.currentTime >= this.trimEnd) {
+        this.video.pause()
+        this.currentTime = this.trimEnd
+        this.isPlaying = false
+        this.stopPreviewLoop()
+        this.draw()
+      }
     },
 
     onVideoEnded () {
@@ -1102,6 +1283,14 @@ export default {
       const tick = () => {
         if (!this.video || this.video.paused) return
         this.currentTime = this.video.currentTime
+        if (this.currentTime >= this.trimEnd) {
+          this.video.pause()
+          this.currentTime = this.trimEnd
+          this.isPlaying = false
+          this.stopPreviewLoop()
+          this.draw()
+          return
+        }
         this.draw()
         this.previewFrameHandle = requestAnimationFrame(tick)
       }
@@ -1113,8 +1302,8 @@ export default {
       const tick = async () => {
         if (!this.isAviSource || !this.isPlaying) return
         const target = (performance.now() - this.aviPlaybackStartedAt) / 1000
-        if (target >= this.duration) {
-          this.currentTime = this.duration
+        if (target >= this.trimEnd) {
+          this.currentTime = this.trimEnd
           this.onVideoEnded()
           return
         }
@@ -1231,6 +1420,10 @@ export default {
         this.exportStage = 'Reading audio'
         try {
           audioBuffer = await this.decodeAndResampleAudio()
+          if (audioBuffer.duration <= this.trimStart) {
+            audioBuffer = null
+            audioWarning = true
+          }
         } catch (error) {
           console.warn('Audio could not be decoded for export.', error)
           audioWarning = true
@@ -1274,14 +1467,17 @@ export default {
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
 
-      const totalFrames = Math.max(1, Math.ceil(this.duration * this.frameRate))
+      const totalFrames = Math.max(1, Math.ceil(this.trimDuration * this.frameRate))
       const frameDuration = Math.round(1000000 / this.frameRate)
       this.exportStage = 'Encoding video'
 
       try {
         for (let index = 0; index < totalFrames; index++) {
           if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-          const time = Math.min(index / this.frameRate, Math.max(0, this.duration - 0.001))
+          const time = Math.min(
+            this.trimStart + index / this.frameRate,
+            Math.max(this.trimStart, this.trimEnd - 0.001)
+          )
           await this.seekVideo(time)
           ctx.drawImage(
             this.video,
@@ -1290,7 +1486,10 @@ export default {
           )
           const frame = new VideoFrame(outputCanvas, {
             timestamp: index * frameDuration,
-            duration: frameDuration
+            duration: Math.min(
+              frameDuration,
+              Math.max(1, Math.round(this.trimDuration * 1000000) - index * frameDuration)
+            )
           })
           videoEncoder.encode(frame, { keyFrame: index % (this.frameRate * 4) === 0 })
           frame.close()
@@ -1313,7 +1512,7 @@ export default {
 
       if (audioBuffer) {
         this.exportStage = 'Encoding audio'
-        await this.encodeAudio(audioBuffer, muxer)
+        await this.encodeAudio(audioBuffer, muxer, this.trimStart, this.trimEnd)
       }
       if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
 
@@ -1357,7 +1556,7 @@ export default {
       ctx.imageSmoothingEnabled = true
       ctx.imageSmoothingQuality = 'high'
 
-      const totalFrames = Math.max(1, Math.ceil(this.duration * this.frameRate))
+      const totalFrames = Math.max(1, Math.ceil(this.trimDuration * this.frameRate))
       const frameDuration = Math.round(1000000 / this.frameRate)
       const sourceStart = Number(this.aviVideoStream.start_time) || 0
       let nextOutputIndex = 0
@@ -1368,7 +1567,10 @@ export default {
         try {
           if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
           const sourceSeconds = Math.max(0, timestamp / 1000000 - sourceStart)
-          const sourceIndex = Math.min(totalFrames - 1, Math.max(0, Math.round(sourceSeconds * this.frameRate)))
+          const sourceIndex = Math.min(
+            totalFrames - 1,
+            Math.round((sourceSeconds - this.trimStart) * this.frameRate)
+          )
           if (sourceIndex < nextOutputIndex) return
 
           while (nextOutputIndex <= sourceIndex && nextOutputIndex < totalFrames) {
@@ -1379,7 +1581,10 @@ export default {
             )
             const outputFrame = new VideoFrame(outputCanvas, {
               timestamp: nextOutputIndex * frameDuration,
-              duration: frameDuration
+              duration: Math.min(
+                frameDuration,
+                Math.max(1, Math.round(this.trimDuration * 1000000) - nextOutputIndex * frameDuration)
+              )
             })
             videoEncoder.encode(outputFrame, {
               keyFrame: nextOutputIndex % (this.frameRate * 4) === 0
@@ -1405,7 +1610,7 @@ export default {
       }
 
       try {
-        const reader = this.aviDemuxer.read('video', 0, this.duration).getReader()
+        const reader = this.aviDemuxer.read('video', this.trimStart, this.trimEnd).getReader()
         try {
           if (this.aviDecodeMode === 'mjpeg') {
             while (true) {
@@ -1531,7 +1736,7 @@ export default {
       }
     },
 
-    async encodeAudio (audioBuffer, muxer) {
+    async encodeAudio (audioBuffer, muxer, startTime = 0, endTime = audioBuffer.duration) {
       const config = {
         codec: 'opus',
         sampleRate: audioBuffer.sampleRate,
@@ -1548,12 +1753,14 @@ export default {
       })
       encoder.configure(config)
       const blockSize = 960
-      const total = audioBuffer.length
+      const startOffset = this.clamp(Math.floor(startTime * audioBuffer.sampleRate), 0, audioBuffer.length)
+      const endOffset = this.clamp(Math.ceil(endTime * audioBuffer.sampleRate), startOffset, audioBuffer.length)
+      const total = Math.max(1, endOffset - startOffset)
 
       try {
-        for (let offset = 0; offset < total; offset += blockSize) {
+        for (let offset = startOffset; offset < endOffset; offset += blockSize) {
           if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
-          const frameCount = Math.min(blockSize, total - offset)
+          const frameCount = Math.min(blockSize, endOffset - offset)
           const planar = new Float32Array(frameCount * audioBuffer.numberOfChannels)
           for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
             planar.set(
@@ -1566,15 +1773,15 @@ export default {
             sampleRate: audioBuffer.sampleRate,
             numberOfFrames: frameCount,
             numberOfChannels: audioBuffer.numberOfChannels,
-            timestamp: Math.round((offset / audioBuffer.sampleRate) * 1000000),
+            timestamp: Math.round(((offset - startOffset) / audioBuffer.sampleRate) * 1000000),
             data: planar
           })
           encoder.encode(audioData)
           audioData.close()
 
           while (encoder.encodeQueueSize > 24) await this.nextTask()
-          if (offset % (blockSize * 20) === 0) {
-            this.exportProgress = 85 + Math.round((offset / total) * 12)
+          if ((offset - startOffset) % (blockSize * 20) === 0) {
+            this.exportProgress = 85 + Math.round(((offset - startOffset) / total) * 12)
             await this.nextTask()
           }
           if (encoderError) throw encoderError
@@ -1622,7 +1829,7 @@ export default {
 
     makeOutputName () {
       const base = this.sourceName.replace(/\.[^.]+$/, '') || 'video'
-      return `${base}-cropped.webm`
+      return `${base}-cropped${this.hasTrim ? '-trimmed' : ''}.webm`
     },
 
     formatTime (seconds) {
@@ -1634,6 +1841,20 @@ export default {
       return hours
         ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`
         : `${minutes}:${String(remaining).padStart(2, '0')}`
+    },
+
+    formatTimePrecise (seconds) {
+      if (!Number.isFinite(seconds)) return '0:00.00'
+      const centiseconds = Math.round(Math.max(0, seconds) * 100)
+      const whole = Math.floor(centiseconds / 100)
+      const hundredths = centiseconds % 100
+      const hours = Math.floor(whole / 3600)
+      const minutes = Math.floor((whole % 3600) / 60)
+      const remaining = whole % 60
+      const base = hours
+        ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`
+        : `${minutes}:${String(remaining).padStart(2, '0')}`
+      return `${base}.${String(hundredths).padStart(2, '0')}`
     },
 
     parseFrameRate (value) {
@@ -1885,15 +2106,17 @@ canvas {
 canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 
 .playback {
-  width: min(100%, 38rem);
+  width: 100%;
   margin: 0.75rem auto 0;
   display: grid;
-  grid-template-columns: 2rem minmax(5rem, 1fr) auto;
+  grid-template-columns: 2rem minmax(0, 1fr);
   align-items: center;
-  gap: 0.7rem;
+  gap: 0.35rem 0.7rem;
 }
 
 .play-button {
+  grid-column: 1;
+  grid-row: 1;
   width: 2rem;
   height: 2rem;
   padding: 0;
@@ -1907,8 +2130,295 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 
 .play-button:hover { background: rgba(255, 255, 255, 0.17); }
 .play-button svg { width: 0.9rem; fill: currentColor; }
-.timeline { width: 100%; accent-color: #c47ec4; }
-.timecode { color: #d1cad3; font-size: 0.72rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.timeline-stack {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  position: relative;
+  min-width: 0;
+  height: 2.5rem;
+}
+
+.timeline-stack::before {
+  position: absolute;
+  top: 0.475rem;
+  right: 1rem;
+  left: 1rem;
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: #5b5660;
+  content: "";
+}
+
+.timeline {
+  position: absolute;
+  top: 0;
+  right: 0.5rem;
+  left: 0.5rem;
+  z-index: 3;
+  width: auto;
+  height: 1.25rem;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  outline: none;
+}
+
+.timeline:focus-visible {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+.timeline::-webkit-slider-runnable-track {
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: transparent;
+}
+
+.timeline::-webkit-slider-thumb {
+  width: 1rem;
+  height: 1rem;
+  margin-top: -0.36rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  appearance: none;
+  background: var(--accent);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+.timeline::-moz-range-track {
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: transparent;
+}
+
+.timeline::-moz-range-thumb {
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
+}
+
+.timecode {
+  grid-column: 2;
+  grid-row: 1;
+  justify-self: end;
+  color: #d1cad3;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trim-editor {
+  width: min(100%, 38rem);
+  margin: 0.85rem auto 0;
+  padding: 0.75rem 0.85rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.7rem;
+  box-sizing: border-box;
+  color: #f4eef5;
+  background: rgba(17, 17, 22, 0.78);
+}
+
+.trim-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #f4eef5;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.trim-heading span:last-child {
+  color: #c9c1cc;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.trim-range {
+  position: absolute;
+  top: 0.8rem;
+  right: 0;
+  left: 0;
+  height: 1.7rem;
+}
+
+.trim-track {
+  position: absolute;
+  top: -0.325rem;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: 0.3rem;
+  border-radius: 1rem;
+  background: transparent;
+}
+
+.trim-track span {
+  position: absolute;
+  top: 0;
+  right: calc(100% - var(--trim-end-position));
+  bottom: 0;
+  left: var(--trim-start-position);
+  border-radius: inherit;
+  background: #c47ec4;
+}
+
+.trim-guide {
+  position: absolute;
+  top: -0.45rem;
+  z-index: 1;
+  width: 2px;
+  height: 1.3rem;
+  pointer-events: none;
+  background: #fff;
+  transform: translateX(-1px);
+}
+
+.trim-guide-start { left: var(--trim-start-position); }
+.trim-guide-end { left: var(--trim-end-position); }
+
+.trim-range input[type="range"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 1.7rem;
+  margin: 0;
+  z-index: 2;
+  appearance: none;
+  pointer-events: none;
+  background: transparent;
+  outline: none;
+}
+
+.trim-range input[type="range"]:focus-visible {
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+.trim-range input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.3rem;
+  background: transparent;
+}
+
+.trim-range input[type="range"]::-webkit-slider-thumb {
+  width: 2rem;
+  height: 1.25rem;
+  margin-top: -0.48rem;
+  border: 0;
+  border-radius: 0;
+  appearance: none;
+  pointer-events: auto;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.trim-range input[type="range"]::-moz-range-track {
+  height: 0.3rem;
+  background: transparent;
+}
+
+.trim-range input[type="range"]::-moz-range-thumb {
+  width: 2rem;
+  height: 1.25rem;
+  border: 0;
+  border-radius: 0;
+  pointer-events: auto;
+  background-color: transparent;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+}
+
+.trim-range input[type="range"]:first-of-type::-webkit-slider-thumb {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M1 2v18l15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.trim-range input[type="range"]:last-of-type::-webkit-slider-thumb {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M31 2v18l-15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.trim-range input[type="range"]:first-of-type::-moz-range-thumb {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M1 2v18l15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.trim-range input[type="range"]:last-of-type::-moz-range-thumb {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M31 2v18l-15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.trim-fields {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 0.55rem;
+}
+
+.trim-fields > label {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.22rem 0.4rem;
+  color: #c9c1cc;
+  font-size: 0.66rem;
+}
+
+.trim-time {
+  color: #a9a1ad;
+  font-variant-numeric: tabular-nums;
+}
+
+.trim-fields input {
+  grid-column: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.45rem;
+  border: 1px solid #5a535e;
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  color: #fff;
+  background: #2b2930;
+  outline: none;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trim-fields input:focus {
+  border-color: #c47ec4;
+  box-shadow: 0 0 0 2px rgba(196, 126, 196, 0.2);
+}
+
+.trim-set-button {
+  grid-column: 2;
+  min-height: 2rem;
+  padding: 0 0.45rem;
+  border: 1px solid #5a535e;
+  border-radius: 0.4rem;
+  color: #eee7ef;
+  background: #37333b;
+  font-size: 0.63rem;
+  white-space: nowrap;
+}
+
+.trim-set-button:hover:not(:disabled), .trim-reset-button:hover:not(:disabled) {
+  border-color: #c47ec4;
+  color: #fff;
+}
+
+.trim-reset-button {
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid #5a535e;
+  border-radius: 0.4rem;
+  color: #d8d0da;
+  background: transparent;
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
 
 .canvas-help {
   margin: 0.6rem 0 0;
@@ -1978,7 +2488,7 @@ select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow
 .check-control input { width: 1rem; height: 1rem; margin: 0; accent-color: var(--accent); }
 .resize-lock { margin-top: 0.55rem; color: var(--muted); font-size: 0.72rem; font-weight: 500; }
 .divider { height: 1px; margin: 1.1rem 0; background: var(--line); }
-.range-label span { color: var(--accent); font-size: 0.72rem; }
+.range-label span { color: var(--muted); font-size: 0.72rem; }
 .quality-range { width: 100%; accent-color: var(--accent); }
 
 .output-summary { margin: 1.1rem 0 0.8rem; font-size: 0.78rem; }
@@ -2009,7 +2519,7 @@ select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow
 
 .status-message, .compatibility-message {
   margin: 0.8rem 0 0;
-  color: var(--accent-dark);
+  color: var(--muted);
   font-size: 0.85rem;
   text-align: center;
 }
@@ -2033,6 +2543,11 @@ select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow
   .text-button { padding-right: 0; text-align: right; }
   .canvas-help { line-height: 1.45; }
   .playback { grid-template-columns: 2rem 1fr; }
-  .timecode { grid-column: 1 / -1; text-align: center; }
+  .timecode { grid-column: 2; text-align: right; }
+  .trim-fields { grid-template-columns: 1fr 1fr; }
+  .trim-fields > label { grid-template-columns: 1fr; }
+  .trim-time { grid-column: 1; }
+  .trim-set-button { grid-column: 1; }
+  .trim-reset-button { grid-column: 1 / -1; }
 }
 </style>

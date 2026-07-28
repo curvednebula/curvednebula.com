@@ -1,6 +1,7 @@
 ---
 title: Free Online Image Cropper and Resizer
 description: Crop and resize PNG, JPEG, and WebP images online for free. Choose an aspect ratio or exact output resolution with private browser-based processing.
+pageClass: crop-tool-layout
 permalink: /cropimage/
 canonicalUrl: https://curvednebula.com/cropimage/
 meta:

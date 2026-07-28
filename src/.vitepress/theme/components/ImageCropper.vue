@@ -1079,7 +1079,7 @@ button {
   border-top: 0;
   border-radius: 0 0 0.85rem 0.85rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 12rem;
+  grid-template-columns: minmax(0, 1fr) 13rem;
   overflow: hidden;
   background: #fff;
   box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
@@ -1229,7 +1229,7 @@ select:focus,
 }
 
 .range-label span {
-  color: var(--accent);
+  color: var(--muted);
 }
 
 .quality-range {
@@ -1275,7 +1275,7 @@ select:focus,
 
 .status-message {
   margin: 0.8rem 0 0;
-  color: var(--accent-dark);
+  color: var(--muted);
   font-size: 0.85rem;
   text-align: center;
 }

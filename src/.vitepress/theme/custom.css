@@ -9,16 +9,17 @@
     BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.VPDoc:not(.has-sidebar) .container {
-  max-width: 1104px;
+.crop-tool-layout .VPDoc:not(.has-sidebar) .container {
+  max-width: 1152px !important;
 }
 
-.VPDoc:not(.has-sidebar) .content {
-  max-width: 1000px;
+.crop-tool-layout .VPDoc:not(.has-sidebar) .content {
+  /* VitePress adds 32px of horizontal padding on both sides. */
+  max-width: 1088px !important;
 }
 
-.VPDoc:not(.has-sidebar) .content-container {
-  max-width: 1000px;
+.crop-tool-layout .VPDoc:not(.has-sidebar) .content-container {
+  max-width: 1024px !important;
 }
 
 /* VuePress left inline Markdown images in the text flow. VitePress resets all
