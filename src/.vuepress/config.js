@@ -38,6 +38,7 @@ module.exports = {
    */
   head: [
     ['meta', {name: 'theme-color', content: '#883388'}],
+    ['meta', {name: 'mobile-web-app-capable', content: 'yes'}],
     ['meta', {name: 'apple-mobile-web-app-capable', content: 'yes'}],
     ['meta', {name: 'apple-mobile-web-app-status-bar-style', content: 'black'}],
     ['link', {rel: 'shortcut icon', type: 'image/x-icon', href: '/favicon.ico'}],
