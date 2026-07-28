@@ -14,9 +14,31 @@
 }
 
 .VPDoc:not(.has-sidebar) .content {
-  max-width: 960px;
+  max-width: 1000px;
 }
 
 .VPDoc:not(.has-sidebar) .content-container {
-  max-width: 960px;
+  max-width: 1000px;
+}
+
+/* VuePress left inline Markdown images in the text flow. VitePress resets all
+ * images to block elements and forces their height to auto, which stacks store
+ * badges and screenshot strips and ignores their explicit display height. */
+.vp-doc p img {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.vp-doc img[height="70"] {
+  width: auto;
+  height: 70px;
+}
+
+.vp-doc img[height="100"] {
+  width: auto;
+  height: 100px;
+}
+
+.vp-doc._photocurves_ h1 + img {
+  margin-top: 1rem;
 }
