@@ -22,15 +22,15 @@ meta:
     content: Crop and resize images to exact dimensions online. Free, private, and browser-based.
 ---
 
-# Free Online Image Cropper and Resizer
+# Crop and Resize Images Online
 
 <ImageCropper />
 
-## Crop and resize images online in a few clicks
+## About
 
 Crop and resize a photo or image to the exact size you need. Choose a custom crop area or a common aspect ratio, optionally set new output dimensions, then save the result as PNG, JPEG, or WebP. Everything happens locally in your browser—your image is never uploaded.
 
-## How to crop and resize an image
+## Howto
 
 1. Select an image from your device or drag and drop it into the cropper.
 2. Drag inside the crop area to reposition it.

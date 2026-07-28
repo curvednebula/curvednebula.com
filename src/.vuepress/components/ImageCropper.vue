@@ -58,11 +58,12 @@
               @pointermove="onPointerMove"
               @pointerup="onPointerUp"
               @pointercancel="onPointerUp"
+              @dblclick="onCanvasDoubleClick"
               @keydown="onCanvasKeydown"
             />
           </div>
           <p class="canvas-help">
-            Drag inside to move · Drag handles to resize · Arrow keys nudge the crop
+            Drag inside to move · Drag handles to resize · Double-click for full image · Arrow keys nudge
           </p>
         </section>
 
@@ -200,8 +201,8 @@
           </div>
 
           <div class="output-summary">
-            <span>Output Resolution:</span>
-            <strong>{{ outputSize.w }} × {{ outputSize.h }} px</strong>
+            <span class="output-label">Output Resolution:</span>
+            <span class="output-value">{{ outputSize.w }} × {{ outputSize.h }} px</span>
           </div>
 
           <button
@@ -255,11 +256,26 @@ export default {
 
   computed: {
     roundedCrop () {
+      if (!this.imageWidth || !this.imageHeight) {
+        return { x: 0, y: 0, w: 1, h: 1 }
+      }
+      const left = this.clamp(Math.round(this.crop.x), 0, this.imageWidth - 1)
+      const top = this.clamp(Math.round(this.crop.y), 0, this.imageHeight - 1)
+      const right = this.clamp(
+        Math.round(this.crop.x + this.crop.w),
+        left + 1,
+        this.imageWidth
+      )
+      const bottom = this.clamp(
+        Math.round(this.crop.y + this.crop.h),
+        top + 1,
+        this.imageHeight
+      )
       return {
-        x: Math.round(this.crop.x),
-        y: Math.round(this.crop.y),
-        w: Math.max(1, Math.round(this.crop.w)),
-        h: Math.max(1, Math.round(this.crop.h))
+        x: left,
+        y: top,
+        w: right - left,
+        h: bottom - top
       }
     },
 
@@ -419,7 +435,7 @@ export default {
 
       ctx.strokeStyle = '#ffffff'
       ctx.lineWidth = 2
-      ctx.strokeRect(box.x, box.y, box.w, box.h)
+      ctx.strokeRect(box.x - 1, box.y - 1, box.w + 2, box.h + 2)
       this.drawHandles(ctx, box)
     },
 
@@ -439,24 +455,26 @@ export default {
     },
 
     handlePositions (box) {
+      const offset = 6
       return {
-        nw: { x: box.x, y: box.y },
-        n: { x: box.x + box.w / 2, y: box.y },
-        ne: { x: box.x + box.w, y: box.y },
-        e: { x: box.x + box.w, y: box.y + box.h / 2 },
-        se: { x: box.x + box.w, y: box.y + box.h },
-        s: { x: box.x + box.w / 2, y: box.y + box.h },
-        sw: { x: box.x, y: box.y + box.h },
-        w: { x: box.x, y: box.y + box.h / 2 }
+        nw: { x: box.x - offset, y: box.y - offset },
+        n: { x: box.x + box.w / 2, y: box.y - offset },
+        ne: { x: box.x + box.w + offset, y: box.y - offset },
+        e: { x: box.x + box.w + offset, y: box.y + box.h / 2 },
+        se: { x: box.x + box.w + offset, y: box.y + box.h + offset },
+        s: { x: box.x + box.w / 2, y: box.y + box.h + offset },
+        sw: { x: box.x - offset, y: box.y + box.h + offset },
+        w: { x: box.x - offset, y: box.y + box.h / 2 }
       }
     },
 
     displayCrop () {
+      const crop = this.roundedCrop
       return {
-        x: this.crop.x * this.display.scale + this.display.pad,
-        y: this.crop.y * this.display.scale + this.display.pad,
-        w: this.crop.w * this.display.scale,
-        h: this.crop.h * this.display.scale
+        x: crop.x * this.display.scale + this.display.pad,
+        y: crop.y * this.display.scale + this.display.pad,
+        w: crop.w * this.display.scale,
+        h: crop.h * this.display.scale
       }
     },
 
@@ -501,8 +519,8 @@ export default {
       this.interaction = {
         handle,
         start: {
-          x: point.x / this.display.scale,
-          y: point.y / this.display.scale
+          x: (point.x - this.display.pad) / this.display.scale,
+          y: (point.y - this.display.pad) / this.display.scale
         },
         crop: { ...this.crop }
       }
@@ -519,8 +537,8 @@ export default {
 
       event.preventDefault()
       const naturalPoint = {
-        x: point.x / this.display.scale,
-        y: point.y / this.display.scale
+        x: (point.x - this.display.pad) / this.display.scale,
+        y: (point.y - this.display.pad) / this.display.scale
       }
       const delta = {
         x: naturalPoint.x - this.interaction.start.x,
@@ -540,8 +558,33 @@ export default {
       if (this.$refs.canvas.hasPointerCapture(event.pointerId)) {
         this.$refs.canvas.releasePointerCapture(event.pointerId)
       }
+      this.crop = { ...this.roundedCrop }
       this.interaction = null
+      this.draw()
       this.setCursor(this.hitTest(this.pointerPosition(event)))
+    },
+
+    onCanvasDoubleClick (event) {
+      const point = this.pointerPosition(event)
+      const box = this.displayCrop()
+      const isInside = (
+        point.x >= box.x &&
+        point.x <= box.x + box.w &&
+        point.y >= box.y &&
+        point.y <= box.y + box.h
+      )
+      if (!isInside) return
+
+      event.preventDefault()
+      this.aspect = 'free'
+      this.crop = {
+        x: 0,
+        y: 0,
+        w: this.imageWidth,
+        h: this.imageHeight
+      }
+      this.message = ''
+      this.draw()
     },
 
     moveCrop (delta) {
@@ -1199,17 +1242,18 @@ select:focus,
   font-size: 0.8rem;
 }
 
-.output-summary span {
+.output-label {
   margin-bottom: 0.3rem;
   display: block;
   color: #4d4651;
   font-weight: 650;
 }
 
-.output-summary strong {
+.output-value {
   display: block;
   color: var(--ink);
   font-size: 0.9rem;
+  font-weight: 400;
 }
 
 .save-button {
