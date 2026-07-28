@@ -89,7 +89,7 @@ meta:
 
 <div class="home-intro">
   <h1>Creative Apps and Online Tools</h1>
-  <p>Curved Nebula builds focused tools for photo editing, color grading, relaxation, and everyday image tasks. Explore our apps for Android, iOS, and macOS or use our browser-based tools directly on the web.</p>
+  <p>Explore our apps for Android, iOS, macOS, or use our browser-based tools directly on the web.</p>
 </div>
 
 <div class="apps-container">
@@ -103,15 +103,6 @@ meta:
     </div>
   </div>
   <div class="app-item">
-    <a href="/lullwave/">
-      <img src="/images/lullwave_icon_rounded_256x256.png" alt="Lullwave sleep sounds app" class="app-icon" />
-    </a>
-    <div class="app-info">
-      <a href="/lullwave/"><h3>Lullwave</h3></a>
-      <p>Colored noise and ambient sounds for sleep, relaxation, focus, and sound masking, including rain, water, sea waves, train, and fireplace sounds.</p>
-    </div>
-  </div>
-  <div class="app-item">
     <a href="/cropimage/" aria-label="Open the free online image cropper">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop Image online tool icon">
         <rect width="128" height="128" rx="28" fill="#883388"/>
@@ -121,6 +112,15 @@ meta:
     <div class="app-info">
       <a href="/cropimage/"><h3>Crop Image Online</h3></a>
       <p>Crop PNG, JPEG, and WebP images to exact dimensions or common aspect ratios. Images are processed privately in your browser.</p>
+    </div>
+  </div>
+  <div class="app-item">
+    <a href="/lullwave/">
+      <img src="/images/lullwave_icon_rounded_256x256.png" alt="Lullwave sleep sounds app" class="app-icon" />
+    </a>
+    <div class="app-info">
+      <a href="/lullwave/"><h3>Lullwave</h3></a>
+      <p>Colored noise and ambient sounds for sleep, relaxation, focus, and sound masking, including rain, water, sea waves, train, and fireplace sounds.</p>
     </div>
   </div>
 </div>
