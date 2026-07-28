@@ -6,7 +6,7 @@ module.exports = {
   /**
    * Ref：https://v1.vuepress.vuejs.org/config/#description
    */
-  description: 'Developer of Photo Curves color grading app for Android, iOS, macOS',
+  description: 'Creative apps and online tools for photo editing, color grading, relaxation, and everyday image tasks.',
   dest: 'dist',
 
   /**
@@ -18,7 +18,7 @@ module.exports = {
     ['meta', {name: 'theme-color', content: '#883388'}],
     ['meta', {name: 'apple-mobile-web-app-capable', content: 'yes'}],
     ['meta', {name: 'apple-mobile-web-app-status-bar-style', content: 'black'}],
-    ['link', {rel: 'shortcut icon', type: 'image/x-icon', href: 'favicon.ico'}],
+    ['link', {rel: 'shortcut icon', type: 'image/x-icon', href: '/favicon.ico'}],
     // Google Analytics
     ['script', {'async src': 'https://www.googletagmanager.com/gtag/js?id=G-Z40PJ8416Z'}, ''],
     ['script', {}, `
