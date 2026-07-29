@@ -36,7 +36,7 @@
           <span>{{ imageWidth }} × {{ imageHeight }} px</span>
         </div>
         <button class="text-button" type="button" @click="openFilePicker">
-          Choose another image
+          Another Image
         </button>
         <input
           ref="fileInput"
@@ -226,7 +226,7 @@
 
 <script>
 export default {
-  name: 'ImageCropper',
+  name: 'ImageCrop',
 
   data () {
     return {

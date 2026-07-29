@@ -128,6 +128,18 @@ meta:
     </div>
   </div>
   <div class="app-item">
+    <a href="/trimaudio/" aria-label="Open the free online audio trimmer with waveform">
+      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Trim Audio online tool icon">
+        <rect width="128" height="128" rx="28" fill="#333333"/>
+        <path d="M20 64h8m5-18v36m9-52v68m10-55v42m10-68v94m10-78v62m10-48v34m10-22v10m6-5h10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+    </a>
+    <div class="app-info">
+      <a href="/trimaudio/"><h3>Trim Audio Online</h3></a>
+      <p>Navigate and trim MP3, WAV, M4A, Ogg, Opus, FLAC, and AAC files with an interactive waveform. Audio is processed privately in your browser.</p>
+    </div>
+  </div>
+  <div class="app-item">
     <a href="/lullwave/">
       <img src="/images/lullwave_icon_rounded_256x256.png" alt="Lullwave sleep sounds app" class="app-icon" />
     </a>

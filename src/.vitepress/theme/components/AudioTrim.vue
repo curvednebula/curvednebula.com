@@ -1,0 +1,1525 @@
+<template>
+  <div class="trim-audio-tool">
+    <section
+      v-if="!hasSource"
+      class="drop-zone"
+      :class="{ 'is-dragging': isDraggingOver }"
+      @dragenter.prevent="isDraggingOver = true"
+      @dragover.prevent="isDraggingOver = true"
+      @dragleave.prevent="isDraggingOver = false"
+      @drop.prevent="onDrop"
+    >
+      <input
+        ref="fileInput"
+        class="visually-hidden"
+        type="file"
+        accept="audio/*,.m4a,.mp3,.wav,.wave,.ogg,.oga,.opus,.flac,.aac"
+        @change="onFileSelected"
+      >
+      <div class="upload-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24">
+          <path d="M4 14.5v-5m4 8v-11m4 14v-17m4 14v-11m4 8v-5"/>
+        </svg>
+      </div>
+      <h2>Choose an audio file to trim</h2>
+      <p>Drop audio here, or select a file from your device.</p>
+      <button class="primary-button" type="button" @click="openFilePicker">Select audio</button>
+      <span class="privacy-note">
+        Supports common browser audio formats · Exports Ogg Opus · Your audio stays on your device
+      </span>
+    </section>
+
+    <div v-else class="workspace">
+      <div class="toolbar">
+        <div class="file-summary">
+          <span class="file-name" :title="sourceName">{{ sourceName }}</span>
+          <span>{{ sourceDetails }}</span>
+        </div>
+        <button class="text-button" type="button" :disabled="isExporting" @click="openFilePicker">
+          Another Audio
+        </button>
+        <input
+          ref="fileInput"
+          class="visually-hidden"
+          type="file"
+          accept="audio/*,.m4a,.mp3,.wav,.wave,.ogg,.oga,.opus,.flac,.aac"
+          @change="onFileSelected"
+        >
+      </div>
+
+      <div class="editor-layout">
+        <section class="waveform-panel">
+          <div
+            ref="waveformStage"
+            class="waveform-stage"
+            :style="{ cursor: waveformCursor }"
+            @pointerdown="onWaveformPointerDown"
+            @pointermove="onWaveformPointerMove"
+            @pointerup="onWaveformPointerUp"
+            @pointercancel="onWaveformPointerUp"
+            @pointerleave="onWaveformPointerLeave"
+          >
+            <canvas
+              ref="waveformCanvas"
+              class="waveform-canvas"
+              tabindex="0"
+              role="img"
+              :aria-label="waveformAriaLabel"
+              @keydown="onWaveformKeydown"
+            />
+            <span v-if="isGeneratingWaveform" class="waveform-status" aria-live="polite">
+              Reading waveform · {{ Math.round(waveformProgress) }}%
+            </span>
+          </div>
+
+          <div class="playback">
+            <button
+              class="play-button"
+              type="button"
+              :aria-label="isPlaying ? 'Pause preview' : 'Play preview'"
+              @click="togglePlayback"
+            >
+              <svg v-if="!isPlaying" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5.5v13l11-6.5z"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
+              </svg>
+            </button>
+            <span class="timecode">{{ formatTime(currentTime) }} / {{ formattedDuration }}</span>
+          </div>
+
+          <div class="trim-editor">
+            <div class="trim-heading">
+              <span>Trim audio</span>
+              <span>{{ formattedTrimDuration }} selected</span>
+            </div>
+            <div class="trim-fields">
+              <label>
+                <span>Start</span>
+                <span class="trim-time">{{ formatTimePrecise(trimStart) }}</span>
+                <input
+                  :value="trimStart.toFixed(2)"
+                  type="number"
+                  min="0"
+                  :max="Math.max(0, trimEnd - minimumTrimDuration)"
+                  step="0.01"
+                  :disabled="isExporting"
+                  aria-label="Trim start in seconds"
+                  @change="updateTrimStart"
+                >
+                <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('start')">
+                  Set to playhead
+                </button>
+              </label>
+              <label>
+                <span>End</span>
+                <span class="trim-time">{{ formatTimePrecise(trimEnd) }}</span>
+                <input
+                  :value="trimEnd.toFixed(2)"
+                  type="number"
+                  :min="Math.min(duration, trimStart + minimumTrimDuration)"
+                  :max="duration"
+                  step="0.01"
+                  :disabled="isExporting"
+                  aria-label="Trim end in seconds"
+                  @change="updateTrimEnd"
+                >
+                <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('end')">
+                  Set to playhead
+                </button>
+              </label>
+              <button class="trim-reset-button" type="button" :disabled="isExporting || !hasTrim" @click="resetTrim">
+                Reset trim
+              </button>
+            </div>
+          </div>
+          <p class="waveform-help">
+            Click or drag the waveform to seek · Drag its edge handles to select the audio to keep
+          </p>
+        </section>
+
+        <aside class="settings-panel">
+          <div class="output-summary">
+            <span class="output-label">Output</span>
+            <span class="output-value">Ogg Opus audio</span>
+            <span class="output-detail">{{ formattedTrimDuration }} · {{ formattedAudioBitrate }}</span>
+          </div>
+
+          <div v-if="isExporting" class="progress-wrap" aria-live="polite">
+            <div class="progress-track">
+              <span :style="{ width: `${exportProgress}%` }" />
+            </div>
+            <span>{{ exportStage }} · {{ Math.round(exportProgress) }}%</span>
+          </div>
+
+          <button
+            class="primary-button save-button"
+            type="button"
+            :disabled="!audioEncodingSupported"
+            @click="saveAudio"
+          >
+            <svg v-if="!isExporting" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/>
+            </svg>
+            <svg v-else viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M7 7h10v10H7z"/>
+            </svg>
+            {{ isExporting ? 'Cancel' : 'Save Audio' }}
+          </button>
+        </aside>
+      </div>
+    </div>
+
+    <p v-if="message" class="status-message" :class="{ error: messageIsError }" role="status">{{ message }}</p>
+    <p v-if="hasSource && !audioEncodingSupported" class="compatibility-message">
+      Audio export requires WebCodecs audio support. Open this tool in a recent Chrome, Edge, or another compatible browser.
+    </p>
+  </div>
+</template>
+
+<script>
+export default {
+  name: 'AudioTrim',
+
+  data () {
+    return {
+      audio: null,
+      audioUrl: '',
+      loadGeneration: 0,
+      sourceFile: null,
+      sourceName: '',
+      duration: 0,
+      currentTime: 0,
+      trimStart: 0,
+      trimEnd: 0,
+      audioChannels: 0,
+      audioSampleRate: 0,
+      waveformPeaks: null,
+      waveformProgress: 0,
+      isGeneratingWaveform: false,
+      waveformGeneration: 0,
+      waveformInput: null,
+      waveformInteraction: null,
+      waveformHover: null,
+      isDraggingOver: false,
+      isPlaying: false,
+      isExporting: false,
+      cancelRequested: false,
+      activeConversion: null,
+      exportProgress: 0,
+      exportStage: 'Preparing',
+      message: '',
+      messageIsError: false,
+      clientReady: false,
+      resizeObserver: null,
+      previewFrameHandle: null
+    }
+  },
+
+  computed: {
+    hasSource () {
+      return Boolean(this.audio)
+    },
+
+    audioEncodingSupported () {
+      return this.clientReady &&
+        typeof window !== 'undefined' &&
+        typeof window.AudioEncoder !== 'undefined' &&
+        typeof window.AudioData !== 'undefined'
+    },
+
+    sourceDetails () {
+      const channels = this.audioChannels === 1
+        ? 'Mono'
+        : this.audioChannels === 2
+          ? 'Stereo'
+          : this.audioChannels
+            ? `${this.audioChannels} channels`
+            : 'Audio'
+      const sampleRate = this.audioSampleRate ? ` · ${(this.audioSampleRate / 1000).toFixed(1)} kHz` : ''
+      return `${channels}${sampleRate} · ${this.formattedDuration}`
+    },
+
+    waveformAriaLabel () {
+      const progress = this.isGeneratingWaveform ? `, ${Math.round(this.waveformProgress)} percent loaded` : ''
+      return `Audio waveform for ${this.sourceName}. Use the arrow keys to move the playhead${progress}.`
+    },
+
+    formattedDuration () {
+      return this.formatTime(this.duration)
+    },
+
+    minimumTrimDuration () {
+      return Math.min(this.duration, 0.01)
+    },
+
+    trimDuration () {
+      return Math.max(0, this.trimEnd - this.trimStart)
+    },
+
+    formattedTrimDuration () {
+      return this.formatTimePrecise(this.trimDuration)
+    },
+
+    hasTrim () {
+      return this.trimStart > 0.005 || this.trimEnd < this.duration - 0.005
+    },
+
+    audioBitrate () {
+      return this.audioChannels === 1 ? 96000 : 160000
+    },
+
+    formattedAudioBitrate () {
+      return `${Math.round(this.audioBitrate / 1000)} kbps`
+    },
+
+    waveformCursor () {
+      const target = this.waveformInteraction ? this.waveformInteraction.type : this.waveformHover
+      if (target === 'inactive') return 'default'
+      return target === 'start' || target === 'end' || target === 'playhead'
+        ? 'ew-resize'
+        : 'crosshair'
+    }
+  },
+
+  mounted () {
+    this.clientReady = true
+  },
+
+  beforeUnmount () {
+    this.loadGeneration++
+    this.cleanUpAudio()
+  },
+
+  methods: {
+    openFilePicker () {
+      if (this.isExporting) return
+      this.clearMessage()
+      this.$refs.fileInput.click()
+    },
+
+    onFileSelected (event) {
+      const file = event.target.files && event.target.files[0]
+      if (file) this.loadFile(file)
+      event.target.value = ''
+    },
+
+    onDrop (event) {
+      this.isDraggingOver = false
+      if (this.isExporting) return
+      const file = event.dataTransfer.files && event.dataTransfer.files[0]
+      if (file) this.loadFile(file)
+    },
+
+    loadFile (file) {
+      if (this.isExporting) return
+      const isAudio = file.type.startsWith('audio/') ||
+        /\.(?:m4a|mp3|wav|wave|ogg|oga|opus|flac|aac)$/i.test(file.name)
+      if (!isAudio) {
+        this.setMessage('Please choose a supported audio file.', true)
+        return
+      }
+      this.openBrowserAudio(file, ++this.loadGeneration)
+    },
+
+    openBrowserAudio (file, loadToken) {
+      const nextUrl = URL.createObjectURL(file)
+      const nextAudio = document.createElement('audio')
+      nextAudio.preload = 'metadata'
+
+      const onLoadError = () => {
+        URL.revokeObjectURL(nextUrl)
+        if (loadToken !== this.loadGeneration) return
+        this.setMessage('This audio file could not be opened by your browser.', true)
+      }
+
+      nextAudio.addEventListener('loadedmetadata', () => {
+        nextAudio.removeEventListener('error', onLoadError)
+        if (loadToken !== this.loadGeneration) {
+          URL.revokeObjectURL(nextUrl)
+          nextAudio.removeAttribute('src')
+          nextAudio.load()
+          return
+        }
+        if (!Number.isFinite(nextAudio.duration) || nextAudio.duration <= 0) {
+          URL.revokeObjectURL(nextUrl)
+          this.setMessage('This file does not contain a readable audio track.', true)
+          return
+        }
+
+        this.cleanUpAudio()
+        this.audioUrl = nextUrl
+        this.audio = nextAudio
+        this.sourceFile = file
+        this.sourceName = file.name
+        this.duration = nextAudio.duration
+        this.currentTime = 0
+        this.trimStart = 0
+        this.trimEnd = nextAudio.duration
+        this.isPlaying = false
+        this.clearMessage()
+
+        nextAudio.addEventListener('timeupdate', this.onAudioTimeUpdate)
+        nextAudio.addEventListener('ended', this.onAudioEnded)
+
+        const waveformToken = ++this.waveformGeneration
+        this.isGeneratingWaveform = true
+        this.waveformProgress = 0
+        this.$nextTick(() => {
+          this.setupWaveformLayout()
+          this.generateWaveform(file, waveformToken).catch(error => {
+            if (waveformToken !== this.waveformGeneration) return
+            console.error(error)
+            this.isGeneratingWaveform = false
+            this.setMessage(
+              `Audio opened, but its waveform could not be generated${error && error.message ? `: ${error.message}` : '.'}`,
+              true
+            )
+            this.drawWaveform()
+          })
+        })
+      }, { once: true })
+
+      nextAudio.addEventListener('error', onLoadError, { once: true })
+      nextAudio.src = nextUrl
+    },
+
+    async generateWaveform (file, generation) {
+      const {
+        ALL_FORMATS,
+        AudioSampleSink,
+        BlobSource,
+        Input
+      } = await import('mediabunny')
+      if (generation !== this.waveformGeneration) return
+
+      const input = new Input({
+        source: new BlobSource(file, { maxCacheSize: 8 * 1024 * 1024 }),
+        formats: ALL_FORMATS
+      })
+      this.waveformInput = input
+
+      try {
+        const track = await input.getPrimaryAudioTrack()
+        if (!track) throw new Error('No audio track was found')
+        const [channels, sampleRate, firstTimestamp] = await Promise.all([
+          track.getNumberOfChannels(),
+          track.getSampleRate(),
+          track.getFirstTimestamp()
+        ])
+        if (generation !== this.waveformGeneration) return
+
+        this.audioChannels = Number(channels) || 1
+        this.audioSampleRate = Number(sampleRate) || 0
+        const durationScale = Math.log2(Math.max(1, this.duration / 60))
+        const binCount = Math.round(this.clamp(820 - durationScale * 64, 420, 820))
+        const minimums = new Float32Array(binCount)
+        const maximums = new Float32Array(binCount)
+        this.waveformPeaks = { minimums, maximums }
+        const sink = new AudioSampleSink(track)
+        const binDuration = this.duration / binCount
+        const regionsPerBin = 2
+        const regionDuration = Math.min(
+          binDuration / regionsPerBin,
+          Math.max(0.06, Math.min(0.12, binDuration * 0.18))
+        )
+        const totalRegions = binCount * regionsPerBin
+        let completedRegions = 0
+        let lastUpdate = performance.now()
+
+        for (let binIndex = 0; binIndex < binCount; binIndex++) {
+          const binStart = binIndex * binDuration
+          for (let regionIndex = 0; regionIndex < regionsPerBin; regionIndex++) {
+            if (generation !== this.waveformGeneration) return
+            const center = binStart + ((regionIndex + 1) / (regionsPerBin + 1)) * binDuration
+            const regionStart = Math.max(binStart, center - regionDuration / 2)
+            const regionEnd = Math.min(binStart + binDuration, center + regionDuration / 2)
+
+            for await (const sample of sink.samples(
+              firstTimestamp + regionStart,
+              firstTimestamp + regionEnd
+            )) {
+              try {
+                if (generation !== this.waveformGeneration) return
+                const frameCount = sample.numberOfFrames
+                const plane = new Float32Array(frameCount)
+                for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+                  sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
+                  for (let frame = 0; frame < frameCount; frame++) {
+                    const value = plane[frame]
+                    if (value < minimums[binIndex]) minimums[binIndex] = value
+                    if (value > maximums[binIndex]) maximums[binIndex] = value
+                  }
+                }
+              } finally {
+                sample.close()
+              }
+            }
+
+            completedRegions++
+            this.waveformProgress = this.clamp(completedRegions / totalRegions * 100, 0, 99)
+            if (performance.now() - lastUpdate > 80) {
+              this.drawWaveform()
+              await this.nextTask()
+              lastUpdate = performance.now()
+            }
+          }
+        }
+
+        if (generation !== this.waveformGeneration) return
+        this.waveformProgress = 100
+        this.isGeneratingWaveform = false
+        this.drawWaveform()
+      } finally {
+        if (!input.disposed) input.dispose()
+        if (this.waveformInput === input) this.waveformInput = null
+      }
+    },
+
+    cleanUpAudio () {
+      this.stopPreviewLoop()
+      this.waveformGeneration++
+      if (this.audio) {
+        this.audio.pause()
+        this.audio.removeEventListener('timeupdate', this.onAudioTimeUpdate)
+        this.audio.removeEventListener('ended', this.onAudioEnded)
+        this.audio.removeAttribute('src')
+        this.audio.load()
+      }
+      if (this.audioUrl) URL.revokeObjectURL(this.audioUrl)
+      if (this.waveformInput && !this.waveformInput.disposed) this.waveformInput.dispose()
+      if (this.resizeObserver) this.resizeObserver.disconnect()
+      window.removeEventListener('resize', this.layoutWaveform)
+      this.audio = null
+      this.audioUrl = ''
+      this.waveformInput = null
+      this.waveformPeaks = null
+      this.waveformProgress = 0
+      this.isGeneratingWaveform = false
+      this.waveformInteraction = null
+      this.waveformHover = null
+      this.audioChannels = 0
+      this.audioSampleRate = 0
+    },
+
+    setupWaveformLayout () {
+      this.layoutWaveform()
+      if (typeof ResizeObserver !== 'undefined') {
+        if (this.resizeObserver) this.resizeObserver.disconnect()
+        this.resizeObserver = new ResizeObserver(this.layoutWaveform)
+        if (this.$refs.waveformStage) this.resizeObserver.observe(this.$refs.waveformStage)
+      } else {
+        window.addEventListener('resize', this.layoutWaveform)
+      }
+    },
+
+    layoutWaveform () {
+      if (!this.audio || !this.$refs.waveformStage || !this.$refs.waveformCanvas) return
+      const width = Math.max(280, this.$refs.waveformStage.clientWidth)
+      const height = Math.min(250, Math.max(170, window.innerHeight * 0.25))
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
+      const canvas = this.$refs.waveformCanvas
+      canvas.style.width = `${width}px`
+      canvas.style.height = `${height}px`
+      canvas.width = Math.round(width * pixelRatio)
+      canvas.height = Math.round(height * pixelRatio)
+      canvas._pixelRatio = pixelRatio
+      this.drawWaveform()
+    },
+
+    drawWaveform () {
+      const canvas = this.$refs.waveformCanvas
+      if (!canvas || !this.audio) return
+      const ratio = canvas._pixelRatio || 1
+      const width = canvas.width / ratio
+      const height = canvas.height / ratio
+      const ctx = canvas.getContext('2d')
+      const handleGutter = 36
+      const sideGutter = Math.min(18, width / 4)
+      const waveformLeft = sideGutter
+      const waveformWidth = Math.max(1, width - sideGutter * 2)
+      const waveformRight = waveformLeft + waveformWidth
+      const waveformHeight = Math.max(1, height - handleGutter)
+      const center = waveformHeight / 2
+      const amplitudeHeight = center - 18
+      const peaks = this.waveformPeaks
+      const startX = this.timeToWaveformX(this.trimStart, width)
+      const endX = this.timeToWaveformX(this.trimEnd, width)
+
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
+      ctx.clearRect(0, 0, width, height)
+      ctx.fillStyle = '#17171d'
+      ctx.fillRect(waveformLeft, 0, waveformWidth, waveformHeight)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.42)'
+      ctx.fillRect(waveformLeft, 0, Math.max(0, startX - waveformLeft), waveformHeight)
+      ctx.fillRect(endX, 0, Math.max(0, waveformRight - endX), waveformHeight)
+      ctx.fillStyle = 'rgba(136, 51, 136, 0.18)'
+      ctx.fillRect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(waveformLeft, center + 0.5)
+      ctx.lineTo(waveformRight, center + 0.5)
+      ctx.stroke()
+
+      if (peaks) {
+        let absolutePeak = 0
+        for (let index = 0; index < peaks.maximums.length; index++) {
+          absolutePeak = Math.max(absolutePeak, peaks.maximums[index], -peaks.minimums[index])
+        }
+        const gain = 1 / Math.max(0.12, absolutePeak)
+        const drawPeaks = color => {
+          ctx.strokeStyle = color
+          ctx.lineWidth = 1
+          ctx.beginPath()
+          for (let offset = 0; offset < Math.ceil(waveformWidth); offset++) {
+            const first = Math.floor(offset / waveformWidth * peaks.maximums.length)
+            const last = Math.max(first + 1, Math.ceil((offset + 1) / waveformWidth * peaks.maximums.length))
+            let minimum = 0
+            let maximum = 0
+            for (let index = first; index < last && index < peaks.maximums.length; index++) {
+              minimum = Math.min(minimum, peaks.minimums[index])
+              maximum = Math.max(maximum, peaks.maximums[index])
+            }
+            const x = waveformLeft + offset + 0.5
+            ctx.moveTo(x, center - maximum * gain * amplitudeHeight)
+            ctx.lineTo(x, center - minimum * gain * amplitudeHeight)
+          }
+          ctx.stroke()
+        }
+
+        drawPeaks('#736d78')
+        ctx.save()
+        ctx.beginPath()
+        ctx.rect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+        ctx.clip()
+        drawPeaks('#d797d7')
+        ctx.restore()
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
+      ctx.lineWidth = 1
+      ctx.strokeRect(waveformLeft + 0.5, 0.5, Math.max(0, waveformWidth - 1), Math.max(0, waveformHeight - 1))
+
+      this.drawTrimHandle(ctx, startX, waveformHeight, 'start')
+      this.drawTrimHandle(ctx, endX, waveformHeight, 'end')
+
+      const playheadX = this.timeToWaveformX(this.currentTime, width)
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      ctx.moveTo(playheadX, 0)
+      ctx.lineTo(playheadX, waveformHeight)
+      ctx.stroke()
+      ctx.fillStyle = '#fff'
+      ctx.beginPath()
+      ctx.moveTo(playheadX - 5, 0)
+      ctx.lineTo(playheadX + 5, 0)
+      ctx.lineTo(playheadX, 7)
+      ctx.closePath()
+      ctx.fill()
+
+    },
+
+    drawTrimHandle (ctx, x, height, boundary) {
+      const handleTipY = height + 18
+      const guideX = Math.round(x) + 0.5
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(guideX, 0)
+      ctx.lineTo(guideX, handleTipY)
+      ctx.stroke()
+      ctx.fillStyle = '#883388'
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 1.5
+      ctx.beginPath()
+      if (boundary === 'start') {
+        ctx.moveTo(guideX, handleTipY)
+        ctx.lineTo(guideX - 16, height + 10)
+        ctx.lineTo(guideX - 16, height + 26)
+      } else {
+        ctx.moveTo(guideX, handleTipY)
+        ctx.lineTo(guideX + 16, height + 10)
+        ctx.lineTo(guideX + 16, height + 26)
+      }
+      ctx.closePath()
+      ctx.fill()
+      ctx.stroke()
+    },
+
+    timeToWaveformX (time, width = null) {
+      const canvas = this.$refs.waveformCanvas
+      const canvasWidth = width == null && canvas ? canvas.width / (canvas._pixelRatio || 1) : width
+      if (!this.duration || !canvasWidth) return 0
+      const gutter = Math.min(18, canvasWidth / 4)
+      const waveformWidth = Math.max(1, canvasWidth - gutter * 2)
+      return gutter + this.clamp(time / this.duration, 0, 1) * waveformWidth
+    },
+
+    waveformTimeFromEvent (event) {
+      const rect = this.$refs.waveformCanvas.getBoundingClientRect()
+      const gutter = Math.min(18, rect.width / 4)
+      const waveformWidth = Math.max(1, rect.width - gutter * 2)
+      const ratio = this.clamp((event.clientX - rect.left - gutter) / waveformWidth, 0, 1)
+      return ratio * this.duration
+    },
+
+    waveformTargetFromEvent (event) {
+      const rect = this.$refs.waveformCanvas.getBoundingClientRect()
+      const x = event.clientX - rect.left
+      const y = event.clientY - rect.top
+      const waveformHeight = Math.max(1, rect.height - 36)
+      const startX = this.timeToWaveformX(this.trimStart, rect.width)
+      const endX = this.timeToWaveformX(this.trimEnd, rect.width)
+      const playheadX = this.timeToWaveformX(this.currentTime, rect.width)
+      const handleRadius = 14
+      const startDistance = Math.abs(x - startX)
+      const endDistance = Math.abs(x - endX)
+      if (Math.min(startDistance, endDistance) <= handleRadius) {
+        return startDistance <= endDistance ? 'start' : 'end'
+      }
+      if (y > waveformHeight) return 'inactive'
+      if (Math.abs(x - playheadX) <= 8) return 'playhead'
+      return 'seek'
+    },
+
+    onWaveformPointerDown (event) {
+      if (this.isExporting || event.button !== 0 || !this.duration) return
+      const target = this.waveformTargetFromEvent(event)
+      if (target === 'inactive') return
+      event.preventDefault()
+      this.pausePlayback()
+      const type = target === 'start' || target === 'end' || target === 'playhead' ? target : 'seek'
+      this.waveformInteraction = { type, pointerId: event.pointerId }
+      this.$refs.waveformStage.setPointerCapture(event.pointerId)
+      this.$refs.waveformCanvas.focus({ preventScroll: true })
+      this.applyWaveformInteraction(event)
+    },
+
+    onWaveformPointerMove (event) {
+      if (!this.waveformInteraction) {
+        this.waveformHover = this.waveformTargetFromEvent(event)
+        return
+      }
+      if (this.waveformInteraction.pointerId !== event.pointerId) return
+      event.preventDefault()
+      this.applyWaveformInteraction(event)
+    },
+
+    onWaveformPointerUp (event) {
+      if (!this.waveformInteraction || this.waveformInteraction.pointerId !== event.pointerId) return
+      if (this.$refs.waveformStage.hasPointerCapture(event.pointerId)) {
+        this.$refs.waveformStage.releasePointerCapture(event.pointerId)
+      }
+      this.waveformInteraction = null
+      this.waveformHover = this.waveformTargetFromEvent(event)
+    },
+
+    onWaveformPointerLeave () {
+      if (!this.waveformInteraction) this.waveformHover = null
+    },
+
+    applyWaveformInteraction (event) {
+      const time = this.waveformTimeFromEvent(event)
+      const type = this.waveformInteraction && this.waveformInteraction.type
+      if (type === 'start') {
+        this.trimStart = this.clamp(time, 0, Math.max(0, this.trimEnd - this.minimumTrimDuration))
+        this.seekPreview(this.trimStart)
+      } else if (type === 'end') {
+        this.trimEnd = this.clamp(time, Math.min(this.duration, this.trimStart + this.minimumTrimDuration), this.duration)
+        this.seekPreview(this.trimEnd)
+      } else {
+        this.seekPreview(time)
+      }
+      this.clearMessage()
+      this.drawWaveform()
+    },
+
+    onWaveformKeydown (event) {
+      if (this.isExporting || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+      event.preventDefault()
+      let target = this.currentTime
+      if (event.key === 'Home') target = 0
+      else if (event.key === 'End') target = this.duration
+      else target += (event.key === 'ArrowRight' ? 1 : -1) * (event.shiftKey ? 1 : 0.1)
+      this.seekPreview(this.clamp(target, 0, this.duration))
+    },
+
+    updateTrimStart (event) {
+      this.pausePlayback()
+      const limit = Math.max(0, this.trimEnd - this.minimumTrimDuration)
+      this.trimStart = this.clamp(Number(event.target.value) || 0, 0, limit)
+      event.target.value = this.trimStart
+      this.seekPreview(this.trimStart)
+      this.clearMessage()
+      this.drawWaveform()
+    },
+
+    updateTrimEnd (event) {
+      this.pausePlayback()
+      const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
+      const value = Number(event.target.value)
+      this.trimEnd = this.clamp(Number.isFinite(value) ? value : this.duration, minimum, this.duration)
+      event.target.value = this.trimEnd
+      this.seekPreview(this.trimEnd)
+      this.clearMessage()
+      this.drawWaveform()
+    },
+
+    setTrimBoundary (boundary) {
+      const mockEvent = { target: { value: this.currentTime } }
+      if (boundary === 'start') this.updateTrimStart(mockEvent)
+      else this.updateTrimEnd(mockEvent)
+    },
+
+    resetTrim () {
+      this.pausePlayback()
+      this.trimStart = 0
+      this.trimEnd = this.duration
+      this.clearMessage()
+      this.drawWaveform()
+    },
+
+    seekPreview (time) {
+      if (!this.audio) return
+      const target = this.clamp(Number(time) || 0, 0, this.duration)
+      this.currentTime = target
+      this.audio.currentTime = Math.min(target, Math.max(0, this.duration - 0.001))
+      this.drawWaveform()
+    },
+
+    pausePlayback () {
+      if (this.audio) this.audio.pause()
+      this.isPlaying = false
+      this.stopPreviewLoop()
+    },
+
+    async togglePlayback () {
+      if (!this.audio || this.isExporting) return
+      if (this.audio.paused) {
+        try {
+          if (this.audio.currentTime < this.trimStart || this.audio.currentTime >= this.trimEnd - 0.01) {
+            await this.seekAudio(this.trimStart)
+            this.currentTime = this.trimStart
+          }
+          await this.audio.play()
+          this.isPlaying = true
+          this.startPreviewLoop()
+        } catch (error) {
+          this.setMessage('Audio preview could not start in this browser.', true)
+        }
+      } else {
+        this.pausePlayback()
+        this.drawWaveform()
+      }
+    },
+
+    onAudioTimeUpdate () {
+      this.currentTime = this.audio ? this.audio.currentTime : 0
+      if (this.audio && this.isPlaying && this.currentTime >= this.trimEnd) {
+        this.audio.pause()
+        this.currentTime = this.trimEnd
+        this.isPlaying = false
+        this.stopPreviewLoop()
+      }
+      this.drawWaveform()
+    },
+
+    onAudioEnded () {
+      this.isPlaying = false
+      this.stopPreviewLoop()
+      this.drawWaveform()
+    },
+
+    startPreviewLoop () {
+      this.stopPreviewLoop()
+      const tick = () => {
+        if (!this.audio || this.audio.paused) return
+        this.currentTime = this.audio.currentTime
+        if (this.currentTime >= this.trimEnd) {
+          this.audio.pause()
+          this.currentTime = this.trimEnd
+          this.isPlaying = false
+          this.stopPreviewLoop()
+          this.drawWaveform()
+          return
+        }
+        this.drawWaveform()
+        this.previewFrameHandle = requestAnimationFrame(tick)
+      }
+      this.previewFrameHandle = requestAnimationFrame(tick)
+    },
+
+    stopPreviewLoop () {
+      if (this.previewFrameHandle) cancelAnimationFrame(this.previewFrameHandle)
+      this.previewFrameHandle = null
+    },
+
+    seekAudio (time) {
+      if (!this.audio) return Promise.reject(new Error('Audio preview is unavailable'))
+      const target = this.clamp(time, 0, Math.max(0, this.duration - 0.001))
+      if (Math.abs(this.audio.currentTime - target) < 0.0005 && this.audio.readyState >= 2) {
+        return Promise.resolve()
+      }
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          cleanup()
+          reject(new Error('Timed out while seeking the audio preview'))
+        }, 12000)
+        const cleanup = () => {
+          clearTimeout(timeout)
+          this.audio.removeEventListener('seeked', onSeeked)
+          this.audio.removeEventListener('error', onError)
+        }
+        const onSeeked = () => {
+          cleanup()
+          resolve()
+        }
+        const onError = () => {
+          cleanup()
+          reject(new Error('The source audio could not be decoded'))
+        }
+        this.audio.addEventListener('seeked', onSeeked, { once: true })
+        this.audio.addEventListener('error', onError, { once: true })
+        this.audio.currentTime = target
+      })
+    },
+
+    async saveAudio () {
+      if (this.isExporting) {
+        this.cancelRequested = true
+        this.exportStage = 'Canceling'
+        if (this.activeConversion) this.activeConversion.cancel().catch(() => {})
+        return
+      }
+      if (!this.audio || !this.audioEncodingSupported) return
+
+      this.pausePlayback()
+      this.isExporting = true
+      this.cancelRequested = false
+      this.exportProgress = 0
+      this.exportStage = 'Preparing'
+      this.clearMessage()
+
+      const filename = this.makeOutputName()
+      const originalTime = this.audio.currentTime
+      let fileHandle = null
+      let writable = null
+
+      try {
+        if (typeof window.showSaveFilePicker === 'function') {
+          try {
+            fileHandle = await window.showSaveFilePicker({
+              suggestedName: filename,
+              types: [{
+                description: 'Ogg Opus audio',
+                accept: { 'audio/ogg': ['.ogg'] }
+              }]
+            })
+          } catch (error) {
+            if (error && error.name === 'AbortError') return
+            throw error
+          }
+        }
+
+        if (fileHandle) writable = await fileHandle.createWritable()
+        const result = await this.encodeAudio(writable)
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+
+        if (writable) {
+          if (!result.writableClosed) await writable.close()
+          writable = null
+          this.setMessage(`Saved ${filename}`)
+        } else {
+          const blob = new Blob([result.buffer], { type: 'audio/ogg' })
+          const url = URL.createObjectURL(blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = filename
+          document.body.appendChild(link)
+          link.click()
+          link.remove()
+          setTimeout(() => URL.revokeObjectURL(url), 2000)
+          this.setMessage(`Downloaded ${filename}`)
+        }
+      } catch (error) {
+        if (writable) {
+          await writable.abort().catch(() => {})
+          writable = null
+        }
+        if (error && error.message === 'EXPORT_CANCELED') {
+          this.setMessage('Export canceled.')
+        } else {
+          console.error(error)
+          this.setMessage(`Audio export failed${error && error.message ? `: ${error.message}` : '.'}`, true)
+        }
+      } finally {
+        this.isExporting = false
+        this.cancelRequested = false
+        this.activeConversion = null
+        this.exportProgress = 0
+        this.exportStage = 'Preparing'
+        await this.seekAudio(Math.min(originalTime, Math.max(0, this.duration - 0.001))).catch(() => {})
+        this.currentTime = this.audio ? this.audio.currentTime : 0
+        this.drawWaveform()
+      }
+    },
+
+    async encodeAudio (writable = null) {
+      const {
+        ALL_FORMATS,
+        BlobSource,
+        BufferTarget,
+        Conversion,
+        ConversionCanceledError,
+        Input,
+        OggOutputFormat,
+        Output,
+        StreamTarget
+      } = await import('mediabunny')
+      const input = new Input({
+        source: new BlobSource(this.sourceFile, { maxCacheSize: 8 * 1024 * 1024 }),
+        formats: ALL_FORMATS
+      })
+      let conversion = null
+
+      try {
+        this.exportStage = 'Reading audio'
+        const audioTrack = await input.getPrimaryAudioTrack()
+        if (!audioTrack) throw new Error('No audio track was found')
+        const channels = Math.min(Math.max(1, await audioTrack.getNumberOfChannels()), 2)
+        const target = writable
+          ? new StreamTarget(writable, { chunked: true, chunkSize: 8 * 1024 * 1024 })
+          : new BufferTarget()
+        const output = new Output({
+          format: new OggOutputFormat(),
+          target
+        })
+
+        conversion = await Conversion.init({
+          input,
+          output,
+          tracks: 'primary',
+          trim: {
+            start: this.trimStart,
+            end: this.trimEnd
+          },
+          video: { discard: true },
+          audio: {
+            codec: 'opus',
+            sampleRate: 48000,
+            numberOfChannels: channels,
+            bitrate: channels === 1 ? 96000 : 160000,
+            forceTranscode: true
+          },
+          showWarnings: false
+        })
+
+        const audioIsUsed = conversion.utilizedTracks.some(track => track === audioTrack)
+        if (!conversion.isValid || !audioIsUsed) {
+          throw new Error('This audio codec cannot be decoded and exported by this browser')
+        }
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+
+        this.activeConversion = conversion
+        this.exportStage = 'Encoding audio'
+        conversion.onProgress = progress => {
+          this.exportProgress = Math.min(96, Math.round(progress * 96))
+        }
+
+        try {
+          await conversion.execute()
+        } catch (error) {
+          if (error instanceof ConversionCanceledError || this.cancelRequested) {
+            throw new Error('EXPORT_CANCELED')
+          }
+          throw error
+        } finally {
+          this.activeConversion = null
+        }
+
+        if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
+        this.exportStage = 'Finishing file'
+        this.exportProgress = 100
+        if (!writable && !target.buffer) throw new Error('The exported audio file is empty')
+        return {
+          buffer: writable ? null : target.buffer,
+          writableClosed: Boolean(writable)
+        }
+      } finally {
+        if (!input.disposed) input.dispose()
+      }
+    },
+
+    makeOutputName () {
+      const base = this.sourceName.replace(/\.[^.]+$/, '') || 'audio'
+      return `${base}${this.hasTrim ? '-trimmed' : '-converted'}.ogg`
+    },
+
+    nextTask () {
+      return new Promise(resolve => setTimeout(resolve, 0))
+    },
+
+    formatTime (seconds) {
+      if (!Number.isFinite(seconds)) return '0:00'
+      const whole = Math.max(0, Math.floor(seconds))
+      const hours = Math.floor(whole / 3600)
+      const minutes = Math.floor((whole % 3600) / 60)
+      const remaining = whole % 60
+      return hours
+        ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`
+        : `${minutes}:${String(remaining).padStart(2, '0')}`
+    },
+
+    formatTimePrecise (seconds) {
+      if (!Number.isFinite(seconds)) return '0:00.00'
+      const centiseconds = Math.round(Math.max(0, seconds) * 100)
+      const whole = Math.floor(centiseconds / 100)
+      const hundredths = centiseconds % 100
+      const hours = Math.floor(whole / 3600)
+      const minutes = Math.floor((whole % 3600) / 60)
+      const remaining = whole % 60
+      const base = hours
+        ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`
+        : `${minutes}:${String(remaining).padStart(2, '0')}`
+      return `${base}.${String(hundredths).padStart(2, '0')}`
+    },
+
+    clamp (value, min, max) {
+      return Math.min(Math.max(value, min), Math.max(min, max))
+    },
+
+    setMessage (message, isError = false) {
+      this.message = message
+      this.messageIsError = isError
+    },
+
+    clearMessage () {
+      this.message = ''
+      this.messageIsError = false
+    }
+  }
+}
+</script>
+
+<style scoped>
+.trim-audio-tool {
+  --accent: #883388;
+  --accent-dark: #6d286d;
+  --ink: #29242e;
+  --muted: #716a76;
+  --line: #e5dfe8;
+  --panel: #faf8fb;
+  margin: 2rem 0 4rem;
+  color: var(--ink);
+}
+
+.drop-zone {
+  min-height: 27rem;
+  padding: 3rem 2rem;
+  border: 2px dashed #cfbfd2;
+  border-radius: 1.25rem;
+  background: radial-gradient(circle at 50% 0%, rgba(136, 51, 136, 0.1), transparent 42%), #fcfbfc;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.drop-zone.is-dragging {
+  border-color: var(--accent);
+  background-color: #f8f1f8;
+  transform: scale(1.005);
+}
+
+.drop-zone h2 {
+  margin: 1.25rem 0 0.35rem;
+  border: 0;
+  font-size: 1.55rem;
+}
+
+.drop-zone p {
+  margin: 0 0 1.5rem;
+  color: var(--muted);
+}
+
+.upload-icon {
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 1.2rem;
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  background: #f0e4f0;
+}
+
+.upload-icon svg {
+  width: 2.2rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+}
+
+.privacy-note {
+  margin-top: 1rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
+
+.primary-button {
+  min-height: 2.9rem;
+  padding: 0.72rem 1.2rem;
+  border: 0;
+  border-radius: 0.65rem;
+  color: #fff;
+  background: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 8px 20px rgba(96, 29, 96, 0.18);
+  transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: var(--accent-dark);
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(96, 29, 96, 0.24);
+}
+
+.toolbar {
+  min-height: 2.8rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.85rem 0.85rem 0 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  background: #fff;
+}
+
+.file-summary {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.file-name {
+  max-width: 24rem;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.text-button {
+  border: 0;
+  color: var(--accent);
+  background: transparent;
+  font-weight: 600;
+}
+
+.text-button:hover:not(:disabled) { color: var(--accent-dark); }
+
+.editor-layout {
+  border: 1px solid var(--line);
+  border-top: 0;
+  border-radius: 0 0 0.85rem 0.85rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 13rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
+}
+
+.waveform-panel {
+  min-width: 0;
+  padding: 1.35rem 1.35rem 0.8rem;
+  background-color: #202027;
+  background-image:
+    linear-gradient(45deg, #25252d 25%, transparent 25%),
+    linear-gradient(-45deg, #25252d 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #25252d 75%),
+    linear-gradient(-45deg, transparent 75%, #25252d 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+}
+
+.waveform-stage {
+  position: relative;
+  width: 100%;
+  min-height: 10.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  background: transparent;
+  touch-action: none;
+}
+
+.waveform-canvas {
+  max-width: 100%;
+  display: block;
+  outline: 0;
+  touch-action: none;
+}
+
+.waveform-canvas:focus-visible { box-shadow: inset 0 0 0 3px rgba(196, 126, 196, 0.85); }
+
+.waveform-status {
+  position: absolute;
+  top: 0.75rem;
+  left: 50%;
+  padding: 0.28rem 0.5rem;
+  border-radius: 0.35rem;
+  color: #e6dfe8;
+  background: rgba(17, 17, 22, 0.82);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.playback {
+  width: 100%;
+  margin: 0.75rem auto 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.7rem;
+}
+
+.play-button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.play-button:hover { background: rgba(255, 255, 255, 0.17); }
+.play-button svg { width: 0.9rem; fill: currentColor; }
+
+.timecode {
+  color: #d1cad3;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.trim-editor {
+  width: min(100%, 38rem);
+  margin: 0.85rem auto 0;
+  padding: 0.75rem 0.85rem 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.7rem;
+  box-sizing: border-box;
+  color: #f4eef5;
+  background: rgba(17, 17, 22, 0.78);
+}
+
+.trim-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #f4eef5;
+  font-size: 0.75rem;
+  font-weight: 650;
+}
+
+.trim-heading span:last-child {
+  color: #c9c1cc;
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.trim-fields {
+  margin-top: 0.55rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 0.55rem;
+}
+
+.trim-fields > label {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 0.22rem 0.4rem;
+  color: #c9c1cc;
+  font-size: 0.66rem;
+}
+
+.trim-time {
+  color: #a9a1ad;
+  font-variant-numeric: tabular-nums;
+}
+
+.trim-fields input {
+  grid-column: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 2rem;
+  padding: 0 0.45rem;
+  border: 1px solid #5a535e;
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  color: #fff;
+  background: #2b2930;
+  outline: none;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.trim-fields input:focus {
+  border-color: #c47ec4;
+  box-shadow: 0 0 0 2px rgba(196, 126, 196, 0.2);
+}
+
+.trim-set-button {
+  grid-column: 2;
+  min-height: 2rem;
+  padding: 0 0.45rem;
+  border: 1px solid #5a535e;
+  border-radius: 0.4rem;
+  color: #eee7ef;
+  background: #37333b;
+  font-size: 0.63rem;
+  white-space: nowrap;
+}
+
+.trim-set-button:hover:not(:disabled), .trim-reset-button:hover:not(:disabled) {
+  border-color: #c47ec4;
+  color: #fff;
+}
+
+.trim-reset-button {
+  min-height: 2rem;
+  padding: 0 0.55rem;
+  border: 1px solid #5a535e;
+  border-radius: 0.4rem;
+  color: #d8d0da;
+  background: transparent;
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+.waveform-help {
+  margin: 0.6rem 0 0;
+  color: #aaa3ad;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.settings-panel {
+  padding: 1.15rem;
+  border-left: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.output-summary { margin: 0 0 0.8rem; font-size: 0.78rem; }
+.output-label { margin-bottom: 0.25rem; display: block; color: #4d4651; font-weight: 650; }
+.output-value { display: block; color: var(--ink); font-size: 0.86rem; }
+.output-detail { margin-top: 0.18rem; display: block; color: var(--muted); font-size: 0.7rem; }
+
+.save-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.save-button svg {
+  width: 1.1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.progress-wrap {
+  margin: -0.2rem 0 0.8rem;
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-align: center;
+}
+
+.progress-track {
+  height: 0.35rem;
+  margin-bottom: 0.35rem;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: #e8e0e9;
+}
+
+.progress-track span {
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.status-message, .compatibility-message {
+  margin: 0.8rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.status-message.error, .compatibility-message { color: #a33232; }
+
+@media (max-width: 760px) {
+  .trim-audio-tool { margin-top: 1.25rem; }
+  .editor-layout { grid-template-columns: 1fr; }
+  .settings-panel { border-top: 1px solid var(--line); border-left: 0; }
+  .waveform-panel { padding: 0.8rem 0.8rem 0.65rem; }
+  .waveform-stage { min-height: 10rem; }
+}
+
+@media (max-width: 480px) {
+  .drop-zone { min-height: 22rem; padding: 2rem 1rem; }
+  .toolbar { align-items: flex-start; }
+  .file-summary { display: block; }
+  .file-summary > span { display: block; }
+  .file-name { max-width: 11rem; }
+  .text-button { padding-right: 0; text-align: right; }
+  .trim-fields { grid-template-columns: 1fr 1fr; }
+  .trim-fields > label { grid-template-columns: 1fr; }
+  .trim-time, .trim-set-button { grid-column: 1; }
+  .trim-reset-button { grid-column: 1 / -1; }
+}
+</style>

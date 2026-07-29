@@ -25,7 +25,7 @@ meta:
 
 # Crop, Trim, and Resize Videos Online
 
-<VideoCropper />
+<VideoCrop />
 
 ## About
 
@@ -46,7 +46,7 @@ MP4, MOV, WebM, and MKV exports use a sequential Mediabunny decode pipeline inst
 
 ## Browser compatibility
 
-Video export requires a browser with the WebCodecs VideoEncoder API. Recent Chromium-based browsers such as Chrome and Edge offer the broadest compatibility.
+Recent Chromium-based browsers such as Chrome and Edge offer the best compatibility.
 
 ## Frequently asked questions
 

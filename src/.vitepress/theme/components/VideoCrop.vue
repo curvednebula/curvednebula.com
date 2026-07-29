@@ -38,7 +38,7 @@
           <span>{{ videoWidth }} × {{ videoHeight }} px · {{ formattedDuration }}</span>
         </div>
         <button class="text-button" type="button" :disabled="isExporting" @click="openFilePicker">
-          Choose another video
+          Another Video
         </button>
         <input
           ref="fileInput"
@@ -324,7 +324,7 @@
 import { WebDemuxer } from 'web-demuxer'
 
 export default {
-  name: 'VideoCropper',
+  name: 'VideoCrop',
 
   data () {
     return {

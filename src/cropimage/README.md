@@ -25,7 +25,7 @@ meta:
 
 # Crop and Resize Images Online
 
-<ImageCropper />
+<ImageCrop />
 
 ## About
 

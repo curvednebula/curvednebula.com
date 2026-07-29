@@ -11,6 +11,7 @@ export default defineConfig({
   rewrites: {
     'cropimage/README.md': 'cropimage/index.md',
     'cropvideo/README.md': 'cropvideo/index.md',
+    'trimaudio/README.md': 'trimaudio/index.md',
     'lullwave/README.md': 'lullwave/index.md',
     'photocurves/README.md': 'photocurves/index.md'
   },
@@ -43,6 +44,7 @@ export default defineConfig({
         items: [
           { text: 'Crop & Resize Image', link: '/cropimage/' },
           { text: 'Crop & Resize Video', link: '/cropvideo/' },
+          { text: 'Trim Audio', link: '/trimaudio/' },
           { text: 'ApiBake - OpenAPI to PDF', link: '/apibake/' }
         ]
       },
