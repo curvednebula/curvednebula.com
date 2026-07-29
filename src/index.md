@@ -131,8 +131,7 @@ meta:
     <a href="/trimaudio/" aria-label="Open the free online audio trimmer with waveform">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Trim Audio online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
-        <path d="M24 59v10m10-23v36m10-52v68m10-55v42m10-68v94m10-78v62m10-48v34m10-22v10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
-        <circle cx="104" cy="64" r="3.5" fill="#fff"/>
+        <path d="M24 59v10m10-23v36m10-52v68m10-55v42m10-68v94m10-78v62m10-48v34m10-28v22m10-16v10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
       </svg>
     </a>
     <div class="app-info">
