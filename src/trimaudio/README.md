@@ -43,18 +43,20 @@ The waveform is generated incrementally from short regions distributed across th
 
 ## Browser compatibility
 
-Recent Chromium-based browsers such as Chrome and Edge provide the best compatibility.
+Recent Chromium-based browsers such as Chrome and Edge provide the best compatibility. Audio export requires WebCodecs and must run in a secure browser context such as HTTPS.
 
-## Frequently asked questions
+**Input files supported:** MP3, WAV/WAVE, M4A, Ogg/OGA, Opus, FLAC, and AAC.
 
-### Is my audio uploaded?
+- **MP3 and WAV:** Generally provide the broadest input compatibility.
+- **M4A and AAC:** Browser- and operating-system-specific. M4A is a container, so the audio codec inside it must also be supported; AAC is the most common.
+- **Ogg, Opus, and FLAC:** Support varies between browsers and operating systems.
+- An accepted filename extension does not guarantee that a file can be edited. The browser must be able to play the file for preview and decode its exact codec through WebCodecs for waveform generation and export.
 
-No. Audio processing happens locally in your browser.
+**Output files supported:** Ogg Opus, MP3, M4A AAC, and uncompressed 16-bit WAV.
 
-### What audio formats can I open?
+- **WAV PCM:** The most dependable output choice. It does not require a compressed-audio encoder, but the browser must still be able to decode the input audio.
+- **Ogg Opus:** Requires an Opus `AudioEncoder` and is available only when the current browser reports support.
+- **M4A AAC:** Browser-specific. AAC encoding may be unavailable in Firefox or on desktop Linux.
+- **MP3:** Highly browser-specific and usually unavailable because current major browsers do not normally expose an MP3 `AudioEncoder`.
+- Unsupported compressed formats are disabled automatically in the output selector. Safari added WebCodecs audio encoding and decoding in Safari 26, so earlier Safari versions cannot export audio with this tool.
 
-The file picker accepts MP3, WAV, M4A, Ogg, Opus, FLAC, and AAC files. Actual decoding support depends on your browser and the codec used by the file.
-
-### What format does the tool export?
-
-Choose Ogg Opus, MP3, M4A AAC, or uncompressed 16-bit WAV. Compressed formats offer automatic or manual bitrate selection. Formats that the current browser cannot encode are disabled.

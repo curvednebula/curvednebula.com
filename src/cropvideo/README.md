@@ -46,13 +46,27 @@ MP4, MOV, WebM, and MKV input files use a sequential Mediabunny decode pipeline 
 
 ## Browser compatibility
 
-Recent Chromium-based browsers such as Chrome and Edge offer the best compatibility.
+Recent Chromium-based browsers such as Chrome and Edge offer the best compatibility. Video export requires WebCodecs and must run in a secure browser context such as HTTPS.
+
+**Input files supported:** MP4, M4V, MOV, WebM, MKV, and AVI.
+
+- **MP4, M4V, and MOV:** Usually offer the broadest input compatibility when they contain H.264 video and AAC audio. Files using HEVC, ProRes, or another codec still depend on the codecs available in the browser and operating system.
+- **WebM:** Requires browser support for the VP8 or VP9 video codec used by the file. Opus audio also requires a compatible audio decoder.
+- **MKV and AVI:** Browser-specific. The tool can read these containers, but the video and audio codecs inside them must still be supported by WebCodecs on the current device. Recent Chrome and Edge generally provide the best results.
+- Non-AVI files must also be playable by the browser's built-in video player so the editor can show a preview.
+
+**Output files supported:** WebM, MKV, and MP4.
+
+- **WebM and MKV:** Use VP9 or VP8 video and, when available, Opus audio. VP9, VP8, and Opus encoder availability varies by browser and device.
+- **MP4:** Uses H.264 video and, when available, AAC audio. H.264 encoding can depend on the device's hardware and operating system. AAC encoding is especially browser-specific and may be unavailable in Firefox or on desktop Linux.
+- The tool checks the selected output codecs at runtime. If the video codec is unavailable, export stops with an explanatory message. If only the audio encoder is unavailable, the video is exported without audio and the tool shows a warning.
+- Safari added WebCodecs audio encoding and decoding in Safari 26. Earlier Safari versions may open some input videos but cannot preserve their audio during export.
 
 ## Frequently asked questions
 
 ### Can I remove time from the beginning or end?
 
-Yes. Move the start and end trim handles, enter exact timestamps as `H:M:S.S`, `M:S.S`, or `S.S`, or move the playhead and choose **Set to playhead**. Preview playback stays inside the selected range, and the exported video starts at time zero.
+Yes. Move the start and end trim handles, enter exact timestamps, or move the playhead and choose **Set to playhead**. Preview playback stays inside the selected range, and the exported video starts at time zero.
 
 ### Can I crop a landscape video into a vertical video?
 
@@ -62,11 +76,4 @@ Yes. Choose **Vertical · 9:16**, move the selection over the important part of 
 
 Yes. Choose **Custom** under Output resolution, then enter the width and height. Keep the aspect ratio option enabled to avoid stretching.
 
-### What format does the tool export?
-
-The tool exports WebM and MKV with VP9 or VP8 video and Opus audio. MP4 uses H.264 video and AAC audio. The selected codecs must be supported by your browser; unsupported audio is omitted with a warning.
-
-### Why can video export take a while?
-
-Every frame must be decoded, cropped, resized, and encoded on your device. Longer videos, higher resolutions, and 60 fps exports require more processing.
 
