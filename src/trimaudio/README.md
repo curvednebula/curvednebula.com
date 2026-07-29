@@ -37,7 +37,7 @@ The waveform is generated incrementally from short regions distributed across th
 
 1. Select an audio file or drag it into the trimmer.
 2. Click or drag the waveform to navigate through the audio.
-3. Drag the waveform edge handles to select the range to keep, or enter exact start and end times.
+3. Drag the waveform edge handles to select the range to keep, or enter exact start and end timestamps as `H:M:S.S`, `M:S.S`, or `S.S`.
 4. Preview the selected range with the play button.
 5. Choose **Save Audio** to export an Ogg Opus file.
 

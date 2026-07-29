@@ -138,13 +138,11 @@
                 <span>Start</span>
                 <span class="trim-time">{{ formatTimePrecise(trimStart) }}</span>
                 <input
-                  :value="trimStart.toFixed(2)"
-                  type="number"
-                  min="0"
-                  :max="Math.max(0, trimEnd - minimumTrimDuration)"
-                  step="0.01"
+                  :value="formatTimePrecise(trimStart)"
+                  type="text"
+                  placeholder="H:M:S.S"
                   :disabled="isExporting"
-                  aria-label="Trim start in seconds"
+                  aria-label="Trim start time. Enter hours, minutes, and seconds; hours and minutes are optional"
                   @change="updateTrimStart"
                 >
                 <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('start')">
@@ -155,13 +153,11 @@
                 <span>End</span>
                 <span class="trim-time">{{ formatTimePrecise(trimEnd) }}</span>
                 <input
-                  :value="trimEnd.toFixed(2)"
-                  type="number"
-                  :min="Math.min(duration, trimStart + minimumTrimDuration)"
-                  :max="duration"
-                  step="0.01"
+                  :value="formatTimePrecise(trimEnd)"
+                  type="text"
+                  placeholder="H:M:S.S"
                   :disabled="isExporting"
-                  aria-label="Trim end in seconds"
+                  aria-label="Trim end time. Enter hours, minutes, and seconds; hours and minutes are optional"
                   @change="updateTrimEnd"
                 >
                 <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('end')">
@@ -1233,8 +1229,9 @@ export default {
     updateTrimStart (event) {
       this.pausePlayback()
       const limit = Math.max(0, this.trimEnd - this.minimumTrimDuration)
-      this.trimStart = this.clamp(Number(event.target.value) || 0, 0, limit)
-      event.target.value = this.trimStart
+      const value = this.parseTimestamp(event.target.value)
+      this.trimStart = this.clamp(Number.isFinite(value) ? value : this.trimStart, 0, limit)
+      event.target.value = this.formatTimePrecise(this.trimStart)
       this.seekPreview(this.trimStart)
       this.clearMessage()
     },
@@ -1303,9 +1300,9 @@ export default {
     updateTrimEnd (event) {
       this.pausePlayback()
       const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
-      const value = Number(event.target.value)
-      this.trimEnd = this.clamp(Number.isFinite(value) ? value : this.duration, minimum, this.duration)
-      event.target.value = this.trimEnd
+      const value = this.parseTimestamp(event.target.value)
+      this.trimEnd = this.clamp(Number.isFinite(value) ? value : this.trimEnd, minimum, this.duration)
+      event.target.value = this.formatTimePrecise(this.trimEnd)
       this.seekPreview(this.trimEnd)
       this.clearMessage()
     },
@@ -2263,6 +2260,21 @@ export default {
       return `${base}.${String(hundredths).padStart(2, '0')}`
     },
 
+    parseTimestamp (value) {
+      if (typeof value === 'number') return Number.isFinite(value) && value >= 0 ? value : NaN
+
+      const parts = String(value).trim().split(':')
+      if (parts.length > 3 || parts.some(part => !/^\d+(?:\.\d+)?$/.test(part))) return NaN
+      if (parts.slice(0, -1).some(part => !/^\d+$/.test(part))) return NaN
+
+      const seconds = Number(parts[parts.length - 1])
+      const minutes = parts.length >= 2 ? Number(parts[parts.length - 2]) : 0
+      const hours = parts.length === 3 ? Number(parts[0]) : 0
+      if (seconds >= 60 || (parts.length === 3 && minutes >= 60)) return NaN
+
+      return hours * 3600 + minutes * 60 + seconds
+    },
+
     parseFrameRate (value) {
       if (!value) return 30
       const parts = String(value).split('/').map(Number)
@@ -2571,7 +2583,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 }
 
 .timeline:focus-visible {
-  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+  filter: drop-shadow(0 0 3px rgba(255, 59, 48, 0.9));
 }
 
 .timeline::-webkit-slider-runnable-track {
@@ -2587,7 +2599,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   border: 2px solid #fff;
   border-radius: 50%;
   appearance: none;
-  background: var(--accent);
+  background: #ff3b30;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
 
@@ -2602,7 +2614,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   height: 0.75rem;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: var(--accent);
+  background: #ff3b30;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
 

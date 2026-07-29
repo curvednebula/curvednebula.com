@@ -117,13 +117,11 @@
                 <span>Start</span>
                 <span class="trim-time">{{ formatTimePrecise(trimStart) }}</span>
                 <input
-                  :value="trimStart.toFixed(2)"
-                  type="number"
-                  min="0"
-                  :max="Math.max(0, trimEnd - minimumTrimDuration)"
-                  step="0.01"
+                  :value="formatTimePrecise(trimStart)"
+                  type="text"
+                  placeholder="H:M:S.S"
                   :disabled="isExporting"
-                  aria-label="Trim start in seconds"
+                  aria-label="Trim start time. Enter hours, minutes, and seconds; hours and minutes are optional"
                   @change="updateTrimStart"
                 >
                 <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('start')">
@@ -134,13 +132,11 @@
                 <span>End</span>
                 <span class="trim-time">{{ formatTimePrecise(trimEnd) }}</span>
                 <input
-                  :value="trimEnd.toFixed(2)"
-                  type="number"
-                  :min="Math.min(duration, trimStart + minimumTrimDuration)"
-                  :max="duration"
-                  step="0.01"
+                  :value="formatTimePrecise(trimEnd)"
+                  type="text"
+                  placeholder="H:M:S.S"
                   :disabled="isExporting"
-                  aria-label="Trim end in seconds"
+                  aria-label="Trim end time. Enter hours, minutes, and seconds; hours and minutes are optional"
                   @change="updateTrimEnd"
                 >
                 <button class="trim-set-button" type="button" :disabled="isExporting" @click="setTrimBoundary('end')">
@@ -1230,9 +1226,9 @@ export default {
         ctx.stroke()
         ctx.fillStyle = '#fff'
         ctx.beginPath()
-        ctx.moveTo(playheadX - 5, 0)
-        ctx.lineTo(playheadX + 5, 0)
-        ctx.lineTo(playheadX, 7)
+        ctx.moveTo(playheadX - 7, 0)
+        ctx.lineTo(playheadX + 7, 0)
+        ctx.lineTo(playheadX, 10)
         ctx.closePath()
         ctx.fill()
       }
@@ -1241,7 +1237,7 @@ export default {
 
     drawTrimHandle (ctx, x, height, boundary) {
       const handleTipY = height + 18
-      const guideX = Math.round(x) + 0.5
+      const guideX = Math.round(x)
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       ctx.beginPath()
@@ -1352,12 +1348,12 @@ export default {
         const nextStart = this.clamp(time, 0, Math.max(0, this.trimEnd - this.minimumTrimDuration))
         if (Math.abs(nextStart - this.trimStart) > 1e-7) this.invalidateDetailedWaveform()
         this.trimStart = nextStart
-        this.seekPreview(this.trimStart)
+        this.drawWaveform()
       } else if (type === 'end') {
         const nextEnd = this.clamp(time, Math.min(this.duration, this.trimStart + this.minimumTrimDuration), this.duration)
         if (Math.abs(nextEnd - this.trimEnd) > 1e-7) this.invalidateDetailedWaveform()
         this.trimEnd = nextEnd
-        this.seekPreview(this.trimEnd)
+        this.drawWaveform()
       } else {
         this.seekPreview(time)
       }
@@ -1377,10 +1373,11 @@ export default {
     updateTrimStart (event) {
       this.pausePlayback()
       const limit = Math.max(0, this.trimEnd - this.minimumTrimDuration)
-      const nextStart = this.clamp(Number(event.target.value) || 0, 0, limit)
+      const value = this.parseTimestamp(event.target.value)
+      const nextStart = this.clamp(Number.isFinite(value) ? value : this.trimStart, 0, limit)
       if (Math.abs(nextStart - this.trimStart) > 1e-7) this.invalidateDetailedWaveform()
       this.trimStart = nextStart
-      event.target.value = this.trimStart
+      event.target.value = this.formatTimePrecise(this.trimStart)
       this.seekPreview(this.trimStart)
       this.clearMessage()
       this.drawWaveform()
@@ -1389,11 +1386,11 @@ export default {
     updateTrimEnd (event) {
       this.pausePlayback()
       const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
-      const value = Number(event.target.value)
-      const nextEnd = this.clamp(Number.isFinite(value) ? value : this.duration, minimum, this.duration)
+      const value = this.parseTimestamp(event.target.value)
+      const nextEnd = this.clamp(Number.isFinite(value) ? value : this.trimEnd, minimum, this.duration)
       if (Math.abs(nextEnd - this.trimEnd) > 1e-7) this.invalidateDetailedWaveform()
       this.trimEnd = nextEnd
-      event.target.value = this.trimEnd
+      event.target.value = this.formatTimePrecise(this.trimEnd)
       this.seekPreview(this.trimEnd)
       this.clearMessage()
       this.drawWaveform()
@@ -1727,6 +1724,21 @@ export default {
         ? `${hours}:${String(minutes).padStart(2, '0')}:${String(remaining).padStart(2, '0')}`
         : `${minutes}:${String(remaining).padStart(2, '0')}`
       return `${base}.${String(hundredths).padStart(2, '0')}`
+    },
+
+    parseTimestamp (value) {
+      if (typeof value === 'number') return Number.isFinite(value) && value >= 0 ? value : NaN
+
+      const parts = String(value).trim().split(':')
+      if (parts.length > 3 || parts.some(part => !/^\d+(?:\.\d+)?$/.test(part))) return NaN
+      if (parts.slice(0, -1).some(part => !/^\d+$/.test(part))) return NaN
+
+      const seconds = Number(parts[parts.length - 1])
+      const minutes = parts.length >= 2 ? Number(parts[parts.length - 2]) : 0
+      const hours = parts.length === 3 ? Number(parts[0]) : 0
+      if (seconds >= 60 || (parts.length === 3 && minutes >= 60)) return NaN
+
+      return hours * 3600 + minutes * 60 + seconds
     },
 
     clamp (value, min, max) {

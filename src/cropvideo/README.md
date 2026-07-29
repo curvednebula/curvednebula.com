@@ -52,7 +52,7 @@ Recent Chromium-based browsers such as Chrome and Edge offer the best compatibil
 
 ### Can I remove time from the beginning or end?
 
-Yes. Move the start and end trim handles, enter exact times in seconds, or move the playhead and choose **Set to playhead**. Preview playback stays inside the selected range, and the exported video starts at time zero.
+Yes. Move the start and end trim handles, enter exact timestamps as `H:M:S.S`, `M:S.S`, or `S.S`, or move the playhead and choose **Set to playhead**. Preview playback stays inside the selected range, and the exported video starts at time zero.
 
 ### Can I crop a landscape video into a vertical video?
 
