@@ -124,7 +124,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/cropvideo/"><h3>Crop, Trim, and Resize Videos Online</h3></a>
-      <p>Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally. Export as WebM.</p>
+      <p>Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally. Export as WebM, MKV, or MP4.</p>
     </div>
   </div>
   <div class="app-item">

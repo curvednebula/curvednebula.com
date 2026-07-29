@@ -27,7 +27,7 @@
         {{ isPreparingAvi ? 'Cancel opening' : 'Select video' }}
       </button>
       <span class="privacy-note">
-        {{ isPreparingAvi ? 'Reading the file locally without loading it all into memory.' : 'Supports MP4, WebM, MKV, MOV, and AVI · Exports WebM · Your video stays on your device.' }}
+        {{ isPreparingAvi ? 'Reading the file locally without loading it all into memory.' : 'Supports MP4, WebM, MKV, MOV, and AVI · Exports WebM, MKV, and MP4 · Your video stays on your device.' }}
       </span>
     </section>
 
@@ -279,8 +279,12 @@
           </div>
 
           <div class="output-summary">
-            <span class="output-label">Output</span>
-            <span class="output-value">{{ outputSize.w }} × {{ outputSize.h }} px · WebM</span>
+            <label class="output-label" for="output-format">Output</label>
+            <select id="output-format" v-model="outputFormat" :disabled="isExporting">
+              <option value="webm">WebM · VP9/VP8</option>
+              <option value="mkv">MKV · VP9/VP8</option>
+              <option value="mp4">MP4 · H.264</option>
+            </select>
             <span class="output-detail">{{ formattedTrimDuration }} · {{ frameRate }} fps · {{ formattedBitrate }}</span>
           </div>
 
@@ -337,6 +341,7 @@ export default {
       crop: { x: 0, y: 0, w: 0, h: 0 },
       aspect: 'free',
       resolutionPreset: 'crop',
+      outputFormat: 'webm',
       outputWidth: 2,
       outputHeight: 2,
       outputAspectLocked: true,
@@ -403,6 +408,36 @@ export default {
       if (!this.aviAudioStream) return 'This AVI has no audio track'
       if (!this.aviAudioExportSupported) return 'This AVI audio codec is not supported by this browser'
       return 'Preserve AVI audio'
+    },
+
+    outputProfile () {
+      const profiles = {
+        webm: {
+          label: 'WebM',
+          extension: 'webm',
+          mimeType: 'video/webm',
+          videoCodecs: ['vp9', 'vp8'],
+          videoCodecLabel: 'VP9 or VP8',
+          audioCodec: 'opus'
+        },
+        mkv: {
+          label: 'MKV',
+          extension: 'mkv',
+          mimeType: 'video/x-matroska',
+          videoCodecs: ['vp9', 'vp8'],
+          videoCodecLabel: 'VP9 or VP8',
+          audioCodec: 'opus'
+        },
+        mp4: {
+          label: 'MP4',
+          extension: 'mp4',
+          mimeType: 'video/mp4',
+          videoCodecs: ['avc'],
+          videoCodecLabel: 'H.264',
+          audioCodec: 'aac'
+        }
+      }
+      return profiles[this.outputFormat] || profiles.webm
     },
 
     roundedCrop () {
@@ -1481,7 +1516,8 @@ export default {
       this.exportStage = 'Preparing'
       this.clearMessage()
 
-      const filename = this.makeOutputName()
+      const profile = this.outputProfile
+      const filename = this.makeOutputName(profile)
       let fileHandle = null
       let writable = null
       const originalTime = this.isAviSource ? this.currentTime : this.video.currentTime
@@ -1493,8 +1529,8 @@ export default {
             fileHandle = await window.showSaveFilePicker({
               suggestedName: filename,
               types: [{
-                description: 'WebM video',
-                accept: { 'video/webm': ['.webm'] }
+                description: `${profile.label} video`,
+                accept: { [profile.mimeType]: [`.${profile.extension}`] }
               }]
             })
           } catch (error) {
@@ -1512,7 +1548,7 @@ export default {
           writable = null
           this.setMessage(`Saved ${filename}${result.audioWarning ? ' without audio' : ''}`)
         } else {
-          const blob = new Blob([result.buffer], { type: 'video/webm' })
+          const blob = new Blob([result.buffer], { type: profile.mimeType })
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
@@ -1567,6 +1603,7 @@ export default {
     },
 
     async encodeMediabunnyVideo (writable = null) {
+      const mediabunny = await import('mediabunny')
       const {
         BlobSource,
         BufferTarget,
@@ -1578,13 +1615,11 @@ export default {
         Output,
         QTFF,
         StreamTarget,
-        WEBM,
-        WebMOutputFormat
-      } = await import('mediabunny')
+        WEBM
+      } = mediabunny
       const size = this.outputSize
       const crop = this.roundedCrop
       const encoderConfig = await this.chooseVideoConfig(size)
-      const videoCodec = encoderConfig.codec.startsWith('vp09') ? 'vp9' : 'vp8'
       const input = new Input({
         source: new BlobSource(this.sourceFile),
         formats: [MP4, QTFF, WEBM, MATROSKA]
@@ -1599,14 +1634,19 @@ export default {
           return null
         }
 
-        const sourceAudioTrack = this.preserveAudio && this.audioEncodingSupported
+        const sourceAudioTrack = this.preserveAudio
           ? await input.getPrimaryAudioTrack()
           : null
+        let audioConfig = null
+        if (sourceAudioTrack && this.audioEncodingSupported) {
+          const channels = Math.min(await sourceAudioTrack.getNumberOfChannels(), 2)
+          audioConfig = await this.getSupportedAudioEncodingConfig(channels)
+        }
         const target = writable
           ? new StreamTarget(writable, { chunked: true, chunkSize: 8 * 1024 * 1024 })
           : new BufferTarget()
         const output = new Output({
-          format: new WebMOutputFormat(),
+          format: this.createOutputFormat(mediabunny),
           target
         })
 
@@ -1630,23 +1670,14 @@ export default {
                 height: crop.h
               },
               frameRate: this.frameRate,
-              codec: videoCodec,
+              codec: encoderConfig.codec,
               bitrate: this.bitrate,
               keyFrameInterval: 4,
               forceTranscode: true,
               allowRotationMetadata: false
             },
-            audio: sourceAudioTrack
-              ? async track => {
-                  const channels = Math.min(await track.getNumberOfChannels(), 2)
-                  return {
-                    codec: 'opus',
-                    sampleRate: 48000,
-                    numberOfChannels: channels,
-                    bitrate: channels === 1 ? 96000 : 160000,
-                    forceTranscode: true
-                  }
-                }
+            audio: audioConfig
+              ? { ...audioConfig, forceTranscode: true }
               : { discard: true },
             showWarnings: false
           })
@@ -1668,7 +1699,7 @@ export default {
         const audioIsUsed = sourceAudioTrack &&
           conversion.utilizedTracks.some(track => track === sourceAudioTrack)
         const audioWarning = this.preserveAudio &&
-          (!this.audioEncodingSupported || !sourceAudioTrack || !audioIsUsed)
+          (!sourceAudioTrack || !audioConfig || !audioIsUsed)
 
         this.activeConversion = conversion
         this.exportStage = audioIsUsed ? 'Encoding video and audio' : 'Encoding video'
@@ -1706,6 +1737,7 @@ export default {
       const crop = this.roundedCrop
       const config = await this.chooseVideoConfig(size)
       let audioBuffer = null
+      let audioConfig = null
       let audioWarning = this.preserveAudio && !this.audioEncodingSupported
 
       if (this.preserveAudio && this.audioEncodingSupported) {
@@ -1715,6 +1747,12 @@ export default {
           if (audioBuffer.duration <= this.trimStart) {
             audioBuffer = null
             audioWarning = true
+          } else {
+            audioConfig = await this.getSupportedAudioEncodingConfig(audioBuffer.numberOfChannels)
+            if (!audioConfig) {
+              audioBuffer = null
+              audioWarning = true
+            }
           }
         } catch (error) {
           console.warn('Audio could not be decoded for export.', error)
@@ -1732,11 +1770,11 @@ export default {
 
       const totalFrames = Math.max(1, Math.ceil(this.trimDuration * this.frameRate))
       const frameDuration = 1 / this.frameRate
-      const session = await this.createManualWebMExport(
+      const session = await this.createManualExport(
         writable,
         outputCanvas,
         config,
-        audioBuffer ? audioBuffer.numberOfChannels : 0
+        audioConfig
       )
       this.exportStage = audioBuffer ? 'Encoding video and audio' : 'Encoding video'
 
@@ -1783,9 +1821,9 @@ export default {
         await Promise.all([videoTask, audioTask])
         if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
 
-        return await this.finalizeManualWebMExport(session, writable, audioWarning)
+        return await this.finalizeManualExport(session, writable, audioWarning)
       } catch (error) {
-        await this.cancelManualWebMExport(session)
+        await this.cancelManualExport(session)
         if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
         throw error
       } finally {
@@ -1810,12 +1848,16 @@ export default {
       const sourceStart = Number(this.aviVideoStream.start_time) || 0
       let nextOutputIndex = 0
       let decodedFrameCount = 0
-      const audioEnabled = this.preserveAudio && this.aviAudioExportSupported
-      const session = await this.createManualWebMExport(
+      const audioChannels = Math.min(Math.max(1, Number(this.aviAudioStream && this.aviAudioStream.channels) || 1), 2)
+      const audioConfig = this.preserveAudio && this.aviAudioExportSupported
+        ? await this.getSupportedAudioEncodingConfig(audioChannels)
+        : null
+      const audioEnabled = Boolean(audioConfig)
+      const session = await this.createManualExport(
         writable,
         outputCanvas,
         config,
-        audioEnabled ? Math.min(Math.max(1, Number(this.aviAudioStream.channels) || 1), 2) : 0
+        audioConfig
       )
       this.exportStage = audioEnabled ? 'Encoding video and audio' : 'Encoding video'
 
@@ -1935,13 +1977,13 @@ export default {
         await Promise.all([videoTask, audioTask])
         if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
 
-        return await this.finalizeManualWebMExport(
+        return await this.finalizeManualExport(
           session,
           writable,
-          Boolean(this.aviAudioStream && !audioEnabled)
+          this.preserveAudio && Boolean(this.aviAudioStream && !audioEnabled)
         )
       } catch (error) {
-        await this.cancelManualWebMExport(session)
+        await this.cancelManualExport(session)
         if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
         throw error
       } finally {
@@ -1949,39 +1991,38 @@ export default {
       }
     },
 
-    async createManualWebMExport (writable, outputCanvas, videoConfig, audioChannels = 0) {
+    async createManualExport (writable, outputCanvas, videoConfig, audioConfig = null) {
+      const mediabunny = await import('mediabunny')
       const {
         AudioSample,
         AudioSampleSource,
         BufferTarget,
         CanvasSource,
         Output,
-        StreamTarget,
-        WebMOutputFormat
-      } = await import('mediabunny')
+        StreamTarget
+      } = mediabunny
       const target = writable
         ? new StreamTarget(writable, { chunked: true, chunkSize: 8 * 1024 * 1024 })
         : new BufferTarget()
       const output = new Output({
-        format: new WebMOutputFormat(),
+        format: this.createOutputFormat(mediabunny),
         target
       })
       const videoSource = new CanvasSource(outputCanvas, {
-        codec: videoConfig.codec.startsWith('vp09') ? 'vp9' : 'vp8',
+        codec: videoConfig.codec,
         bitrate: this.bitrate,
         keyFrameInterval: 4,
         latencyMode: 'quality'
       })
       output.addVideoTrack(videoSource)
 
-      const channels = Math.min(Math.max(0, Number(audioChannels) || 0), 2)
-      const audioSource = channels
+      const audioSource = audioConfig
         ? new AudioSampleSource({
-            codec: 'opus',
-            bitrate: channels === 1 ? 96000 : 160000,
+            codec: audioConfig.codec,
+            bitrate: audioConfig.bitrate,
             transform: {
-              sampleRate: 48000,
-              numberOfChannels: channels
+              sampleRate: audioConfig.sampleRate,
+              numberOfChannels: audioConfig.numberOfChannels
             }
           })
         : null
@@ -1992,7 +2033,7 @@ export default {
       return { AudioSample, audioSource, output, target, videoSource }
     },
 
-    async finalizeManualWebMExport (session, writable, audioWarning) {
+    async finalizeManualExport (session, writable, audioWarning) {
       this.exportStage = 'Finishing file'
       this.exportProgress = 98
       await session.output.finalize()
@@ -2005,7 +2046,7 @@ export default {
       }
     },
 
-    async cancelManualWebMExport (session) {
+    async cancelManualExport (session) {
       if (!session || !session.output || !['pending', 'started'].includes(session.output.state)) return
       await session.output.cancel().catch(() => {})
     },
@@ -2152,25 +2193,52 @@ export default {
       if (!decodedSamples) throw new Error('The AVI audio track did not contain decodable samples in the selected range.')
     },
 
-    async chooseVideoConfig (size) {
-      const base = {
-        width: size.w,
-        height: size.h,
-        bitrate: this.bitrate,
-        framerate: this.frameRate,
-        latencyMode: 'quality'
+    createOutputFormat (mediabunny) {
+      if (this.outputFormat === 'mkv') return new mediabunny.MkvOutputFormat()
+      if (this.outputFormat === 'mp4') return new mediabunny.Mp4OutputFormat()
+      return new mediabunny.WebMOutputFormat()
+    },
+
+    getAudioEncodingConfig (channels) {
+      const numberOfChannels = Math.min(Math.max(1, Number(channels) || 1), 2)
+      return {
+        codec: this.outputProfile.audioCodec,
+        sampleRate: 48000,
+        numberOfChannels,
+        bitrate: numberOfChannels === 1 ? 96000 : 160000
       }
-      const candidates = [
-        { ...base, codec: 'vp09.00.10.08' },
-        { ...base, codec: 'vp8' }
-      ]
-      for (const candidate of candidates) {
+    },
+
+    async getSupportedAudioEncodingConfig (channels) {
+      if (!this.audioEncodingSupported) return null
+      const config = this.getAudioEncodingConfig(channels)
+      const { canEncodeAudio } = await import('mediabunny')
+      try {
+        const supported = await canEncodeAudio(config.codec, {
+          numberOfChannels: config.numberOfChannels,
+          sampleRate: config.sampleRate,
+          bitrate: config.bitrate
+        })
+        return supported ? config : null
+      } catch (error) {
+        return null
+      }
+    },
+
+    async chooseVideoConfig (size) {
+      const { canEncodeVideo } = await import('mediabunny')
+      for (const codec of this.outputProfile.videoCodecs) {
         try {
-          const support = await VideoEncoder.isConfigSupported(candidate)
-          if (support.supported) return candidate
+          const supported = await canEncodeVideo(codec, {
+            width: size.w,
+            height: size.h,
+            bitrate: this.bitrate,
+            latencyMode: 'quality'
+          })
+          if (supported) return { codec }
         } catch (error) {}
       }
-      throw new Error('No compatible VP9 or VP8 WebCodecs encoder was found.')
+      throw new Error(`No compatible ${this.outputProfile.videoCodecLabel} WebCodecs encoder was found for ${this.outputProfile.label}.`)
     },
 
     async decodeAndResampleAudio () {
@@ -2230,9 +2298,9 @@ export default {
       return new Promise(resolve => setTimeout(resolve, 0))
     },
 
-    makeOutputName () {
+    makeOutputName (profile = this.outputProfile) {
       const base = this.sourceName.replace(/\.[^.]+$/, '') || 'video'
-      return `${base}-cropped${this.hasTrim ? '-trimmed' : ''}.webm`
+      return `${base}-cropped${this.hasTrim ? '-trimmed' : ''}.${profile.extension}`
     },
 
     formatTime (seconds) {
@@ -2917,7 +2985,6 @@ select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow
 
 .output-summary { margin: 1.1rem 0 0.8rem; font-size: 0.78rem; }
 .output-label { margin-bottom: 0.25rem; display: block; color: #4d4651; font-weight: 650; }
-.output-value { display: block; color: var(--ink); font-size: 0.86rem; }
 .output-detail { margin-top: 0.18rem; display: block; color: var(--muted); font-size: 0.7rem; }
 
 .save-button {

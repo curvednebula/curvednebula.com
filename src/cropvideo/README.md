@@ -1,6 +1,6 @@
 ---
 title: Free Online Video Cropper, Trimmer, and Resizer
-description: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos to a new duration, aspect ratio, or exact resolution. Export a private, browser-processed WebM video.
+description: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos to a new duration, aspect ratio, or exact resolution. Export privately as WebM, MKV, or MP4.
 pageClass: crop-tool-layout
 permalink: /cropvideo/
 canonicalUrl: https://curvednebula.com/cropvideo/
@@ -10,7 +10,7 @@ meta:
   - property: og:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - property: og:description
-    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM.
+    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM, MKV, or MP4.
   - property: og:type
     content: website
   - property: og:url
@@ -20,7 +20,7 @@ meta:
   - name: twitter:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - name: twitter:description
-    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM.
+    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM, MKV, or MP4.
 ---
 
 # Crop, Trim, and Resize Videos Online
@@ -29,7 +29,7 @@ meta:
 
 ## About
 
-Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as a WebM file. MP4, WebM, MKV, MOV, and AVI files are supported. Processing happens locally in your browser — your video is never uploaded.
+Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as WebM, MKV, or MP4. MP4, WebM, MKV, MOV, and AVI input files are supported. Processing happens locally in your browser — your video is never uploaded.
 
 ## How to crop a video
 
@@ -38,11 +38,11 @@ Crop a video to a custom area or a common aspect ratio, trim unwanted time from 
 3. Drag the trim handles to select the part of the video to keep, or set either boundary to the playhead.
 4. Choose an aspect ratio such as 16:9, 1:1, 4:5, or 9:16.
 5. Keep the crop resolution, choose a long-edge preset, or enter a custom width and height.
-6. Select a frame rate and quality level, then choose **Save Video**.
+6. Select WebM, MKV, or MP4, set a frame rate and quality level, then choose **Save Video**.
 
-The editor previews only the selected time range with the same crop. Exported dimensions are kept even for broad WebM codec compatibility.
+The editor previews only the selected time range with the same crop. Exported dimensions are kept even for broad codec compatibility.
 
-MP4, MOV, WebM, and MKV exports use a sequential Mediabunny decode pipeline instead of seeking separately for every output frame. AVI and compatibility exports use the same Mediabunny WebM writer, so every export path shares one maintained output pipeline.
+MP4, MOV, WebM, and MKV input files use a sequential Mediabunny decode pipeline instead of seeking separately for every output frame. AVI and compatibility exports use the same output writers, so every export path supports the selected format.
 
 ## Browser compatibility
 
@@ -64,7 +64,7 @@ Yes. Choose **Custom** under Output resolution, then enter the width and height.
 
 ### What format does the tool export?
 
-The tool exports a WebM file encoded with VP9 or VP8. Audio is encoded as Opus when it can be preserved.
+The tool exports WebM and MKV with VP9 or VP8 video and Opus audio. MP4 uses H.264 video and AAC audio. The selected codecs must be supported by your browser; unsupported audio is omitted with a warning.
 
 ### Why can video export take a while?
 
