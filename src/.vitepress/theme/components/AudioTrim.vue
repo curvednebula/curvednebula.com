@@ -25,7 +25,7 @@
       <p>Drop audio here, or select a file from your device.</p>
       <button class="primary-button" type="button" @click="openFilePicker">Select audio</button>
       <span class="privacy-note">
-        Supports common browser audio formats · Exports Ogg Opus · Your audio stays on your device
+        Supports common browser audio formats · Exports Ogg, MP3, M4A, or WAV · Your audio stays on your device
       </span>
     </section>
 
@@ -154,9 +154,49 @@
         </section>
 
         <aside class="settings-panel">
+          <div class="output-settings">
+            <label for="audio-output-format">
+              <span>File format</span>
+              <select
+                id="audio-output-format"
+                v-model="outputFormat"
+                :disabled="isExporting || isCheckingCodecSupport"
+                @change="clearMessage"
+              >
+                <option value="ogg" :disabled="!codecSupport.opus">
+                  Ogg Opus{{ codecSupport.opus ? '' : ' (unsupported)' }}
+                </option>
+                <option value="mp3" :disabled="!codecSupport.mp3">
+                  MP3{{ codecSupport.mp3 ? '' : ' (unsupported)' }}
+                </option>
+                <option value="m4a" :disabled="!codecSupport.aac">
+                  M4A AAC{{ codecSupport.aac ? '' : ' (unsupported)' }}
+                </option>
+                <option value="wav">WAV PCM</option>
+              </select>
+            </label>
+
+            <label v-if="outputFormat !== 'wav'" for="audio-output-bitrate">
+              <span>Bitrate</span>
+              <select
+                id="audio-output-bitrate"
+                v-model.number="outputBitrate"
+                :disabled="isExporting"
+                @change="clearMessage"
+              >
+                <option :value="0">Auto</option>
+                <option :value="96000">96 kbps</option>
+                <option :value="128000">128 kbps</option>
+                <option :value="160000">160 kbps</option>
+                <option :value="192000">192 kbps</option>
+                <option :value="256000">256 kbps</option>
+              </select>
+            </label>
+          </div>
+
           <div class="output-summary">
             <span class="output-label">Output</span>
-            <span class="output-value">Ogg Opus audio</span>
+            <span class="output-value">{{ outputPreset.label }}</span>
             <span class="output-detail">{{ formattedTrimDuration }} · {{ formattedAudioBitrate }}</span>
           </div>
 
@@ -170,7 +210,7 @@
           <button
             class="primary-button save-button"
             type="button"
-            :disabled="!audioEncodingSupported"
+            :disabled="!audioEncodingSupported || isCheckingCodecSupport"
             @click="saveAudio"
           >
             <svg v-if="!isExporting" viewBox="0 0 24 24" aria-hidden="true">
@@ -186,8 +226,11 @@
     </div>
 
     <p v-if="message" class="status-message" :class="{ error: messageIsError }" role="status">{{ message }}</p>
-    <p v-if="hasSource && !audioEncodingSupported" class="compatibility-message">
-      Audio export requires WebCodecs audio support. Open this tool in a recent Chrome, Edge, or another compatible browser.
+    <p v-if="hasSource && !baseAudioExportSupported" class="compatibility-message">
+      Audio export requires WebCodecs audio decoding support. Open this tool in a recent Chrome, Edge, or another compatible browser.
+    </p>
+    <p v-else-if="hasSource && !selectedFormatSupported" class="compatibility-message">
+      {{ outputPreset.label }} cannot be encoded by this browser. Choose another output format.
     </p>
   </div>
 </template>
@@ -209,6 +252,14 @@ export default {
       trimEnd: 0,
       audioChannels: 0,
       audioSampleRate: 0,
+      outputFormat: 'ogg',
+      outputBitrate: 0,
+      codecSupport: {
+        opus: false,
+        mp3: false,
+        aac: false
+      },
+      isCheckingCodecSupport: true,
       waveformPeaks: null,
       fullWaveformPeaks: null,
       detailedWaveformCache: null,
@@ -240,11 +291,53 @@ export default {
       return Boolean(this.audio)
     },
 
-    audioEncodingSupported () {
+    baseAudioExportSupported () {
       return this.clientReady &&
         typeof window !== 'undefined' &&
-        typeof window.AudioEncoder !== 'undefined' &&
+        typeof window.AudioDecoder !== 'undefined' &&
         typeof window.AudioData !== 'undefined'
+    },
+
+    selectedFormatSupported () {
+      return this.outputFormat === 'wav' || Boolean(this.codecSupport[this.outputPreset.codec])
+    },
+
+    audioEncodingSupported () {
+      return this.baseAudioExportSupported && this.selectedFormatSupported
+    },
+
+    outputPreset () {
+      const presets = {
+        ogg: {
+          label: 'Ogg Opus audio',
+          description: 'Ogg Opus audio',
+          codec: 'opus',
+          extension: '.ogg',
+          mimeType: 'audio/ogg'
+        },
+        mp3: {
+          label: 'MP3 audio',
+          description: 'MP3 audio',
+          codec: 'mp3',
+          extension: '.mp3',
+          mimeType: 'audio/mpeg'
+        },
+        m4a: {
+          label: 'M4A AAC audio',
+          description: 'M4A AAC audio',
+          codec: 'aac',
+          extension: '.m4a',
+          mimeType: 'audio/mp4'
+        },
+        wav: {
+          label: 'WAV PCM audio',
+          description: 'WAV PCM audio',
+          codec: 'pcm-s16',
+          extension: '.wav',
+          mimeType: 'audio/wav'
+        }
+      }
+      return presets[this.outputFormat] || presets.ogg
     },
 
     sourceDetails () {
@@ -309,10 +402,11 @@ export default {
     },
 
     audioBitrate () {
-      return this.audioChannels === 1 ? 96000 : 160000
+      return this.outputBitrate || (this.audioChannels === 1 ? 96000 : 160000)
     },
 
     formattedAudioBitrate () {
+      if (this.outputFormat === 'wav') return '16-bit PCM'
       return `${Math.round(this.audioBitrate / 1000)} kbps`
     },
 
@@ -327,6 +421,7 @@ export default {
 
   mounted () {
     this.clientReady = true
+    this.detectCodecSupport()
   },
 
   beforeUnmount () {
@@ -335,6 +430,32 @@ export default {
   },
 
   methods: {
+    async detectCodecSupport () {
+      this.isCheckingCodecSupport = true
+      try {
+        const { canEncodeAudio } = await import('mediabunny')
+        const options = {
+          numberOfChannels: 2,
+          sampleRate: 48000,
+          bitrate: 160000
+        }
+        const check = codec => canEncodeAudio(codec, options).catch(() => false)
+        const [opus, mp3, aac] = await Promise.all([
+          check('opus'),
+          check('mp3'),
+          check('aac')
+        ])
+        this.codecSupport = { opus, mp3, aac }
+        if (!this.selectedFormatSupported) this.outputFormat = 'wav'
+      } catch (error) {
+        console.error(error)
+        this.codecSupport = { opus: false, mp3: false, aac: false }
+        this.outputFormat = 'wav'
+      } finally {
+        this.isCheckingCodecSupport = false
+      }
+    },
+
     openFilePicker () {
       if (this.isExporting) return
       this.clearMessage()
@@ -1542,6 +1663,11 @@ export default {
       this.exportStage = 'Preparing'
       this.clearMessage()
 
+      const exportOptions = {
+        format: this.outputFormat,
+        preset: { ...this.outputPreset },
+        bitrate: this.audioBitrate
+      }
       const filename = this.makeOutputName()
       const originalTime = this.audio.currentTime
       let fileHandle = null
@@ -1553,8 +1679,10 @@ export default {
             fileHandle = await window.showSaveFilePicker({
               suggestedName: filename,
               types: [{
-                description: 'Ogg Opus audio',
-                accept: { 'audio/ogg': ['.ogg'] }
+                description: exportOptions.preset.description,
+                accept: {
+                  [exportOptions.preset.mimeType]: [exportOptions.preset.extension]
+                }
               }]
             })
           } catch (error) {
@@ -1564,7 +1692,7 @@ export default {
         }
 
         if (fileHandle) writable = await fileHandle.createWritable()
-        const result = await this.encodeAudio(writable)
+        const result = await this.encodeAudio(writable, exportOptions)
         if (this.cancelRequested) throw new Error('EXPORT_CANCELED')
 
         if (writable) {
@@ -1572,7 +1700,7 @@ export default {
           writable = null
           this.setMessage(`Saved ${filename}`)
         } else {
-          const blob = new Blob([result.buffer], { type: 'audio/ogg' })
+          const blob = new Blob([result.buffer], { type: exportOptions.preset.mimeType })
           const url = URL.createObjectURL(blob)
           const link = document.createElement('a')
           link.href = url
@@ -1606,18 +1734,25 @@ export default {
       }
     },
 
-    async encodeAudio (writable = null) {
+    async encodeAudio (writable = null, exportOptions = {}) {
       const {
         ALL_FORMATS,
         BlobSource,
         BufferTarget,
+        canEncodeAudio,
         Conversion,
         ConversionCanceledError,
         Input,
+        Mp3OutputFormat,
+        Mp4OutputFormat,
         OggOutputFormat,
         Output,
-        StreamTarget
+        StreamTarget,
+        WavOutputFormat
       } = await import('mediabunny')
+      const formatName = exportOptions.format || this.outputFormat
+      const preset = exportOptions.preset || this.outputPreset
+      const bitrate = exportOptions.bitrate || this.audioBitrate
       const input = new Input({
         source: new BlobSource(this.sourceFile, { maxCacheSize: 8 * 1024 * 1024 }),
         formats: ALL_FORMATS
@@ -1628,14 +1763,55 @@ export default {
         this.exportStage = 'Reading audio'
         const audioTrack = await input.getPrimaryAudioTrack()
         if (!audioTrack) throw new Error('No audio track was found')
-        const channels = Math.min(Math.max(1, await audioTrack.getNumberOfChannels()), 2)
+        const [sourceChannels, sourceSampleRate] = await Promise.all([
+          audioTrack.getNumberOfChannels(),
+          audioTrack.getSampleRate()
+        ])
+        const channels = Math.min(Math.max(1, Number(sourceChannels) || 1), 2)
+        const sampleRate = formatName === 'wav'
+          ? Math.max(1, Number(sourceSampleRate) || 48000)
+          : 48000
+        if (formatName !== 'wav' && !await canEncodeAudio(preset.codec, {
+          numberOfChannels: channels,
+          sampleRate,
+          bitrate
+        })) {
+          throw new Error(`${preset.label} cannot be encoded by this browser`)
+        }
         const target = writable
           ? new StreamTarget(writable, { chunked: true, chunkSize: 8 * 1024 * 1024 })
           : new BufferTarget()
+        const formats = {
+          ogg: () => new OggOutputFormat(),
+          mp3: () => new Mp3OutputFormat(),
+          m4a: () => new Mp4OutputFormat(),
+          wav: () => new WavOutputFormat()
+        }
+        const createFormat = formats[formatName] || formats.ogg
         const output = new Output({
-          format: new OggOutputFormat(),
+          format: createFormat(),
           target
         })
+        const audioOptions = {
+          codec: preset.codec,
+          sampleRate,
+          numberOfChannels: channels,
+          forceTranscode: true
+        }
+        if (formatName === 'wav') {
+          audioOptions.sampleFormat = 's16'
+          audioOptions.process = sample => {
+            // Trim-frame rounding can leave the first PCM sample a fraction of
+            // one sample before zero. WAV muxing requires non-negative timestamps.
+            const timestampTolerance = 1 / sample.sampleRate
+            if (sample.timestamp < 0 && sample.timestamp >= -timestampTolerance) {
+              sample.setTimestamp(0)
+            }
+            return sample
+          }
+        } else {
+          audioOptions.bitrate = bitrate
+        }
 
         conversion = await Conversion.init({
           input,
@@ -1646,13 +1822,7 @@ export default {
             end: this.trimEnd
           },
           video: { discard: true },
-          audio: {
-            codec: 'opus',
-            sampleRate: 48000,
-            numberOfChannels: channels,
-            bitrate: channels === 1 ? 96000 : 160000,
-            forceTranscode: true
-          },
+          audio: audioOptions,
           showWarnings: false
         })
 
@@ -1694,7 +1864,7 @@ export default {
 
     makeOutputName () {
       const base = this.sourceName.replace(/\.[^.]+$/, '') || 'audio'
-      return `${base}${this.hasTrim ? '-trimmed' : '-converted'}.ogg`
+      return `${base}${this.hasTrim ? '-trimmed' : '-converted'}${this.outputPreset.extension}`
     },
 
     nextTask () {
@@ -2136,6 +2306,38 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
   padding: 1.15rem;
   border-left: 1px solid var(--line);
   background: var(--panel);
+}
+
+.output-settings {
+  margin-bottom: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.output-settings label {
+  display: grid;
+  gap: 0.3rem;
+  color: #4d4651;
+  font-size: 0.72rem;
+  font-weight: 650;
+}
+
+.output-settings select {
+  width: 100%;
+  min-height: 2.35rem;
+  padding: 0 0.55rem;
+  border: 1px solid #d8d0dc;
+  border-radius: 0.45rem;
+  box-sizing: border-box;
+  color: var(--ink);
+  background: #fff;
+  outline: none;
+  font-size: 0.75rem;
+}
+
+.output-settings select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(136, 51, 136, 0.1);
 }
 
 .output-summary { margin: 0 0 0.8rem; font-size: 0.78rem; }
