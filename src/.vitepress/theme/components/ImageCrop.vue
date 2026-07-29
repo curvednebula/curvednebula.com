@@ -441,8 +441,8 @@ export default {
 
     drawHandles (ctx, box) {
       const positions = this.handlePositions(box)
-      ctx.fillStyle = '#ffffff'
-      ctx.strokeStyle = '#883388'
+      ctx.fillStyle = '#883388'
+      ctx.strokeStyle = '#ffffff'
       ctx.lineWidth = 2
       Object.keys(positions).forEach((name) => {
         const point = positions[name]

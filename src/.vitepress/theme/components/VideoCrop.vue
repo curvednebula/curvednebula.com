@@ -904,8 +904,8 @@ export default {
 
     drawHandles (ctx, box) {
       const positions = this.handlePositions(box)
-      ctx.fillStyle = '#fff'
-      ctx.strokeStyle = '#883388'
+      ctx.fillStyle = '#883388'
+      ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       Object.keys(positions).forEach(name => {
         const point = positions[name]
@@ -2583,7 +2583,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 }
 
 .timeline:focus-visible {
-  filter: drop-shadow(0 0 3px rgba(255, 59, 48, 0.9));
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
 }
 
 .timeline::-webkit-slider-runnable-track {
@@ -2596,10 +2596,11 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   width: 1rem;
   height: 1rem;
   margin-top: -0.36rem;
+  box-sizing: border-box;
   border: 2px solid #fff;
   border-radius: 50%;
   appearance: none;
-  background: #ff3b30;
+  background: #883388;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
 
@@ -2610,11 +2611,12 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 }
 
 .timeline::-moz-range-thumb {
-  width: 0.75rem;
-  height: 0.75rem;
+  width: 1rem;
+  height: 1rem;
+  box-sizing: border-box;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: #ff3b30;
+  background: #883388;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
 
