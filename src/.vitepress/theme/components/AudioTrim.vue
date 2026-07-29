@@ -68,7 +68,7 @@
               @keydown="onWaveformKeydown"
             />
             <span v-if="isGeneratingWaveform" class="waveform-status" aria-live="polite">
-              Reading waveform · {{ Math.round(waveformProgress) }}%
+              {{ isWaveformZoomed ? 'Refining waveform' : 'Reading waveform' }} · {{ Math.round(waveformProgress) }}%
             </span>
           </div>
 
@@ -86,6 +86,24 @@
                 <path d="M7 5h4v14H7zm6 0h4v14h-4z"/>
               </svg>
             </button>
+            <div class="waveform-zoom-controls" aria-label="Waveform zoom controls">
+              <button
+                class="waveform-zoom-button"
+                type="button"
+                :disabled="!canZoomIn"
+                @click="zoomInWaveform"
+              >
+                Zoom In
+              </button>
+              <button
+                class="waveform-zoom-button"
+                type="button"
+                :disabled="!canZoomOut"
+                @click="zoomOutWaveform"
+              >
+                Zoom Out
+              </button>
+            </div>
             <span class="timecode">{{ formatTime(currentTime) }} / {{ formattedDuration }}</span>
           </div>
 
@@ -196,6 +214,10 @@ export default {
       audioChannels: 0,
       audioSampleRate: 0,
       waveformPeaks: null,
+      fullWaveformPeaks: null,
+      detailedWaveformCache: null,
+      waveformViewStart: 0,
+      waveformViewEnd: 0,
       waveformProgress: 0,
       isGeneratingWaveform: false,
       waveformGeneration: 0,
@@ -243,7 +265,10 @@ export default {
 
     waveformAriaLabel () {
       const progress = this.isGeneratingWaveform ? `, ${Math.round(this.waveformProgress)} percent loaded` : ''
-      return `Audio waveform for ${this.sourceName}. Use the arrow keys to move the playhead${progress}.`
+      const visibleRange = this.isWaveformZoomed
+        ? ` Showing ${this.formatTimePrecise(this.waveformViewStart)} to ${this.formatTimePrecise(this.waveformViewEnd)}.`
+        : ''
+      return `Audio waveform for ${this.sourceName}.${visibleRange} Use the arrow keys to move the playhead${progress}.`
     },
 
     formattedDuration () {
@@ -264,6 +289,21 @@ export default {
 
     hasTrim () {
       return this.trimStart > 0.005 || this.trimEnd < this.duration - 0.005
+    },
+
+    isWaveformZoomed () {
+      return this.waveformViewStart > 0.0005 ||
+        this.waveformViewEnd < this.duration - 0.0005
+    },
+
+    canZoomIn () {
+      if (this.isExporting || this.isGeneratingWaveform || !this.fullWaveformPeaks || !this.hasTrim) return false
+      return Math.abs(this.trimStart - this.waveformViewStart) > 0.0005 ||
+        Math.abs(this.trimEnd - this.waveformViewEnd) > 0.0005
+    },
+
+    canZoomOut () {
+      return !this.isExporting && Boolean(this.fullWaveformPeaks) && this.isWaveformZoomed
     },
 
     audioBitrate () {
@@ -357,6 +397,8 @@ export default {
         this.currentTime = 0
         this.trimStart = 0
         this.trimEnd = nextAudio.duration
+        this.waveformViewStart = 0
+        this.waveformViewEnd = nextAudio.duration
         this.isPlaying = false
         this.clearMessage()
 
@@ -417,6 +459,7 @@ export default {
         const minimums = new Float32Array(binCount)
         const maximums = new Float32Array(binCount)
         this.waveformPeaks = { minimums, maximums }
+        this.fullWaveformPeaks = null
         const sink = new AudioSampleSink(track)
         const binDuration = this.duration / binCount
         const regionsPerBin = 2
@@ -468,6 +511,8 @@ export default {
         }
 
         if (generation !== this.waveformGeneration) return
+        this.fullWaveformPeaks = { minimums, maximums }
+        this.waveformPeaks = this.fullWaveformPeaks
         this.waveformProgress = 100
         this.isGeneratingWaveform = false
         this.drawWaveform()
@@ -475,6 +520,440 @@ export default {
         if (!input.disposed) input.dispose()
         if (this.waveformInput === input) this.waveformInput = null
       }
+    },
+
+    async generateDetailedWaveform (file, generation, rangeStart, rangeEnd) {
+      const {
+        ALL_FORMATS,
+        AudioSampleSink,
+        BlobSource,
+        Input
+      } = await import('mediabunny')
+      if (generation !== this.waveformGeneration) return
+
+      const input = new Input({
+        source: new BlobSource(file, { maxCacheSize: 8 * 1024 * 1024 }),
+        formats: ALL_FORMATS
+      })
+      this.waveformInput = input
+
+      try {
+        const track = await input.getPrimaryAudioTrack()
+        if (!track) throw new Error('No audio track was found')
+        const [sampleRateValue, firstTimestamp] = await Promise.all([
+          track.getSampleRate(),
+          track.getFirstTimestamp()
+        ])
+        if (generation !== this.waveformGeneration) return
+
+        const sampleRate = Number(sampleRateValue) || this.audioSampleRate || 48000
+        const rangeDuration = rangeEnd - rangeStart
+        const canvas = this.$refs.waveformCanvas
+        const canvasWidth = canvas ? canvas.width / (canvas._pixelRatio || 1) : 820
+        const waveformPixelWidth = Math.max(1, canvasWidth - Math.min(18, canvasWidth / 4) * 2)
+        const samplesPerPixel = rangeDuration * sampleRate / waveformPixelWidth
+        if (rangeDuration <= 1 || samplesPerPixel <= 4) {
+          await this.generateSampleWaveform(
+            new AudioSampleSink(track),
+            generation,
+            rangeStart,
+            rangeEnd,
+            sampleRate,
+            firstTimestamp
+          )
+          return
+        }
+
+        const targetBins = this.clamp(canvas ? canvas.width : 820, 280, 2048)
+        const availableFrames = Math.max(1, Math.ceil(rangeDuration * sampleRate))
+        const binCount = Math.max(1, Math.min(Math.round(targetBins), availableFrames))
+        const projectedPeaks = this.projectFullWaveform(rangeStart, rangeEnd, binCount)
+        const minimums = projectedPeaks ? projectedPeaks.minimums : new Float32Array(binCount)
+        const maximums = projectedPeaks ? projectedPeaks.maximums : new Float32Array(binCount)
+        const detailedBins = new Uint8Array(binCount)
+        const detailedPeaks = { minimums, maximums }
+        const sink = new AudioSampleSink(track)
+        const absoluteStart = firstTimestamp + rangeStart
+        const absoluteEnd = firstTimestamp + rangeEnd
+        const requestStart = firstTimestamp + Math.max(0, rangeStart - 0.25)
+        const binScale = binCount / rangeDuration
+        let lastUpdate = performance.now()
+        this.waveformPeaks = detailedPeaks
+        this.drawWaveform()
+
+        for await (const sample of sink.samples(requestStart, absoluteEnd)) {
+          try {
+            if (generation !== this.waveformGeneration) return
+            const frameCount = sample.numberOfFrames
+            const decodedSampleRate = sample.sampleRate || sampleRate
+            const firstFrame = this.clamp(
+              Math.ceil((absoluteStart - sample.timestamp) * decodedSampleRate - 1e-7),
+              0,
+              frameCount
+            )
+            const lastFrame = this.clamp(
+              Math.ceil((absoluteEnd - sample.timestamp) * decodedSampleRate - 1e-7),
+              0,
+              frameCount
+            )
+            const plane = new Float32Array(frameCount)
+
+            for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+              sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
+              for (let frame = firstFrame; frame < lastFrame; frame++) {
+                const frameTime = sample.timestamp + frame / decodedSampleRate
+                const binIndex = this.clamp(
+                  Math.floor((frameTime - absoluteStart) * binScale),
+                  0,
+                  binCount - 1
+                )
+                if (!detailedBins[binIndex]) {
+                  minimums[binIndex] = 0
+                  maximums[binIndex] = 0
+                  detailedBins[binIndex] = 1
+                }
+                const value = plane[frame]
+                if (value < minimums[binIndex]) minimums[binIndex] = value
+                if (value > maximums[binIndex]) maximums[binIndex] = value
+              }
+            }
+
+            const decodedThrough = Math.min(absoluteEnd, sample.timestamp + sample.duration)
+            this.waveformProgress = this.clamp(
+              (decodedThrough - absoluteStart) / rangeDuration * 100,
+              0,
+              99
+            )
+          } finally {
+            sample.close()
+          }
+
+          if (performance.now() - lastUpdate > 80) {
+            this.drawWaveform()
+            await this.nextTask()
+            lastUpdate = performance.now()
+          }
+        }
+
+        if (generation !== this.waveformGeneration) return
+        this.waveformPeaks = detailedPeaks
+        this.detailedWaveformCache = {
+          start: rangeStart,
+          end: rangeEnd,
+          peaks: detailedPeaks
+        }
+        this.waveformProgress = 100
+        this.isGeneratingWaveform = false
+        this.drawWaveform()
+      } finally {
+        if (!input.disposed) input.dispose()
+        if (this.waveformInput === input) this.waveformInput = null
+      }
+    },
+
+    async generateSampleWaveform (sink, generation, rangeStart, rangeEnd, sampleRate, firstTimestamp) {
+      const rangeDuration = rangeEnd - rangeStart
+      const boundaryFrames = 2
+      const decodePreroll = 0.25
+      const requestStart = firstTimestamp + Math.max(0, rangeStart - decodePreroll)
+      const captureStart = firstTimestamp + Math.max(0, rangeStart - boundaryFrames / sampleRate)
+      const captureEnd = firstTimestamp + Math.min(this.duration, rangeEnd + boundaryFrames / sampleRate)
+      const absoluteStart = firstTimestamp + rangeStart
+      const absoluteEnd = firstTimestamp + rangeEnd
+      const rawTimes = []
+      const rawValues = []
+      const sampleWaveform = {
+        mode: 'samples',
+        times: [],
+        values: [],
+        rawTimes,
+        rawValues,
+        showsIndividualSamples: false,
+        fallbackPeaks: this.projectFullWaveform(rangeStart, rangeEnd),
+        refinedThrough: rangeStart
+      }
+      let lastUpdate = performance.now()
+      this.waveformPeaks = sampleWaveform
+      this.drawWaveform()
+
+      for await (const sample of sink.samples(requestStart, captureEnd)) {
+        try {
+          if (generation !== this.waveformGeneration) return
+          const frameCount = sample.numberOfFrames
+          const decodedSampleRate = sample.sampleRate || sampleRate
+          const firstFrame = this.clamp(
+            Math.ceil((captureStart - sample.timestamp) * decodedSampleRate - 1e-7),
+            0,
+            frameCount
+          )
+          const lastFrame = this.clamp(
+            Math.ceil((captureEnd - sample.timestamp) * decodedSampleRate - 1e-7),
+            0,
+            frameCount
+          )
+          const mixedFrames = new Float32Array(Math.max(0, lastFrame - firstFrame))
+          const plane = new Float32Array(frameCount)
+
+          for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+            sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
+            for (let frame = firstFrame; frame < lastFrame; frame++) {
+              const outputIndex = frame - firstFrame
+              const value = plane[frame]
+              if (Math.abs(value) > Math.abs(mixedFrames[outputIndex])) {
+                mixedFrames[outputIndex] = value
+              }
+            }
+          }
+
+          for (let frame = firstFrame; frame < lastFrame; frame++) {
+            const localTime = sample.timestamp + frame / decodedSampleRate - firstTimestamp
+            if (rawTimes.length && localTime <= rawTimes[rawTimes.length - 1]) continue
+            rawTimes.push(localTime)
+            rawValues.push(mixedFrames[frame - firstFrame])
+          }
+
+          sampleWaveform.refinedThrough = this.clamp(
+            sample.timestamp + sample.duration - firstTimestamp,
+            rangeStart,
+            rangeEnd
+          )
+          const decodedThrough = Math.min(absoluteEnd, sample.timestamp + sample.duration)
+          this.waveformProgress = this.clamp(
+            (decodedThrough - absoluteStart) / rangeDuration * 100,
+            0,
+            99
+          )
+        } finally {
+          sample.close()
+        }
+
+        if (performance.now() - lastUpdate > 80) {
+          const displayEnd = Math.max(rangeStart, sampleWaveform.refinedThrough)
+          const displayData = this.buildSampleDisplayData(rawTimes, rawValues, rangeStart, displayEnd)
+          sampleWaveform.times = displayData.times
+          sampleWaveform.values = displayData.values
+          sampleWaveform.showsIndividualSamples = displayData.showsIndividualSamples
+          this.drawWaveform()
+          await this.nextTask()
+          lastUpdate = performance.now()
+        }
+      }
+
+      if (generation !== this.waveformGeneration) return
+      const displayData = this.buildSampleDisplayData(rawTimes, rawValues, rangeStart, rangeEnd)
+      const completedWaveform = {
+        mode: 'samples',
+        times: displayData.times,
+        values: displayData.values,
+        rawTimes: Float64Array.from(rawTimes),
+        rawValues: Float32Array.from(rawValues),
+        showsIndividualSamples: displayData.showsIndividualSamples,
+        fallbackPeaks: null,
+        refinedThrough: rangeEnd
+      }
+      this.waveformPeaks = completedWaveform
+      this.detailedWaveformCache = {
+        start: rangeStart,
+        end: rangeEnd,
+        peaks: completedWaveform
+      }
+      this.waveformProgress = 100
+      this.isGeneratingWaveform = false
+      this.drawWaveform()
+    },
+
+    buildSampleDisplayData (rawTimes, rawValues, rangeStart, rangeEnd) {
+      if (!rawTimes.length || rangeEnd <= rangeStart) {
+        return { times: new Float64Array(0), values: new Float32Array(0), showsIndividualSamples: false }
+      }
+
+      const valueAt = time => {
+        let right = 0
+        while (right < rawTimes.length && rawTimes[right] < time) right++
+        if (right === 0) return rawValues[0]
+        if (right >= rawTimes.length) return rawValues[rawValues.length - 1]
+        if (rawTimes[right] === time) return rawValues[right]
+        const left = right - 1
+        const span = rawTimes[right] - rawTimes[left]
+        if (span <= 0) return rawValues[right]
+        const ratio = (time - rawTimes[left]) / span
+        return rawValues[left] + (rawValues[right] - rawValues[left]) * ratio
+      }
+
+      let firstInside = 0
+      while (firstInside < rawTimes.length && rawTimes[firstInside] <= rangeStart) firstInside++
+      let lastInside = firstInside
+      while (lastInside < rawTimes.length && rawTimes[lastInside] < rangeEnd) lastInside++
+
+      const canvas = this.$refs.waveformCanvas
+      const canvasWidth = canvas ? canvas.width / (canvas._pixelRatio || 1) : 820
+      const waveformWidth = Math.max(1, canvasWidth - Math.min(18, canvasWidth / 4) * 2)
+      const maxDisplayPoints = Math.max(32, Math.ceil(waveformWidth * 2))
+      const interiorCount = Math.max(0, lastInside - firstInside)
+      const outputTimes = [rangeStart]
+      const outputValues = [valueAt(rangeStart)]
+      const appendPoint = (time, value) => {
+        const lastIndex = outputTimes.length - 1
+        if (lastIndex >= 0 && Math.abs(outputTimes[lastIndex] - time) <= 1e-12) {
+          outputValues[lastIndex] = value
+          return
+        }
+        outputTimes.push(time)
+        outputValues.push(value)
+      }
+
+      if (interiorCount + 2 <= maxDisplayPoints) {
+        for (let index = firstInside; index < lastInside; index++) {
+          appendPoint(rawTimes[index], rawValues[index])
+        }
+        appendPoint(rangeEnd, valueAt(rangeEnd))
+        return {
+          times: Float64Array.from(outputTimes),
+          values: Float32Array.from(outputValues),
+          showsIndividualSamples: true
+        }
+      }
+
+      const binCount = Math.max(1, Math.floor((maxDisplayPoints - 2) / 2))
+      const minimums = new Float32Array(binCount)
+      const maximums = new Float32Array(binCount)
+      const minimumTimes = new Float64Array(binCount)
+      const maximumTimes = new Float64Array(binCount)
+      const populated = new Uint8Array(binCount)
+      minimums.fill(Infinity)
+      maximums.fill(-Infinity)
+      const binScale = binCount / (rangeEnd - rangeStart)
+
+      for (let index = firstInside; index < lastInside; index++) {
+        const time = rawTimes[index]
+        const value = rawValues[index]
+        const binIndex = this.clamp(Math.floor((time - rangeStart) * binScale), 0, binCount - 1)
+        populated[binIndex] = 1
+        if (value < minimums[binIndex]) {
+          minimums[binIndex] = value
+          minimumTimes[binIndex] = time
+        }
+        if (value > maximums[binIndex]) {
+          maximums[binIndex] = value
+          maximumTimes[binIndex] = time
+        }
+      }
+
+      for (let binIndex = 0; binIndex < binCount; binIndex++) {
+        if (!populated[binIndex]) continue
+        if (minimumTimes[binIndex] <= maximumTimes[binIndex]) {
+          appendPoint(minimumTimes[binIndex], minimums[binIndex])
+          if (maximumTimes[binIndex] !== minimumTimes[binIndex]) {
+            appendPoint(maximumTimes[binIndex], maximums[binIndex])
+          }
+        } else {
+          appendPoint(maximumTimes[binIndex], maximums[binIndex])
+          appendPoint(minimumTimes[binIndex], minimums[binIndex])
+        }
+      }
+      appendPoint(rangeEnd, valueAt(rangeEnd))
+
+      return {
+        times: Float64Array.from(outputTimes),
+        values: Float32Array.from(outputValues),
+        showsIndividualSamples: false
+      }
+    },
+
+    projectFullWaveform (rangeStart, rangeEnd, requestedCount = null) {
+      const fullPeaks = this.fullWaveformPeaks
+      if (!fullPeaks || !this.duration) return null
+      const canvas = this.$refs.waveformCanvas
+      const targetCount = requestedCount == null
+        ? Math.max(1, Math.round(this.clamp(canvas ? canvas.width : 820, 280, 2048)))
+        : Math.max(1, Math.round(requestedCount))
+      const minimums = new Float32Array(targetCount)
+      const maximums = new Float32Array(targetCount)
+      const sourceCount = fullPeaks.maximums.length
+      const sourceStart = this.clamp(rangeStart / this.duration, 0, 1) * sourceCount
+      const sourceEnd = this.clamp(rangeEnd / this.duration, 0, 1) * sourceCount
+      const sourceSpan = Math.max(Number.EPSILON, sourceEnd - sourceStart)
+
+      for (let outputIndex = 0; outputIndex < targetCount; outputIndex++) {
+        const first = Math.floor(sourceStart + outputIndex / targetCount * sourceSpan)
+        const last = Math.max(first + 1, Math.ceil(sourceStart + (outputIndex + 1) / targetCount * sourceSpan))
+        for (let sourceIndex = first; sourceIndex < last && sourceIndex < sourceCount; sourceIndex++) {
+          minimums[outputIndex] = Math.min(minimums[outputIndex], fullPeaks.minimums[sourceIndex])
+          maximums[outputIndex] = Math.max(maximums[outputIndex], fullPeaks.maximums[sourceIndex])
+        }
+      }
+
+      return { minimums, maximums }
+    },
+
+    detailedWaveformForTrim () {
+      const cached = this.detailedWaveformCache
+      if (!cached) return null
+      const matchesStart = Math.abs(cached.start - this.trimStart) <= 1e-7
+      const matchesEnd = Math.abs(cached.end - this.trimEnd) <= 1e-7
+      return matchesStart && matchesEnd ? cached.peaks : null
+    },
+
+    invalidateDetailedWaveform () {
+      this.detailedWaveformCache = null
+    },
+
+    zoomInWaveform () {
+      if (!this.canZoomIn || !this.sourceFile) return
+      this.pausePlayback()
+      this.clearMessage()
+      const rangeStart = this.trimStart
+      const rangeEnd = this.trimEnd
+      const cachedPeaks = this.detailedWaveformForTrim()
+      const generation = ++this.waveformGeneration
+      if (this.waveformInput && !this.waveformInput.disposed) this.waveformInput.dispose()
+      this.waveformInput = null
+      this.waveformViewStart = rangeStart
+      this.waveformViewEnd = rangeEnd
+
+      if (cachedPeaks) {
+        this.waveformPeaks = cachedPeaks
+        this.waveformProgress = 100
+        this.isGeneratingWaveform = false
+        if (this.currentTime < rangeStart || this.currentTime > rangeEnd) this.seekPreview(rangeStart)
+        this.drawWaveform()
+        return
+      }
+
+      this.detailedWaveformCache = null
+      this.waveformPeaks = this.projectFullWaveform(rangeStart, rangeEnd)
+      this.waveformProgress = 0
+      this.isGeneratingWaveform = true
+      if (this.currentTime < rangeStart || this.currentTime > rangeEnd) this.seekPreview(rangeStart)
+      this.drawWaveform()
+
+      this.generateDetailedWaveform(this.sourceFile, generation, rangeStart, rangeEnd).catch(error => {
+        if (generation !== this.waveformGeneration) return
+        console.error(error)
+        this.isGeneratingWaveform = false
+        this.setMessage(
+          `The zoomed waveform could not be refined${error && error.message ? `: ${error.message}` : '.'}`,
+          true
+        )
+        this.drawWaveform()
+      })
+    },
+
+    zoomOutWaveform () {
+      if (!this.canZoomOut) return
+      this.pausePlayback()
+      this.waveformGeneration++
+      if (this.waveformInput && !this.waveformInput.disposed) this.waveformInput.dispose()
+      this.waveformInput = null
+      this.waveformViewStart = 0
+      this.waveformViewEnd = this.duration
+      this.waveformPeaks = this.fullWaveformPeaks
+      this.waveformProgress = 0
+      this.isGeneratingWaveform = false
+      this.waveformInteraction = null
+      this.waveformHover = null
+      this.clearMessage()
+      this.drawWaveform()
     },
 
     cleanUpAudio () {
@@ -495,6 +974,10 @@ export default {
       this.audioUrl = ''
       this.waveformInput = null
       this.waveformPeaks = null
+      this.fullWaveformPeaks = null
+      this.detailedWaveformCache = null
+      this.waveformViewStart = 0
+      this.waveformViewEnd = 0
       this.waveformProgress = 0
       this.isGeneratingWaveform = false
       this.waveformInteraction = null
@@ -546,6 +1029,8 @@ export default {
       const peaks = this.waveformPeaks
       const startX = this.timeToWaveformX(this.trimStart, width)
       const endX = this.timeToWaveformX(this.trimEnd, width)
+      const startIsVisible = this.isTimeInWaveformView(this.trimStart)
+      const endIsVisible = this.isTimeInWaveformView(this.trimEnd)
 
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
       ctx.clearRect(0, 0, width, height)
@@ -564,61 +1049,127 @@ export default {
       ctx.stroke()
 
       if (peaks) {
+        const sampleData = peaks.mode === 'samples' ? peaks : null
+        const peakData = sampleData ? sampleData.fallbackPeaks : peaks
         let absolutePeak = 0
-        for (let index = 0; index < peaks.maximums.length; index++) {
-          absolutePeak = Math.max(absolutePeak, peaks.maximums[index], -peaks.minimums[index])
+        if (peakData) {
+          for (let index = 0; index < peakData.maximums.length; index++) {
+            absolutePeak = Math.max(absolutePeak, peakData.maximums[index], -peakData.minimums[index])
+          }
+        }
+        if (sampleData) {
+          for (let index = 0; index < sampleData.values.length; index++) {
+            absolutePeak = Math.max(absolutePeak, Math.abs(sampleData.values[index]))
+          }
         }
         const gain = 1 / Math.max(0.12, absolutePeak)
-        const drawPeaks = color => {
-          ctx.strokeStyle = color
-          ctx.lineWidth = 1
-          ctx.beginPath()
-          for (let offset = 0; offset < Math.ceil(waveformWidth); offset++) {
-            const first = Math.floor(offset / waveformWidth * peaks.maximums.length)
-            const last = Math.max(first + 1, Math.ceil((offset + 1) / waveformWidth * peaks.maximums.length))
-            let minimum = 0
-            let maximum = 0
-            for (let index = first; index < last && index < peaks.maximums.length; index++) {
-              minimum = Math.min(minimum, peaks.minimums[index])
-              maximum = Math.max(maximum, peaks.maximums[index])
+
+        if (peakData) {
+          const drawPeaks = color => {
+            ctx.strokeStyle = color
+            ctx.lineWidth = 1
+            ctx.beginPath()
+            for (let offset = 0; offset < Math.ceil(waveformWidth); offset++) {
+              const first = Math.floor(offset / waveformWidth * peakData.maximums.length)
+              const last = Math.max(first + 1, Math.ceil((offset + 1) / waveformWidth * peakData.maximums.length))
+              let minimum = 0
+              let maximum = 0
+              for (let index = first; index < last && index < peakData.maximums.length; index++) {
+                minimum = Math.min(minimum, peakData.minimums[index])
+                maximum = Math.max(maximum, peakData.maximums[index])
+              }
+              const x = waveformLeft + offset + 0.5
+              ctx.moveTo(x, center - maximum * gain * amplitudeHeight)
+              ctx.lineTo(x, center - minimum * gain * amplitudeHeight)
             }
-            const x = waveformLeft + offset + 0.5
-            ctx.moveTo(x, center - maximum * gain * amplitudeHeight)
-            ctx.lineTo(x, center - minimum * gain * amplitudeHeight)
+            ctx.stroke()
           }
-          ctx.stroke()
+
+          ctx.save()
+          if (sampleData) {
+            const fallbackX = this.timeToWaveformX(sampleData.refinedThrough, width)
+            ctx.beginPath()
+            ctx.rect(fallbackX, 0, Math.max(0, waveformRight - fallbackX), waveformHeight)
+            ctx.clip()
+          }
+          drawPeaks('#736d78')
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+          ctx.clip()
+          drawPeaks('#d797d7')
+          ctx.restore()
+          ctx.restore()
         }
 
-        drawPeaks('#736d78')
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(startX, 0, Math.max(0, endX - startX), waveformHeight)
-        ctx.clip()
-        drawPeaks('#d797d7')
-        ctx.restore()
+        if (sampleData && sampleData.values.length) {
+          const drawSamples = color => {
+            const sampleX = time => waveformLeft +
+              (time - this.waveformViewStart) / (this.waveformViewEnd - this.waveformViewStart) * waveformWidth
+            ctx.strokeStyle = color
+            ctx.fillStyle = color
+            ctx.lineWidth = 1.5
+            ctx.lineJoin = 'round'
+            ctx.lineCap = 'round'
+            ctx.beginPath()
+            for (let index = 0; index < sampleData.values.length; index++) {
+              const x = sampleX(sampleData.times[index])
+              const y = center - sampleData.values[index] * gain * amplitudeHeight
+              if (index === 0) ctx.moveTo(x, y)
+              else ctx.lineTo(x, y)
+            }
+            ctx.stroke()
+
+            const sampleSpacing = waveformWidth / Math.max(1, sampleData.values.length - 3)
+            if (sampleData.showsIndividualSamples && sampleSpacing >= 5) {
+              for (let index = 0; index < sampleData.values.length; index++) {
+                const x = sampleX(sampleData.times[index])
+                const y = center - sampleData.values[index] * gain * amplitudeHeight
+                ctx.beginPath()
+                ctx.arc(x, y, 2.25, 0, Math.PI * 2)
+                ctx.fill()
+              }
+            }
+          }
+
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(waveformLeft, 0, waveformWidth, waveformHeight)
+          ctx.clip()
+          drawSamples('#736d78')
+          ctx.save()
+          ctx.beginPath()
+          ctx.rect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+          ctx.clip()
+          drawSamples('#d797d7')
+          ctx.restore()
+          ctx.restore()
+        }
       }
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
       ctx.lineWidth = 1
       ctx.strokeRect(waveformLeft + 0.5, 0.5, Math.max(0, waveformWidth - 1), Math.max(0, waveformHeight - 1))
 
-      this.drawTrimHandle(ctx, startX, waveformHeight, 'start')
-      this.drawTrimHandle(ctx, endX, waveformHeight, 'end')
+      if (startIsVisible) this.drawTrimHandle(ctx, startX, waveformHeight, 'start')
+      if (endIsVisible) this.drawTrimHandle(ctx, endX, waveformHeight, 'end')
 
-      const playheadX = this.timeToWaveformX(this.currentTime, width)
-      ctx.strokeStyle = '#fff'
-      ctx.lineWidth = 1.5
-      ctx.beginPath()
-      ctx.moveTo(playheadX, 0)
-      ctx.lineTo(playheadX, waveformHeight)
-      ctx.stroke()
-      ctx.fillStyle = '#fff'
-      ctx.beginPath()
-      ctx.moveTo(playheadX - 5, 0)
-      ctx.lineTo(playheadX + 5, 0)
-      ctx.lineTo(playheadX, 7)
-      ctx.closePath()
-      ctx.fill()
+      if (this.isTimeInWaveformView(this.currentTime)) {
+        const playheadX = this.timeToWaveformX(this.currentTime, width)
+        ctx.strokeStyle = '#fff'
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(playheadX, 0)
+        ctx.lineTo(playheadX, waveformHeight)
+        ctx.stroke()
+        ctx.fillStyle = '#fff'
+        ctx.beginPath()
+        ctx.moveTo(playheadX - 5, 0)
+        ctx.lineTo(playheadX + 5, 0)
+        ctx.lineTo(playheadX, 7)
+        ctx.closePath()
+        ctx.fill()
+      }
 
     },
 
@@ -652,10 +1203,17 @@ export default {
     timeToWaveformX (time, width = null) {
       const canvas = this.$refs.waveformCanvas
       const canvasWidth = width == null && canvas ? canvas.width / (canvas._pixelRatio || 1) : width
-      if (!this.duration || !canvasWidth) return 0
+      const viewDuration = this.waveformViewEnd - this.waveformViewStart
+      if (!viewDuration || !canvasWidth) return 0
       const gutter = Math.min(18, canvasWidth / 4)
       const waveformWidth = Math.max(1, canvasWidth - gutter * 2)
-      return gutter + this.clamp(time / this.duration, 0, 1) * waveformWidth
+      const ratio = (time - this.waveformViewStart) / viewDuration
+      return gutter + this.clamp(ratio, 0, 1) * waveformWidth
+    },
+
+    isTimeInWaveformView (time) {
+      return time >= this.waveformViewStart - 0.0005 &&
+        time <= this.waveformViewEnd + 0.0005
     },
 
     waveformTimeFromEvent (event) {
@@ -663,7 +1221,7 @@ export default {
       const gutter = Math.min(18, rect.width / 4)
       const waveformWidth = Math.max(1, rect.width - gutter * 2)
       const ratio = this.clamp((event.clientX - rect.left - gutter) / waveformWidth, 0, 1)
-      return ratio * this.duration
+      return this.waveformViewStart + ratio * (this.waveformViewEnd - this.waveformViewStart)
     },
 
     waveformTargetFromEvent (event) {
@@ -675,13 +1233,13 @@ export default {
       const endX = this.timeToWaveformX(this.trimEnd, rect.width)
       const playheadX = this.timeToWaveformX(this.currentTime, rect.width)
       const handleRadius = 14
-      const startDistance = Math.abs(x - startX)
-      const endDistance = Math.abs(x - endX)
+      const startDistance = this.isTimeInWaveformView(this.trimStart) ? Math.abs(x - startX) : Infinity
+      const endDistance = this.isTimeInWaveformView(this.trimEnd) ? Math.abs(x - endX) : Infinity
       if (Math.min(startDistance, endDistance) <= handleRadius) {
         return startDistance <= endDistance ? 'start' : 'end'
       }
       if (y > waveformHeight) return 'inactive'
-      if (Math.abs(x - playheadX) <= 8) return 'playhead'
+      if (this.isTimeInWaveformView(this.currentTime) && Math.abs(x - playheadX) <= 8) return 'playhead'
       return 'seek'
     },
 
@@ -725,32 +1283,37 @@ export default {
       const time = this.waveformTimeFromEvent(event)
       const type = this.waveformInteraction && this.waveformInteraction.type
       if (type === 'start') {
-        this.trimStart = this.clamp(time, 0, Math.max(0, this.trimEnd - this.minimumTrimDuration))
+        const nextStart = this.clamp(time, 0, Math.max(0, this.trimEnd - this.minimumTrimDuration))
+        if (Math.abs(nextStart - this.trimStart) > 1e-7) this.invalidateDetailedWaveform()
+        this.trimStart = nextStart
         this.seekPreview(this.trimStart)
       } else if (type === 'end') {
-        this.trimEnd = this.clamp(time, Math.min(this.duration, this.trimStart + this.minimumTrimDuration), this.duration)
+        const nextEnd = this.clamp(time, Math.min(this.duration, this.trimStart + this.minimumTrimDuration), this.duration)
+        if (Math.abs(nextEnd - this.trimEnd) > 1e-7) this.invalidateDetailedWaveform()
+        this.trimEnd = nextEnd
         this.seekPreview(this.trimEnd)
       } else {
         this.seekPreview(time)
       }
       this.clearMessage()
-      this.drawWaveform()
     },
 
     onWaveformKeydown (event) {
       if (this.isExporting || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
       event.preventDefault()
       let target = this.currentTime
-      if (event.key === 'Home') target = 0
-      else if (event.key === 'End') target = this.duration
+      if (event.key === 'Home') target = this.waveformViewStart
+      else if (event.key === 'End') target = this.waveformViewEnd
       else target += (event.key === 'ArrowRight' ? 1 : -1) * (event.shiftKey ? 1 : 0.1)
-      this.seekPreview(this.clamp(target, 0, this.duration))
+      this.seekPreview(this.clamp(target, this.waveformViewStart, this.waveformViewEnd))
     },
 
     updateTrimStart (event) {
       this.pausePlayback()
       const limit = Math.max(0, this.trimEnd - this.minimumTrimDuration)
-      this.trimStart = this.clamp(Number(event.target.value) || 0, 0, limit)
+      const nextStart = this.clamp(Number(event.target.value) || 0, 0, limit)
+      if (Math.abs(nextStart - this.trimStart) > 1e-7) this.invalidateDetailedWaveform()
+      this.trimStart = nextStart
       event.target.value = this.trimStart
       this.seekPreview(this.trimStart)
       this.clearMessage()
@@ -761,7 +1324,9 @@ export default {
       this.pausePlayback()
       const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
       const value = Number(event.target.value)
-      this.trimEnd = this.clamp(Number.isFinite(value) ? value : this.duration, minimum, this.duration)
+      const nextEnd = this.clamp(Number.isFinite(value) ? value : this.duration, minimum, this.duration)
+      if (Math.abs(nextEnd - this.trimEnd) > 1e-7) this.invalidateDetailedWaveform()
+      this.trimEnd = nextEnd
       event.target.value = this.trimEnd
       this.seekPreview(this.trimEnd)
       this.clearMessage()
@@ -778,6 +1343,17 @@ export default {
       this.pausePlayback()
       this.trimStart = 0
       this.trimEnd = this.duration
+      this.invalidateDetailedWaveform()
+      if (this.isWaveformZoomed && this.fullWaveformPeaks) {
+        this.waveformGeneration++
+        if (this.waveformInput && !this.waveformInput.disposed) this.waveformInput.dispose()
+        this.waveformInput = null
+        this.waveformViewStart = 0
+        this.waveformViewEnd = this.duration
+        this.waveformPeaks = this.fullWaveformPeaks
+        this.waveformProgress = 0
+        this.isGeneratingWaveform = false
+      }
       this.clearMessage()
       this.drawWaveform()
     },
@@ -1309,9 +1885,9 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
 .playback {
   width: 100%;
   margin: 0.75rem auto 0;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 0.7rem;
 }
 
@@ -1325,15 +1901,51 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
   place-items: center;
   color: #fff;
   background: rgba(255, 255, 255, 0.08);
+  justify-self: start;
 }
 
 .play-button:hover { background: rgba(255, 255, 255, 0.17); }
 .play-button svg { width: 0.9rem; fill: currentColor; }
 
+.waveform-zoom-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  gap: 0.4rem;
+}
+
+.waveform-zoom-button {
+  width: 5rem;
+  min-height: 1.85rem;
+  padding: 0 0.65rem;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+  color: #eee7ef;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.waveform-zoom-button:hover:not(:disabled) {
+  border-color: #c47ec4;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.waveform-zoom-button:disabled {
+  color: #77717a;
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .timecode {
   color: #d1cad3;
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
+  justify-self: end;
+  text-align: right;
   white-space: nowrap;
 }
 
@@ -1517,6 +2129,8 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
   .file-summary > span { display: block; }
   .file-name { max-width: 11rem; }
   .text-button { padding-right: 0; text-align: right; }
+  .playback { grid-template-columns: 1fr 1fr; }
+  .waveform-zoom-controls { grid-column: 1 / -1; grid-row: 2; }
   .trim-fields { grid-template-columns: 1fr 1fr; }
   .trim-fields > label { grid-template-columns: 1fr; }
   .trim-time, .trim-set-button { grid-column: 1; }
