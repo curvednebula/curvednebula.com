@@ -106,7 +106,7 @@ meta:
     <a href="/cropimage/" aria-label="Open the free online image cropper and resizer">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop and Resize Image online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
-        <path d="M38 24v58c0 5 4 8 8 8h58M24 38h58c5 0 8 4 8 8v58" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M36 20v64c0 5 4 8 8 8h64M20 36h64c5 0 8 4 8 8v64" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </a>
     <div class="app-info">
@@ -118,8 +118,8 @@ meta:
     <a href="/cropvideo/" aria-label="Open the free online video cropper, trimmer, and resizer">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Crop, Trim, and Resize Video online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
-        <path d="M33 28v58c0 5 4 9 9 9h58M24 37h58c5 0 9 4 9 9v58" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M55 52l24 14-24 14z" fill="#fff"/>
+        <path d="M36 20v64c0 5 4 8 8 8h64M20 36h64c5 0 8 4 8 8v64" fill="none" stroke="#fff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M57 50.2c-1.6-.9-3.5.2-3.5 2v23.6c0 1.9 1.9 2.9 3.5 2l20-11.8c1.6-.9 1.6-3.1 0-4z" fill="#fff"/>
       </svg>
     </a>
     <div class="app-info">
@@ -131,7 +131,8 @@ meta:
     <a href="/trimaudio/" aria-label="Open the free online audio trimmer with waveform">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Trim Audio online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
-        <path d="M20 64h8m5-18v36m9-52v68m10-55v42m10-68v94m10-78v62m10-48v34m10-22v10m6-5h10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+        <path d="M24 59v10m10-23v36m10-52v68m10-55v42m10-68v94m10-78v62m10-48v34m10-22v10" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="104" cy="64" r="3.5" fill="#fff"/>
       </svg>
     </a>
     <div class="app-info">

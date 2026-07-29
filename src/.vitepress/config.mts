@@ -40,11 +40,16 @@ export default defineConfig({
       { text: 'Photo Curves', link: '/photocurves/' },
       { text: 'Lullwave', link: '/lullwave/' },
       {
-        text: 'Other',
+        text: 'Online Tools',
         items: [
           { text: 'Crop & Resize Image', link: '/cropimage/' },
-          { text: 'Crop & Resize Video', link: '/cropvideo/' },
-          { text: 'Trim Audio', link: '/trimaudio/' },
+          { text: 'Crop & Trim Video', link: '/cropvideo/' },
+          { text: 'Trim Audio', link: '/trimaudio/' }
+        ]
+      },
+      {
+        text: 'Other',
+        items: [
           { text: 'ApiBake - OpenAPI to PDF', link: '/apibake/' }
         ]
       },
