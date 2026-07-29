@@ -23,11 +23,9 @@ meta:
     content: Crop and resize images to exact dimensions online. Free, private, and browser-based.
 ---
 
-# Crop and Resize Images Online
-
 <ImageCrop />
 
-## About
+# Crop and Resize Images Online
 
 Crop and resize a photo or image to the exact size you need. Choose a custom crop area or a common aspect ratio, optionally set new output dimensions, then save the result as PNG, JPEG, or WebP. Everything happens locally in your browser—your image is never uploaded.
 

@@ -55,11 +55,12 @@
             <canvas
               ref="canvas"
               tabindex="0"
-              aria-label="Video crop area. Drag to move the crop and use the handles to resize it."
+              :aria-label="canvasAriaLabel"
               @pointerdown="onPointerDown"
               @pointermove="onPointerMove"
               @pointerup="onPointerUp"
               @pointercancel="onPointerUp"
+              @wheel="onCanvasWheel"
               @dblclick="onCanvasDoubleClick"
               @keydown="onCanvasKeydown"
             />
@@ -170,7 +171,7 @@
             </div>
           </div>
           <p class="canvas-help">
-            Drag inside to move · Drag handles to resize · Double-click for full video · Arrow keys nudge
+            {{ canvasHelp }}
           </p>
         </section>
 
@@ -189,6 +190,34 @@
           </div>
 
           <div class="setting-group">
+            <span class="setting-label">Crop mode</span>
+            <div class="mode-control" role="radiogroup" aria-label="Crop mode">
+              <label :class="{ active: cropMode === 'crop-inside' }">
+                <input
+                  v-model="cropMode"
+                  type="radio"
+                  name="crop-mode"
+                  value="crop-inside"
+                  :disabled="isExporting"
+                  @change="changeCropMode"
+                >
+                <span>Move Crop</span>
+              </label>
+              <label :class="{ active: cropMode === 'video-inside' }">
+                <input
+                  v-model="cropMode"
+                  type="radio"
+                  name="crop-mode"
+                  value="video-inside"
+                  :disabled="isExporting"
+                  @change="changeCropMode"
+                >
+                <span>Move Video</span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="cropMode === 'crop-inside'" class="setting-group">
             <div class="setting-heading">
               <span>Crop area</span>
               <button class="mini-button" type="button" :disabled="isExporting" @click="resetCrop">Reset</button>
@@ -209,6 +238,38 @@
               <label>
                 <span>Height</span>
                 <input :value="roundedCrop.h" type="number" min="2" :max="videoHeight" :disabled="isExporting" @change="updateCropValue('h', $event)">
+              </label>
+            </div>
+          </div>
+
+          <div v-else class="setting-group">
+            <div class="setting-heading">
+              <span>Video placement</span>
+              <button class="mini-button" type="button" :disabled="isExporting" @click="resetVideoPlacement">Fit</button>
+            </div>
+            <div class="range-label placement-zoom-label">
+              <label for="placement-zoom">Zoom</label>
+              <span>{{ Math.round(videoPlacement.zoom * 100) }}%</span>
+            </div>
+            <input
+              id="placement-zoom"
+              :value="videoPlacement.zoom"
+              class="quality-range"
+              type="range"
+              min="0.1"
+              max="20"
+              step="0.01"
+              :disabled="isExporting"
+              @input="updatePlacementZoom"
+            >
+            <div class="number-grid placement-grid">
+              <label>
+                <span>X offset</span>
+                <input :value="roundedVideoPlacement.x" type="number" :disabled="isExporting" @change="updatePlacementOffset('x', $event)">
+              </label>
+              <label>
+                <span>Y offset</span>
+                <input :value="roundedVideoPlacement.y" type="number" :disabled="isExporting" @change="updatePlacementOffset('y', $event)">
               </label>
             </div>
           </div>
@@ -339,6 +400,8 @@ export default {
       trimStart: 0,
       trimEnd: 0,
       crop: { x: 0, y: 0, w: 0, h: 0 },
+      cropMode: 'crop-inside',
+      videoPlacement: { zoom: 1, x: 0, y: 0 },
       aspect: 'free',
       resolutionPreset: 'crop',
       outputFormat: 'webm',
@@ -449,8 +512,68 @@ export default {
       return { x: left, y: top, w: right - left, h: bottom - top }
     },
 
+    compositionFrameSize () {
+      if (!this.videoWidth || !this.videoHeight) return { w: 2, h: 2 }
+      const ratio = this.aspectValue || this.videoWidth / this.videoHeight
+      if (this.hasExpandedCompositionFrame) {
+        const height = this.videoHeight * 1.4
+        return { w: Math.max(2, height * ratio), h: Math.max(2, height) }
+      }
+      let width = this.videoWidth
+      let height = this.videoHeight
+      if (width / height > ratio) width = height * ratio
+      else height = width / ratio
+      return { w: Math.max(2, width), h: Math.max(2, height) }
+    },
+
+    hasExpandedCompositionFrame () {
+      return this.cropMode === 'video-inside' &&
+        Boolean(this.aspectValue) &&
+        this.aspectValue <= 1 &&
+        this.videoWidth >= this.videoHeight
+    },
+
+    activeFrameSize () {
+      return this.cropMode === 'video-inside'
+        ? this.compositionFrameSize
+        : { w: this.roundedCrop.w, h: this.roundedCrop.h }
+    },
+
+    roundedVideoPlacement () {
+      return {
+        x: Math.round(this.videoPlacement.x),
+        y: Math.round(this.videoPlacement.y)
+      }
+    },
+
+    compositionVideoRect () {
+      const frame = this.compositionFrameSize
+      if (!this.videoWidth || !this.videoHeight) return { x: 0, y: 0, w: frame.w, h: frame.h }
+      const fitScale = Math.min(frame.w / this.videoWidth, frame.h / this.videoHeight)
+      const width = this.videoWidth * fitScale * this.videoPlacement.zoom
+      const height = this.videoHeight * fitScale * this.videoPlacement.zoom
+      return {
+        x: (frame.w - width) / 2 + this.videoPlacement.x,
+        y: (frame.h - height) / 2 + this.videoPlacement.y,
+        w: width,
+        h: height
+      }
+    },
+
     aspectValue () {
       return this.aspect === 'free' ? null : Number(this.aspect)
+    },
+
+    canvasAriaLabel () {
+      return this.cropMode === 'video-inside'
+        ? 'Fixed crop frame. Drag to position the video, use the mouse wheel to zoom, and use arrow keys to nudge it.'
+        : 'Video crop area. Drag to move the crop and use the handles to resize it.'
+    },
+
+    canvasHelp () {
+      return this.cropMode === 'video-inside'
+        ? 'Drag video to position · Mouse wheel to zoom · Double-click to fit · Arrow keys nudge'
+        : 'Drag inside to move · Drag handles to resize · Double-click for full video · Arrow keys nudge'
     },
 
     outputSize () {
@@ -603,6 +726,8 @@ export default {
         this.currentTime = 0
         this.trimStart = 0
         this.trimEnd = nextVideo.duration
+        this.cropMode = 'crop-inside'
+        this.videoPlacement = { zoom: 1, x: 0, y: 0 }
         this.aspect = 'free'
         this.resolutionPreset = 'crop'
         this.outputAspectLocked = true
@@ -718,6 +843,8 @@ export default {
         this.currentTime = 0
         this.trimStart = 0
         this.trimEnd = this.duration
+        this.cropMode = 'crop-inside'
+        this.videoPlacement = { zoom: 1, x: 0, y: 0 }
         this.aspect = 'free'
         this.resolutionPreset = 'crop'
         this.outputAspectLocked = true
@@ -874,14 +1001,25 @@ export default {
       if (!this.hasSource || !this.$refs.stage || !this.$refs.canvas) return
       const pad = 12
       const availableWidth = Math.max(280, this.$refs.stage.clientWidth) - pad * 2
-      const availableHeight = Math.min(610, Math.max(300, window.innerHeight * 0.52)) - pad * 2
-      const scale = Math.min(availableWidth / this.videoWidth, availableHeight / this.videoHeight, 1)
-      const width = Math.max(1, Math.round(this.videoWidth * scale))
-      const height = Math.max(1, Math.round(this.videoHeight * scale))
+      const standardAvailableHeight = Math.min(610, Math.max(300, window.innerHeight * 0.52)) - pad * 2
+      const sourceDisplayScale = Math.min(
+        availableWidth / this.videoWidth,
+        standardAvailableHeight / this.videoHeight,
+        1
+      )
+      const availableHeight = this.hasExpandedCompositionFrame
+        ? this.videoHeight * sourceDisplayScale * 1.4
+        : standardAvailableHeight
+      const frame = this.cropMode === 'video-inside'
+        ? this.compositionFrameSize
+        : { w: this.videoWidth, h: this.videoHeight }
+      const scale = Math.min(availableWidth / frame.w, availableHeight / frame.h, 1)
+      const width = Math.max(1, Math.round(frame.w * scale))
+      const height = Math.max(1, Math.round(frame.h * scale))
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
       const canvas = this.$refs.canvas
 
-      this.display = { width, height, scale: width / this.videoWidth, pad }
+      this.display = { width, height, scale: width / frame.w, pad }
       canvas.style.width = `${width + pad * 2}px`
       canvas.style.height = `${height + pad * 2}px`
       canvas.width = Math.round((width + pad * 2) * pixelRatio)
@@ -903,6 +1041,10 @@ export default {
 
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
       ctx.clearRect(0, 0, width + pad * 2, height + pad * 2)
+      if (this.cropMode === 'video-inside') {
+        this.drawComposition(ctx, source)
+        return
+      }
       ctx.save()
       ctx.shadowColor = 'rgba(0, 0, 0, 0.28)'
       ctx.shadowBlur = 24
@@ -937,6 +1079,55 @@ export default {
       this.drawHandles(ctx, box)
     },
 
+    drawComposition (ctx, source) {
+      const pad = this.display.pad
+      const width = this.display.width
+      const height = this.display.height
+      const frame = this.compositionFrameSize
+      const video = this.compositionVideoRect
+      const scaleX = width / frame.w
+      const scaleY = height / frame.h
+
+      ctx.save()
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.38)'
+      ctx.shadowBlur = 24
+      ctx.shadowOffsetY = 8
+      ctx.fillStyle = '#000'
+      ctx.fillRect(pad, pad, width, height)
+      ctx.restore()
+
+      ctx.save()
+      ctx.beginPath()
+      ctx.rect(pad, pad, width, height)
+      ctx.clip()
+      ctx.fillStyle = '#000'
+      ctx.fillRect(pad, pad, width, height)
+      ctx.drawImage(
+        source,
+        pad + video.x * scaleX,
+        pad + video.y * scaleY,
+        video.w * scaleX,
+        video.h * scaleY
+      )
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(pad + width / 3, pad)
+      ctx.lineTo(pad + width / 3, pad + height)
+      ctx.moveTo(pad + (width * 2) / 3, pad)
+      ctx.lineTo(pad + (width * 2) / 3, pad + height)
+      ctx.moveTo(pad, pad + height / 3)
+      ctx.lineTo(pad + width, pad + height / 3)
+      ctx.moveTo(pad, pad + (height * 2) / 3)
+      ctx.lineTo(pad + width, pad + (height * 2) / 3)
+      ctx.stroke()
+      ctx.restore()
+
+      ctx.strokeStyle = '#fff'
+      ctx.lineWidth = 2
+      ctx.strokeRect(pad - 1, pad - 1, width + 2, height + 2)
+    },
+
     drawHandles (ctx, box) {
       const positions = this.handlePositions(box)
       ctx.fillStyle = '#883388'
@@ -967,6 +1158,14 @@ export default {
     },
 
     displayCrop () {
+      if (this.cropMode === 'video-inside') {
+        return {
+          x: this.display.pad,
+          y: this.display.pad,
+          w: this.display.width,
+          h: this.display.height
+        }
+      }
       const crop = this.roundedCrop
       return {
         x: crop.x * this.display.scale + this.display.pad,
@@ -983,6 +1182,12 @@ export default {
 
     hitTest (point) {
       const box = this.displayCrop()
+      if (this.cropMode === 'video-inside') {
+        return point.x >= box.x && point.x <= box.x + box.w &&
+          point.y >= box.y && point.y <= box.y + box.h
+          ? 'video'
+          : null
+      }
       const handles = this.handlePositions(box)
       const hitRadius = 14
       for (const name of Object.keys(handles)) {
@@ -1002,13 +1207,15 @@ export default {
       event.preventDefault()
       this.$refs.canvas.focus()
       this.$refs.canvas.setPointerCapture(event.pointerId)
+      const naturalPoint = {
+        x: (point.x - this.display.pad) / this.display.scale,
+        y: (point.y - this.display.pad) / this.display.scale
+      }
       this.interaction = {
         handle,
-        start: {
-          x: (point.x - this.display.pad) / this.display.scale,
-          y: (point.y - this.display.pad) / this.display.scale
-        },
-        crop: { ...this.crop }
+        start: naturalPoint,
+        crop: { ...this.crop },
+        placement: { ...this.videoPlacement }
       }
       this.setCursor(handle)
     },
@@ -1028,9 +1235,14 @@ export default {
         x: naturalPoint.x - this.interaction.start.x,
         y: naturalPoint.y - this.interaction.start.y
       }
-      if (this.interaction.handle === 'move') this.moveCrop(delta)
-      else this.resizeCrop(delta)
-      this.onCropChanged()
+      if (this.interaction.handle === 'video') {
+        this.moveVideo(delta)
+        this.onPlacementChanged()
+      } else {
+        if (this.interaction.handle === 'move') this.moveCrop(delta)
+        else this.resizeCrop(delta)
+        this.onCropChanged()
+      }
     },
 
     onPointerUp (event) {
@@ -1038,9 +1250,10 @@ export default {
       if (this.$refs.canvas.hasPointerCapture(event.pointerId)) {
         this.$refs.canvas.releasePointerCapture(event.pointerId)
       }
-      this.crop = { ...this.roundedCrop }
+      if (this.interaction.handle !== 'video') this.crop = { ...this.roundedCrop }
       this.interaction = null
-      this.onCropChanged()
+      if (this.cropMode === 'video-inside') this.onPlacementChanged()
+      else this.onCropChanged()
       this.setCursor(this.hitTest(this.pointerPosition(event)))
     },
 
@@ -1052,6 +1265,10 @@ export default {
         point.y >= box.y && point.y <= box.y + box.h
       if (!inside) return
       event.preventDefault()
+      if (this.cropMode === 'video-inside') {
+        this.resetVideoPlacement()
+        return
+      }
       this.aspect = 'free'
       this.crop = { x: 0, y: 0, w: this.videoWidth, h: this.videoHeight }
       this.onCropChanged()
@@ -1061,6 +1278,28 @@ export default {
       const original = this.interaction.crop
       this.crop.x = this.clamp(original.x + delta.x, 0, this.videoWidth - original.w)
       this.crop.y = this.clamp(original.y + delta.y, 0, this.videoHeight - original.h)
+    },
+
+    moveVideo (delta) {
+      const original = this.interaction.placement
+      this.videoPlacement.x = original.x + delta.x
+      this.videoPlacement.y = original.y + delta.y
+    },
+
+    onCanvasWheel (event) {
+      if (this.isExporting || this.cropMode !== 'video-inside') return
+      const point = this.pointerPosition(event)
+      const box = this.displayCrop()
+      if (point.x < box.x || point.x > box.x + box.w ||
+        point.y < box.y || point.y > box.y + box.h) return
+      event.preventDefault()
+      const framePoint = {
+        x: (point.x - this.display.pad) / this.display.scale,
+        y: (point.y - this.display.pad) / this.display.scale
+      }
+      const delta = event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? box.h : 1)
+      const factor = Math.exp(-delta * 0.0015)
+      this.setPlacementZoom(this.videoPlacement.zoom * factor, framePoint)
     },
 
     resizeCrop (delta) {
@@ -1136,7 +1375,8 @@ export default {
       if (!this.$refs.canvas) return
       const cursors = {
         move: 'move', n: 'ns-resize', s: 'ns-resize', e: 'ew-resize', w: 'ew-resize',
-        ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize'
+        ne: 'nesw-resize', sw: 'nesw-resize', nw: 'nwse-resize', se: 'nwse-resize',
+        video: this.interaction ? 'grabbing' : 'grab'
       }
       this.$refs.canvas.style.cursor = cursors[handle] || 'crosshair'
     },
@@ -1145,6 +1385,14 @@ export default {
       if (this.isExporting || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return
       event.preventDefault()
       const amount = event.shiftKey ? 10 : 1
+      if (this.cropMode === 'video-inside') {
+        if (event.key === 'ArrowLeft') this.videoPlacement.x -= amount
+        if (event.key === 'ArrowRight') this.videoPlacement.x += amount
+        if (event.key === 'ArrowUp') this.videoPlacement.y -= amount
+        if (event.key === 'ArrowDown') this.videoPlacement.y += amount
+        this.onPlacementChanged()
+        return
+      }
       if (event.key === 'ArrowLeft') this.crop.x -= amount
       if (event.key === 'ArrowRight') this.crop.x += amount
       if (event.key === 'ArrowUp') this.crop.y -= amount
@@ -1155,6 +1403,11 @@ export default {
     },
 
     applyAspectRatio () {
+      if (this.cropMode === 'video-inside') {
+        this.resetVideoPlacement()
+        this.$nextTick(this.layoutCanvas)
+        return
+      }
       if (!this.aspectValue) return
       const centerX = this.crop.x + this.crop.w / 2
       const centerY = this.crop.y + this.crop.h / 2
@@ -1173,6 +1426,13 @@ export default {
       this.onCropChanged()
     },
 
+    changeCropMode () {
+      this.interaction = null
+      if (this.cropMode === 'video-inside') this.resetVideoPlacement()
+      else this.resetCrop()
+      this.$nextTick(this.layoutCanvas)
+    },
+
     resetCrop () {
       if (!this.hasSource) return
       let width = this.videoWidth
@@ -1188,6 +1448,50 @@ export default {
         h: height
       }
       this.onCropChanged()
+    },
+
+    resetVideoPlacement () {
+      this.videoPlacement = { zoom: 1, x: 0, y: 0 }
+      this.onPlacementChanged()
+    },
+
+    setPlacementZoom (zoom, anchor = null) {
+      const nextZoom = this.clamp(Number(zoom) || 1, 0.1, 20)
+      const previousZoom = this.videoPlacement.zoom
+      if (Math.abs(nextZoom - previousZoom) < 0.0001) return
+      const frame = this.compositionFrameSize
+      const point = anchor || { x: frame.w / 2, y: frame.h / 2 }
+      const centerX = frame.w / 2 + this.videoPlacement.x
+      const centerY = frame.h / 2 + this.videoPlacement.y
+      const factor = nextZoom / previousZoom
+      this.videoPlacement = {
+        zoom: nextZoom,
+        x: point.x - frame.w / 2 - (point.x - centerX) * factor,
+        y: point.y - frame.h / 2 - (point.y - centerY) * factor
+      }
+      this.onPlacementChanged()
+    },
+
+    updatePlacementZoom (event) {
+      this.setPlacementZoom(Number(event.target.value))
+    },
+
+    updatePlacementOffset (key, event) {
+      const value = Number(event.target.value)
+      if (!Number.isFinite(value)) {
+        event.target.value = this.roundedVideoPlacement[key]
+        return
+      }
+      this.videoPlacement[key] = value
+      event.target.value = Math.round(value)
+      this.onPlacementChanged()
+    },
+
+    onPlacementChanged () {
+      if (this.resolutionPreset === 'crop') this.setOutputFromCrop()
+      else if (this.resolutionPreset !== 'custom') this.applyResolutionPreset()
+      this.clearMessage()
+      this.draw()
     },
 
     updateCropValue (key, event) {
@@ -1224,8 +1528,8 @@ export default {
     },
 
     setOutputFromCrop () {
-      this.outputWidth = this.makeEven(this.roundedCrop.w)
-      this.outputHeight = this.makeEven(this.roundedCrop.h)
+      this.outputWidth = this.makeEven(this.activeFrameSize.w)
+      this.outputHeight = this.makeEven(this.activeFrameSize.h)
     },
 
     applyResolutionPreset () {
@@ -1235,7 +1539,7 @@ export default {
       }
       if (this.resolutionPreset === 'custom') return
       const longEdge = Number(this.resolutionPreset)
-      const ratio = this.roundedCrop.w / this.roundedCrop.h
+      const ratio = this.activeFrameSize.w / this.activeFrameSize.h
       if (ratio >= 1) {
         this.outputWidth = this.makeEven(longEdge)
         this.outputHeight = this.makeEven(longEdge / ratio)
@@ -1597,6 +1901,7 @@ export default {
 
     canUseMediabunnyExport () {
       return Boolean(
+        this.cropMode === 'crop-inside' &&
         this.sourceFile &&
         /\.(?:mkv|webm|mp4|m4v|mov)$/i.test(this.sourceName)
       )
@@ -1732,9 +2037,32 @@ export default {
       }
     },
 
+    drawOutputFrame (ctx, source, size) {
+      if (this.cropMode === 'video-inside') {
+        const frame = this.compositionFrameSize
+        const video = this.compositionVideoRect
+        ctx.fillStyle = '#000'
+        ctx.fillRect(0, 0, size.w, size.h)
+        ctx.drawImage(
+          source,
+          video.x * size.w / frame.w,
+          video.y * size.h / frame.h,
+          video.w * size.w / frame.w,
+          video.h * size.h / frame.h
+        )
+        return
+      }
+
+      const crop = this.roundedCrop
+      ctx.drawImage(
+        source,
+        crop.x, crop.y, crop.w, crop.h,
+        0, 0, size.w, size.h
+      )
+    },
+
     async encodeBrowserVideoLegacy (writable = null) {
       const size = this.outputSize
-      const crop = this.roundedCrop
       const config = await this.chooseVideoConfig(size)
       let audioBuffer = null
       let audioConfig = null
@@ -1788,11 +2116,7 @@ export default {
                 Math.max(this.trimStart, this.trimEnd - 0.001)
               )
               await this.seekVideo(time)
-              ctx.drawImage(
-                this.video,
-                crop.x, crop.y, crop.w, crop.h,
-                0, 0, size.w, size.h
-              )
+              this.drawOutputFrame(ctx, this.video, size)
               await session.videoSource.add(
                 index * frameDuration,
                 Math.min(frameDuration, Math.max(0, this.trimDuration - index * frameDuration)),
@@ -1834,7 +2158,6 @@ export default {
     async encodeAviVideo (writable = null) {
       if (!this.aviDemuxer || !this.aviVideoStream) throw new Error('AVI source is unavailable.')
       const size = this.outputSize
-      const crop = this.roundedCrop
       const config = await this.chooseVideoConfig(size)
       const outputCanvas = document.createElement('canvas')
       outputCanvas.width = size.w
@@ -1872,11 +2195,7 @@ export default {
           if (sourceIndex < nextOutputIndex) return
 
           while (nextOutputIndex <= sourceIndex && nextOutputIndex < totalFrames) {
-            ctx.drawImage(
-              source,
-              crop.x, crop.y, crop.w, crop.h,
-              0, 0, size.w, size.h
-            )
+            this.drawOutputFrame(ctx, source, size)
             await session.videoSource.add(
               nextOutputIndex * frameDuration,
               Math.min(
@@ -2564,7 +2883,7 @@ button:disabled, select:disabled, input:disabled { cursor: not-allowed; opacity:
 
 .canvas-panel {
   min-width: 0;
-  padding: 1.35rem 1.35rem 0.8rem;
+  padding: 0.945rem 0.945rem 0.56rem;
   background-color: #202027;
   background-image:
     linear-gradient(45deg, #25252d 25%, transparent 25%),
@@ -2762,10 +3081,11 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   top: -0.45rem;
   z-index: 1;
   width: 2px;
-  height: 1.3rem;
+  height: calc(1.3rem + 2px);
+  border-radius: 999px;
   pointer-events: none;
   background: #fff;
-  transform: translateX(-1px);
+  transform: translate(-1px, 0.04375rem);
 }
 
 .trim-guide-start { left: var(--trim-start-position); }
@@ -2782,6 +3102,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   pointer-events: none;
   background: transparent;
   outline: none;
+  transform: translateY(0.1025rem);
 }
 
 .trim-range input[type="range"]:focus-visible {
@@ -2802,7 +3123,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   appearance: none;
   pointer-events: none;
   background-color: transparent;
-  background-position: center;
+  background-position: center calc(50% + 1px);
   background-repeat: no-repeat;
   background-size: contain;
 }
@@ -2819,25 +3140,25 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   border-radius: 0;
   pointer-events: none;
   background-color: transparent;
-  background-position: center;
+  background-position: center calc(50% + 1px);
   background-repeat: no-repeat;
   background-size: contain;
 }
 
 .trim-range input[type="range"]:first-of-type::-webkit-slider-thumb {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M1 2v18l15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M3 2Q1 2 1 4v14q0 2 2 2l12-7.2q3-1.8 0-3.6z' fill='%23fff'/%3E%3C/svg%3E");
 }
 
 .trim-range input[type="range"]:last-of-type::-webkit-slider-thumb {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M31 2v18l-15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M29 2q2 0 2 2v14q0 2-2 2l-12-7.2q-3-1.8 0-3.6z' fill='%23fff'/%3E%3C/svg%3E");
 }
 
 .trim-range input[type="range"]:first-of-type::-moz-range-thumb {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M1 2v18l15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M3 2Q1 2 1 4v14q0 2 2 2l12-7.2q3-1.8 0-3.6z' fill='%23fff'/%3E%3C/svg%3E");
 }
 
 .trim-range input[type="range"]:last-of-type::-moz-range-thumb {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M31 2v18l-15-9z' fill='%23883388' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 22'%3E%3Cpath d='M29 2q2 0 2 2v14q0 2-2 2l-12-7.2q-3-1.8 0-3.6z' fill='%23fff'/%3E%3C/svg%3E");
 }
 
 .trim-fields {
@@ -2927,6 +3248,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 
 .setting-group + .setting-group { margin-top: 1rem; }
 
+.setting-label,
 .setting-group > label:not(.check-control),
 .setting-heading,
 .range-label {
@@ -2937,6 +3259,43 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   color: #4d4651;
   font-size: 0.78rem;
   font-weight: 650;
+}
+
+.setting-label { margin-bottom: 0.45rem; display: block; }
+
+.mode-control {
+  padding: 0.2rem;
+  border: 1px solid #d8d0dc;
+  border-radius: 0.55rem;
+  display: grid;
+  gap: 0.15rem;
+  background: #f4eff5;
+}
+
+.mode-control label {
+  min-height: 2rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 0.38rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mode-control label.active {
+  color: var(--accent-dark);
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(39, 27, 43, 0.12);
+}
+
+.mode-control input {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin: 0;
+  accent-color: var(--accent);
 }
 
 .setting-heading .mini-button { padding: 0; font-size: 0.75rem; }
@@ -2965,6 +3324,8 @@ select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow
 .number-grid label span { margin-bottom: 0.22rem; display: block; }
 .number-grid input { padding: 0 0.5rem; }
 .output-grid { margin-top: 0.6rem; }
+.placement-zoom-label { margin-top: 0.15rem; }
+.placement-grid { margin-top: 0.55rem; }
 
 .check-control {
   display: flex;
@@ -3021,7 +3382,7 @@ select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow
   .crop-tool { margin-top: 1.25rem; }
   .editor-layout { grid-template-columns: 1fr; }
   .settings-panel { border-top: 1px solid var(--line); border-left: 0; }
-  .canvas-panel { padding: 0.8rem 0.8rem 0.65rem; }
+  .canvas-panel { padding: 0.56rem 0.56rem 0.455rem; }
   .canvas-stage { min-height: 14rem; }
 }
 

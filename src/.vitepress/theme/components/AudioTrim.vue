@@ -1345,42 +1345,45 @@ export default {
         ctx.moveTo(playheadX, 0)
         ctx.lineTo(playheadX, waveformHeight)
         ctx.stroke()
-        ctx.fillStyle = '#fff'
+        ctx.fillStyle = '#883388'
+        ctx.strokeStyle = '#fff'
+        ctx.lineWidth = 1.5
         ctx.beginPath()
         ctx.moveTo(playheadX - 7, 0)
         ctx.lineTo(playheadX + 7, 0)
         ctx.lineTo(playheadX, 10)
         ctx.closePath()
         ctx.fill()
+        ctx.stroke()
       }
 
     },
 
     drawTrimHandle (ctx, x, height, boundary) {
-      const handleTipY = height + 18
+      const guideEndY = height + 18
+      const handleTipY = guideEndY + 1
       const guideX = Math.round(x)
+      const direction = boundary === 'start' ? -1 : 1
+      const handleTipX = guideX - direction * 0.5
+      ctx.save()
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
+      ctx.lineCap = 'round'
       ctx.beginPath()
       ctx.moveTo(guideX, 0)
-      ctx.lineTo(guideX, handleTipY)
+      ctx.lineTo(guideX, guideEndY)
       ctx.stroke()
-      ctx.fillStyle = '#883388'
-      ctx.strokeStyle = '#fff'
-      ctx.lineWidth = 1.5
+      ctx.fillStyle = '#fff'
       ctx.beginPath()
-      if (boundary === 'start') {
-        ctx.moveTo(guideX, handleTipY)
-        ctx.lineTo(guideX - 16, height + 10)
-        ctx.lineTo(guideX - 16, height + 26)
-      } else {
-        ctx.moveTo(guideX, handleTipY)
-        ctx.lineTo(guideX + 16, height + 10)
-        ctx.lineTo(guideX + 16, height + 26)
-      }
+      ctx.moveTo(handleTipX + direction * 2.8, handleTipY - 1.4)
+      ctx.quadraticCurveTo(handleTipX - direction * 2.8, handleTipY, handleTipX + direction * 2.8, handleTipY + 1.4)
+      ctx.lineTo(handleTipX + direction * 13.5, handleTipY + 6.8)
+      ctx.quadraticCurveTo(handleTipX + direction * 16, handleTipY + 8, handleTipX + direction * 16, handleTipY + 5)
+      ctx.lineTo(handleTipX + direction * 16, handleTipY - 5)
+      ctx.quadraticCurveTo(handleTipX + direction * 16, handleTipY - 8, handleTipX + direction * 13.5, handleTipY - 6.8)
       ctx.closePath()
       ctx.fill()
-      ctx.stroke()
+      ctx.restore()
     },
 
     timeToWaveformX (time, width = null) {

@@ -23,11 +23,9 @@ meta:
     content: Trim audio against an interactive waveform without uploading your file.
 ---
 
-# Trim Audio Online
-
 <AudioTrim />
 
-## About
+# Trim Audio Online
 
 Cut unwanted time from the beginning or end of an audio file using an interactive waveform. Click or drag the waveform to move the playhead, drag either edge handle to select the part to keep, preview the selection, and export it as Ogg Opus, MP3, M4A AAC, or WAV audio.
 

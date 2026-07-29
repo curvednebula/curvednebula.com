@@ -23,26 +23,25 @@ meta:
     content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM, MKV, or MP4.
 ---
 
-# Crop, Trim, and Resize Videos Online
-
 <VideoCrop />
 
-## About
+# Crop, Trim, and Resize Videos Online
 
-Crop a video to a custom area or a common aspect ratio, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as WebM, MKV, or MP4. MP4, WebM, MKV, MOV, and AVI input files are supported. Processing happens locally in your browser — your video is never uploaded.
+Crop a video to a custom area or place it inside a fixed frame, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as WebM, MKV, or MP4. MP4, WebM, MKV, MOV, and AVI input files are supported. Processing happens locally in your browser — your video is never uploaded.
 
 ## How to crop a video
 
 1. Select a video from your device or drag and drop it into the cropper.
-2. Drag inside the crop area to reposition it, then drag the handles to resize it.
-3. Drag the trim handles to select the part of the video to keep, or set either boundary to the playhead.
-4. Choose an aspect ratio such as 16:9, 1:1, 4:5, or 9:16.
-5. Keep the crop resolution, choose a long-edge preset, or enter a custom width and height.
-6. Select WebM, MKV, or MP4, set a frame rate and quality level, then choose **Save Video**.
+2. Choose **Move Crop** to move and resize a crop selection over the source, or **Move Video** to use a fixed output frame.
+3. In **Move Video** mode, drag the video to position it and use the mouse wheel or Zoom control to resize it. Select **Fit** to show the complete video with black bars when its aspect ratio differs from the crop.
+4. Drag the trim handles to select the part of the video to keep, or set either boundary to the playhead.
+5. Choose an aspect ratio such as 16:9, 1:1, 4:5, or 9:16.
+6. Keep the crop resolution, choose a long-edge preset, or enter a custom width and height.
+7. Select WebM, MKV, or MP4, set a frame rate and quality level, then choose **Save Video**.
 
 The editor previews only the selected time range with the same crop. Exported dimensions are kept even for broad codec compatibility.
 
-MP4, MOV, WebM, and MKV input files use a sequential Mediabunny decode pipeline instead of seeking separately for every output frame. AVI and compatibility exports use the same output writers, so every export path supports the selected format.
+MP4, MOV, WebM, and MKV files use a sequential Mediabunny decode pipeline when possible. Fixed-frame composition, AVI, and compatibility exports use the canvas-based frame renderer so video placement and black bars are preserved in the output. Every export path supports the selected format.
 
 ## Browser compatibility
 
@@ -71,6 +70,8 @@ Yes. Move the start and end trim handles, enter exact timestamps, or move the pl
 ### Can I crop a landscape video into a vertical video?
 
 Yes. Choose **Vertical · 9:16**, move the selection over the important part of the frame, and select a suitable output resolution such as a 1080-pixel long edge.
+
+To keep the complete landscape frame, choose **Move Video** before selecting **Vertical · 9:16**. The video is fitted inside the vertical frame with black bars, and you can then zoom or reposition it.
 
 ### Can I enter an exact video resolution?
 

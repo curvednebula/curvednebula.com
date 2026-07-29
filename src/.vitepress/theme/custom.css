@@ -14,6 +14,14 @@
   height: calc(var(--vp-nav-logo-height) * 1.5);
 }
 
+.crop-tool-layout .VPDoc {
+  padding-top: 12px;
+}
+
+.crop-tool-layout .vp-doc > :is(.crop-tool, .trim-audio-tool):first-child {
+  margin-top: 0.5rem;
+}
+
 .crop-tool-layout .VPDoc:not(.has-sidebar) .container {
   max-width: 1152px !important;
 }
@@ -25,6 +33,16 @@
 
 .crop-tool-layout .VPDoc:not(.has-sidebar) .content-container {
   max-width: 1024px !important;
+}
+
+@media (max-width: 767px) {
+  .crop-tool-layout .VPDoc {
+    padding-top: 8px;
+  }
+
+  .crop-tool-layout .vp-doc > :is(.crop-tool, .trim-audio-tool):first-child {
+    margin-top: 0.5rem;
+  }
 }
 
 /* VuePress left inline Markdown images in the text flow. VitePress resets all
