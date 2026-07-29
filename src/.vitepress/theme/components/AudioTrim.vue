@@ -279,6 +279,12 @@ export default {
       return Math.min(this.duration, 0.01)
     },
 
+    fullScanMaxDuration () {
+      // Below this length the overview decodes every sample for an exact envelope;
+      // longer files use coarse region sampling to stay fast.
+      return 600
+    },
+
     trimDuration () {
       return Math.max(0, this.trimEnd - this.trimStart)
     },
@@ -454,72 +460,132 @@ export default {
 
         this.audioChannels = Number(channels) || 1
         this.audioSampleRate = Number(sampleRate) || 0
-        const durationScale = Math.log2(Math.max(1, this.duration / 60))
-        const binCount = Math.round(this.clamp(820 - durationScale * 64, 420, 820))
-        const minimums = new Float32Array(binCount)
-        const maximums = new Float32Array(binCount)
-        this.waveformPeaks = { minimums, maximums }
-        this.fullWaveformPeaks = null
         const sink = new AudioSampleSink(track)
-        const binDuration = this.duration / binCount
-        const regionsPerBin = 2
-        const regionDuration = Math.min(
-          binDuration / regionsPerBin,
-          Math.max(0.06, Math.min(0.12, binDuration * 0.18))
-        )
-        const totalRegions = binCount * regionsPerBin
-        let completedRegions = 0
-        let lastUpdate = performance.now()
 
-        for (let binIndex = 0; binIndex < binCount; binIndex++) {
-          const binStart = binIndex * binDuration
-          for (let regionIndex = 0; regionIndex < regionsPerBin; regionIndex++) {
-            if (generation !== this.waveformGeneration) return
-            const center = binStart + ((regionIndex + 1) / (regionsPerBin + 1)) * binDuration
-            const regionStart = Math.max(binStart, center - regionDuration / 2)
-            const regionEnd = Math.min(binStart + binDuration, center + regionDuration / 2)
-
-            for await (const sample of sink.samples(
-              firstTimestamp + regionStart,
-              firstTimestamp + regionEnd
-            )) {
-              try {
-                if (generation !== this.waveformGeneration) return
-                const frameCount = sample.numberOfFrames
-                const plane = new Float32Array(frameCount)
-                for (let channel = 0; channel < sample.numberOfChannels; channel++) {
-                  sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
-                  for (let frame = 0; frame < frameCount; frame++) {
-                    const value = plane[frame]
-                    if (value < minimums[binIndex]) minimums[binIndex] = value
-                    if (value > maximums[binIndex]) maximums[binIndex] = value
-                  }
-                }
-              } finally {
-                sample.close()
-              }
-            }
-
-            completedRegions++
-            this.waveformProgress = this.clamp(completedRegions / totalRegions * 100, 0, 99)
-            if (performance.now() - lastUpdate > 80) {
-              this.drawWaveform()
-              await this.nextTask()
-              lastUpdate = performance.now()
-            }
-          }
+        // Short files decode fully for an exact peak envelope; long files fall back
+        // to coarse region sampling to keep the initial overview fast.
+        if (this.duration > 0 && this.duration <= this.fullScanMaxDuration) {
+          await this.scanFullWaveform(sink, generation, firstTimestamp)
+        } else {
+          await this.sampleCoarseWaveform(sink, generation, firstTimestamp)
         }
-
-        if (generation !== this.waveformGeneration) return
-        this.fullWaveformPeaks = { minimums, maximums }
-        this.waveformPeaks = this.fullWaveformPeaks
-        this.waveformProgress = 100
-        this.isGeneratingWaveform = false
-        this.drawWaveform()
       } finally {
         if (!input.disposed) input.dispose()
         if (this.waveformInput === input) this.waveformInput = null
       }
+    },
+
+    async scanFullWaveform (sink, generation, firstTimestamp) {
+      const binCount = Math.round(this.clamp(Math.round(this.duration * 50), 800, 4000))
+      const minimums = new Float32Array(binCount)
+      const maximums = new Float32Array(binCount)
+      this.waveformPeaks = { minimums, maximums }
+      this.fullWaveformPeaks = null
+      const totalDuration = Math.max(this.duration, 1e-6)
+      const binScale = binCount / totalDuration
+      let lastUpdate = performance.now()
+
+      for await (const sample of sink.samples(firstTimestamp, firstTimestamp + this.duration)) {
+        try {
+          if (generation !== this.waveformGeneration) return
+          const frameCount = sample.numberOfFrames
+          const decodedSampleRate = sample.sampleRate || this.audioSampleRate || 48000
+          const baseTime = sample.timestamp - firstTimestamp
+          const plane = new Float32Array(frameCount)
+          for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+            sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
+            for (let frame = 0; frame < frameCount; frame++) {
+              let binIndex = ((baseTime + frame / decodedSampleRate) * binScale) | 0
+              if (binIndex < 0) binIndex = 0
+              else if (binIndex >= binCount) binIndex = binCount - 1
+              const value = plane[frame]
+              if (value < minimums[binIndex]) minimums[binIndex] = value
+              if (value > maximums[binIndex]) maximums[binIndex] = value
+            }
+          }
+          const decodedThrough = Math.min(this.duration, sample.timestamp + sample.duration - firstTimestamp)
+          this.waveformProgress = this.clamp(decodedThrough / totalDuration * 100, 0, 99)
+        } finally {
+          sample.close()
+        }
+
+        if (performance.now() - lastUpdate > 80) {
+          this.drawWaveform()
+          await this.nextTask()
+          lastUpdate = performance.now()
+        }
+      }
+
+      if (generation !== this.waveformGeneration) return
+      this.fullWaveformPeaks = { minimums, maximums }
+      this.waveformPeaks = this.fullWaveformPeaks
+      this.waveformProgress = 100
+      this.isGeneratingWaveform = false
+      this.drawWaveform()
+    },
+
+    async sampleCoarseWaveform (sink, generation, firstTimestamp) {
+      const durationScale = Math.log2(Math.max(1, this.duration / 60))
+      const binCount = Math.round(this.clamp(820 - durationScale * 64, 420, 820))
+      const minimums = new Float32Array(binCount)
+      const maximums = new Float32Array(binCount)
+      this.waveformPeaks = { minimums, maximums }
+      this.fullWaveformPeaks = null
+      const binDuration = this.duration / binCount
+      const regionsPerBin = 2
+      const regionDuration = Math.min(
+        binDuration / regionsPerBin,
+        Math.max(0.06, Math.min(0.12, binDuration * 0.18))
+      )
+      const totalRegions = binCount * regionsPerBin
+      let completedRegions = 0
+      let lastUpdate = performance.now()
+
+      for (let binIndex = 0; binIndex < binCount; binIndex++) {
+        const binStart = binIndex * binDuration
+        for (let regionIndex = 0; regionIndex < regionsPerBin; regionIndex++) {
+          if (generation !== this.waveformGeneration) return
+          const center = binStart + ((regionIndex + 1) / (regionsPerBin + 1)) * binDuration
+          const regionStart = Math.max(binStart, center - regionDuration / 2)
+          const regionEnd = Math.min(binStart + binDuration, center + regionDuration / 2)
+
+          for await (const sample of sink.samples(
+            firstTimestamp + regionStart,
+            firstTimestamp + regionEnd
+          )) {
+            try {
+              if (generation !== this.waveformGeneration) return
+              const frameCount = sample.numberOfFrames
+              const plane = new Float32Array(frameCount)
+              for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+                sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
+                for (let frame = 0; frame < frameCount; frame++) {
+                  const value = plane[frame]
+                  if (value < minimums[binIndex]) minimums[binIndex] = value
+                  if (value > maximums[binIndex]) maximums[binIndex] = value
+                }
+              }
+            } finally {
+              sample.close()
+            }
+          }
+
+          completedRegions++
+          this.waveformProgress = this.clamp(completedRegions / totalRegions * 100, 0, 99)
+          if (performance.now() - lastUpdate > 80) {
+            this.drawWaveform()
+            await this.nextTask()
+            lastUpdate = performance.now()
+          }
+        }
+      }
+
+      if (generation !== this.waveformGeneration) return
+      this.fullWaveformPeaks = { minimums, maximums }
+      this.waveformPeaks = this.fullWaveformPeaks
+      this.waveformProgress = 100
+      this.isGeneratingWaveform = false
+      this.drawWaveform()
     },
 
     async generateDetailedWaveform (file, generation, rangeStart, rangeEnd) {
