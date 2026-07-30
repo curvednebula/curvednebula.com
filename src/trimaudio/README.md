@@ -29,7 +29,9 @@ meta:
 
 Cut unwanted time from the beginning or end of an audio file using an interactive waveform. Click or drag the waveform to move the playhead, drag either edge handle to select the part to keep, preview the selection, and export it as Ogg Opus, MP3, M4A AAC, or WAV audio.
 
-The waveform is generated incrementally from short regions distributed across the track. Each decoded sample is reduced into a waveform peak and released immediately, so the entire audio file is not retained in browser memory. Your audio stays on your device and is never uploaded.
+Stereo audio can optionally be mixed down to mono when you export it.
+
+Your audio stays on your device and is never uploaded.
 
 ## How to trim audio
 
@@ -57,4 +59,3 @@ Recent Chromium-based browsers such as Chrome and Edge provide the best compatib
 - **M4A AAC:** Browser-specific. AAC encoding may be unavailable in Firefox or on desktop Linux.
 - **MP3:** Highly browser-specific and usually unavailable because current major browsers do not normally expose an MP3 `AudioEncoder`.
 - Unsupported compressed formats are disabled automatically in the output selector. Safari added WebCodecs audio encoding and decoding in Safari 26, so earlier Safari versions cannot export audio with this tool.
-

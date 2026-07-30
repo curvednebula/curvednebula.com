@@ -192,12 +192,24 @@
                 <option :value="256000">256 kbps</option>
               </select>
             </label>
+
+            <label v-if="audioChannels === 2" class="mix-mono-option">
+              <input
+                v-model="mixToMono"
+                type="checkbox"
+                :disabled="isExporting"
+                @change="clearMessage"
+              >
+              <span>Mix down to mono</span>
+            </label>
           </div>
 
           <div class="output-summary">
             <span class="output-label">Output</span>
             <span class="output-value">{{ outputPreset.label }}</span>
-            <span class="output-detail">{{ formattedTrimDuration }} · {{ formattedAudioBitrate }}</span>
+            <span class="output-detail">
+              {{ formattedTrimDuration }} · {{ outputChannelLabel }} · {{ formattedAudioBitrate }}
+            </span>
           </div>
 
           <div v-if="isExporting" class="progress-wrap" aria-live="polite">
@@ -254,6 +266,7 @@ export default {
       audioSampleRate: 0,
       outputFormat: 'ogg',
       outputBitrate: 0,
+      mixToMono: false,
       codecSupport: {
         opus: false,
         mp3: false,
@@ -262,6 +275,7 @@ export default {
       isCheckingCodecSupport: true,
       waveformPeaks: null,
       fullWaveformPeaks: null,
+      overviewWaveformPeaks: null,
       detailedWaveformCache: null,
       waveformViewStart: 0,
       waveformViewEnd: 0,
@@ -357,7 +371,8 @@ export default {
       const visibleRange = this.isWaveformZoomed
         ? ` Showing ${this.formatTimePrecise(this.waveformViewStart)} to ${this.formatTimePrecise(this.waveformViewEnd)}.`
         : ''
-      return `Audio waveform for ${this.sourceName}.${visibleRange} Use the arrow keys to move the playhead${progress}.`
+      const channels = this.audioChannels === 2 ? ' Left and right channels are shown separately.' : ''
+      return `Audio waveform for ${this.sourceName}.${channels}${visibleRange} Use the arrow keys to move the playhead${progress}.`
     },
 
     formattedDuration () {
@@ -372,6 +387,10 @@ export default {
       // Below this length the overview decodes every sample for an exact envelope;
       // longer files use coarse region sampling to stay fast.
       return 600
+    },
+
+    sampleWaveformMaxDuration () {
+      return 1
     },
 
     trimDuration () {
@@ -402,7 +421,17 @@ export default {
     },
 
     audioBitrate () {
-      return this.outputBitrate || (this.audioChannels === 1 ? 96000 : 160000)
+      return this.outputBitrate || (this.outputChannelCount === 1 ? 96000 : 160000)
+    },
+
+    outputChannelCount () {
+      if (this.audioChannels === 2 && this.mixToMono) return 1
+      return this.audioChannels === 1 ? 1 : 2
+    },
+
+    outputChannelLabel () {
+      if (!this.audioChannels) return 'Audio'
+      return this.outputChannelCount === 1 ? 'Mono' : 'Stereo'
     },
 
     formattedAudioBitrate () {
@@ -583,6 +612,22 @@ export default {
         // to coarse region sampling to keep the initial overview fast.
         if (this.duration > 0 && this.duration <= this.fullScanMaxDuration) {
           await this.scanFullWaveform(sink, generation, firstTimestamp)
+          const decodedSampleRate = Number(sampleRate) || this.audioSampleRate || 48000
+          if (
+            generation === this.waveformGeneration &&
+            this.shouldUseSampleWaveform(this.duration, decodedSampleRate)
+          ) {
+            this.isGeneratingWaveform = true
+            this.waveformProgress = 0
+            await this.generateSampleWaveform(
+              new AudioSampleSink(track),
+              generation,
+              0,
+              this.duration,
+              decodedSampleRate,
+              firstTimestamp
+            )
+          }
         } else {
           await this.sampleCoarseWaveform(sink, generation, firstTimestamp)
         }
@@ -592,36 +637,103 @@ export default {
       }
     },
 
-    async scanFullWaveform (sink, generation, firstTimestamp) {
-      const binCount = Math.round(this.clamp(Math.round(this.duration * 50), 800, 4000))
-      const minimums = new Float32Array(binCount)
-      const maximums = new Float32Array(binCount)
-      this.waveformPeaks = { minimums, maximums }
-      this.fullWaveformPeaks = null
-      const totalDuration = Math.max(this.duration, 1e-6)
-      const binScale = binCount / totalDuration
+    createPeakWaveform (binCount) {
+      const channelCount = this.audioChannels === 2 ? 2 : 1
+      return {
+        channels: Array.from({ length: channelCount }, () => ({
+          minimums: new Float32Array(binCount),
+          maximums: new Float32Array(binCount)
+        }))
+      }
+    },
+
+    getPeakChannels (waveform) {
+      if (!waveform) return []
+      if (waveform.channels) return waveform.channels
+      return waveform.minimums && waveform.maximums ? [waveform] : []
+    },
+
+    waveformPixelWidth () {
+      const canvas = this.$refs.waveformCanvas
+      const canvasWidth = canvas ? canvas.width / (canvas._pixelRatio || 1) : 820
+      return Math.max(1, canvasWidth - Math.min(18, canvasWidth / 4) * 2)
+    },
+
+    waveformBinCount (rangeDuration, sampleRate) {
+      const displayColumns = Math.max(1, Math.ceil(this.waveformPixelWidth()))
+      const availableFrames = Math.max(1, Math.ceil(rangeDuration * sampleRate))
+      return Math.min(displayColumns, availableFrames)
+    },
+
+    shouldUseSampleWaveform (rangeDuration, sampleRate) {
+      const samplesPerPixel = rangeDuration * sampleRate / this.waveformPixelWidth()
+      return rangeDuration <= this.sampleWaveformMaxDuration || samplesPerPixel <= 4
+    },
+
+    async scanExactWaveformRange (
+      sink,
+      generation,
+      firstTimestamp,
+      rangeStart,
+      rangeEnd,
+      sampleRate,
+      binCount,
+      initialWaveform = null
+    ) {
+      const waveform = initialWaveform || this.createPeakWaveform(binCount)
+      const refinedBins = initialWaveform
+        ? waveform.channels.map(() => new Uint8Array(binCount))
+        : null
+      this.waveformPeaks = waveform
+      const rangeDuration = Math.max(rangeEnd - rangeStart, 1e-6)
+      const absoluteStart = firstTimestamp + rangeStart
+      const absoluteEnd = firstTimestamp + rangeEnd
+      const requestStart = firstTimestamp + Math.max(0, rangeStart - 0.25)
+      const binScale = binCount / rangeDuration
       let lastUpdate = performance.now()
 
-      for await (const sample of sink.samples(firstTimestamp, firstTimestamp + this.duration)) {
+      for await (const sample of sink.samples(requestStart, absoluteEnd)) {
         try {
           if (generation !== this.waveformGeneration) return
           const frameCount = sample.numberOfFrames
-          const decodedSampleRate = sample.sampleRate || this.audioSampleRate || 48000
-          const baseTime = sample.timestamp - firstTimestamp
+          const decodedSampleRate = sample.sampleRate || sampleRate
+          const firstFrame = this.clamp(
+            Math.ceil((absoluteStart - sample.timestamp) * decodedSampleRate - 1e-7),
+            0,
+            frameCount
+          )
+          const lastFrame = this.clamp(
+            Math.ceil((absoluteEnd - sample.timestamp) * decodedSampleRate - 1e-7),
+            0,
+            frameCount
+          )
+          const baseTime = sample.timestamp - absoluteStart
           const plane = new Float32Array(frameCount)
           for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+            const outputChannelIndex = this.audioChannels === 2 ? Math.min(channel, 1) : 0
+            const outputChannel = waveform.channels[outputChannelIndex]
+            const outputRefinedBins = refinedBins && refinedBins[outputChannelIndex]
             sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
-            for (let frame = 0; frame < frameCount; frame++) {
+            for (let frame = firstFrame; frame < lastFrame; frame++) {
               let binIndex = ((baseTime + frame / decodedSampleRate) * binScale) | 0
               if (binIndex < 0) binIndex = 0
               else if (binIndex >= binCount) binIndex = binCount - 1
+              if (outputRefinedBins && !outputRefinedBins[binIndex]) {
+                outputChannel.minimums[binIndex] = 0
+                outputChannel.maximums[binIndex] = 0
+                outputRefinedBins[binIndex] = 1
+              }
               const value = plane[frame]
-              if (value < minimums[binIndex]) minimums[binIndex] = value
-              if (value > maximums[binIndex]) maximums[binIndex] = value
+              if (value < outputChannel.minimums[binIndex]) outputChannel.minimums[binIndex] = value
+              if (value > outputChannel.maximums[binIndex]) outputChannel.maximums[binIndex] = value
             }
           }
-          const decodedThrough = Math.min(this.duration, sample.timestamp + sample.duration - firstTimestamp)
-          this.waveformProgress = this.clamp(decodedThrough / totalDuration * 100, 0, 99)
+          const decodedThrough = Math.min(absoluteEnd, sample.timestamp + sample.duration)
+          this.waveformProgress = this.clamp(
+            (decodedThrough - absoluteStart) / rangeDuration * 100,
+            0,
+            99
+          )
         } finally {
           sample.close()
         }
@@ -634,21 +746,48 @@ export default {
       }
 
       if (generation !== this.waveformGeneration) return
-      this.fullWaveformPeaks = { minimums, maximums }
-      this.waveformPeaks = this.fullWaveformPeaks
+      return waveform
+    },
+
+    async scanFullWaveform (sink, generation, firstTimestamp) {
+      const sampleRate = this.audioSampleRate || 48000
+      const binCount = this.waveformBinCount(this.duration, sampleRate)
+      this.fullWaveformPeaks = null
+      this.overviewWaveformPeaks = null
+      const waveform = await this.scanExactWaveformRange(
+        sink,
+        generation,
+        firstTimestamp,
+        0,
+        this.duration,
+        sampleRate,
+        binCount
+      )
+      if (!waveform || generation !== this.waveformGeneration) return
+      this.fullWaveformPeaks = waveform
+      this.overviewWaveformPeaks = this.fullWaveformPeaks
+      this.waveformPeaks = this.overviewWaveformPeaks
       this.waveformProgress = 100
       this.isGeneratingWaveform = false
       this.drawWaveform()
     },
 
-    async sampleCoarseWaveform (sink, generation, firstTimestamp) {
-      const durationScale = Math.log2(Math.max(1, this.duration / 60))
-      const binCount = Math.round(this.clamp(820 - durationScale * 64, 420, 820))
-      const minimums = new Float32Array(binCount)
-      const maximums = new Float32Array(binCount)
-      this.waveformPeaks = { minimums, maximums }
-      this.fullWaveformPeaks = null
-      const binDuration = this.duration / binCount
+    async scanCoarseWaveformRange (
+      sink,
+      generation,
+      firstTimestamp,
+      rangeStart,
+      rangeEnd,
+      binCount,
+      initialWaveform = null
+    ) {
+      const waveform = initialWaveform || this.createPeakWaveform(binCount)
+      const refinedBins = initialWaveform
+        ? waveform.channels.map(() => new Uint8Array(binCount))
+        : null
+      this.waveformPeaks = waveform
+      const rangeDuration = rangeEnd - rangeStart
+      const binDuration = rangeDuration / binCount
       const regionsPerBin = 2
       const regionDuration = Math.min(
         binDuration / regionsPerBin,
@@ -659,12 +798,13 @@ export default {
       let lastUpdate = performance.now()
 
       for (let binIndex = 0; binIndex < binCount; binIndex++) {
-        const binStart = binIndex * binDuration
+        const binStart = rangeStart + binIndex * binDuration
+        const binEnd = Math.min(rangeEnd, binStart + binDuration)
         for (let regionIndex = 0; regionIndex < regionsPerBin; regionIndex++) {
           if (generation !== this.waveformGeneration) return
           const center = binStart + ((regionIndex + 1) / (regionsPerBin + 1)) * binDuration
           const regionStart = Math.max(binStart, center - regionDuration / 2)
-          const regionEnd = Math.min(binStart + binDuration, center + regionDuration / 2)
+          const regionEnd = Math.min(binEnd, center + regionDuration / 2)
 
           for await (const sample of sink.samples(
             firstTimestamp + regionStart,
@@ -675,11 +815,19 @@ export default {
               const frameCount = sample.numberOfFrames
               const plane = new Float32Array(frameCount)
               for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+                const outputChannelIndex = this.audioChannels === 2 ? Math.min(channel, 1) : 0
+                const outputChannel = waveform.channels[outputChannelIndex]
+                const outputRefinedBins = refinedBins && refinedBins[outputChannelIndex]
+                if (outputRefinedBins && !outputRefinedBins[binIndex]) {
+                  outputChannel.minimums[binIndex] = 0
+                  outputChannel.maximums[binIndex] = 0
+                  outputRefinedBins[binIndex] = 1
+                }
                 sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
                 for (let frame = 0; frame < frameCount; frame++) {
                   const value = plane[frame]
-                  if (value < minimums[binIndex]) minimums[binIndex] = value
-                  if (value > maximums[binIndex]) maximums[binIndex] = value
+                  if (value < outputChannel.minimums[binIndex]) outputChannel.minimums[binIndex] = value
+                  if (value > outputChannel.maximums[binIndex]) outputChannel.maximums[binIndex] = value
                 }
               }
             } finally {
@@ -698,8 +846,28 @@ export default {
       }
 
       if (generation !== this.waveformGeneration) return
-      this.fullWaveformPeaks = { minimums, maximums }
-      this.waveformPeaks = this.fullWaveformPeaks
+      return waveform
+    },
+
+    async sampleCoarseWaveform (sink, generation, firstTimestamp) {
+      const binCount = this.waveformBinCount(
+        this.duration,
+        this.audioSampleRate || 48000
+      )
+      this.fullWaveformPeaks = null
+      this.overviewWaveformPeaks = null
+      const waveform = await this.scanCoarseWaveformRange(
+        sink,
+        generation,
+        firstTimestamp,
+        0,
+        this.duration,
+        binCount
+      )
+      if (!waveform || generation !== this.waveformGeneration) return
+      this.fullWaveformPeaks = waveform
+      this.overviewWaveformPeaks = this.fullWaveformPeaks
+      this.waveformPeaks = this.overviewWaveformPeaks
       this.waveformProgress = 100
       this.isGeneratingWaveform = false
       this.drawWaveform()
@@ -731,11 +899,33 @@ export default {
 
         const sampleRate = Number(sampleRateValue) || this.audioSampleRate || 48000
         const rangeDuration = rangeEnd - rangeStart
-        const canvas = this.$refs.waveformCanvas
-        const canvasWidth = canvas ? canvas.width / (canvas._pixelRatio || 1) : 820
-        const waveformPixelWidth = Math.max(1, canvasWidth - Math.min(18, canvasWidth / 4) * 2)
-        const samplesPerPixel = rangeDuration * sampleRate / waveformPixelWidth
-        if (rangeDuration <= 1 || samplesPerPixel <= 4) {
+        const binCount = this.waveformBinCount(rangeDuration, sampleRate)
+
+        if (this.duration > this.fullScanMaxDuration) {
+          const projectedPeaks = this.projectFullWaveform(rangeStart, rangeEnd, binCount)
+          const detailedPeaks = await this.scanCoarseWaveformRange(
+            new AudioSampleSink(track),
+            generation,
+            firstTimestamp,
+            rangeStart,
+            rangeEnd,
+            binCount,
+            projectedPeaks
+          )
+          if (!detailedPeaks || generation !== this.waveformGeneration) return
+          this.waveformPeaks = detailedPeaks
+          this.detailedWaveformCache = {
+            start: rangeStart,
+            end: rangeEnd,
+            peaks: detailedPeaks
+          }
+          this.waveformProgress = 100
+          this.isGeneratingWaveform = false
+          this.drawWaveform()
+          return
+        }
+
+        if (this.shouldUseSampleWaveform(rangeDuration, sampleRate)) {
           await this.generateSampleWaveform(
             new AudioSampleSink(track),
             generation,
@@ -747,78 +937,18 @@ export default {
           return
         }
 
-        const targetBins = this.clamp(canvas ? canvas.width : 820, 280, 2048)
-        const availableFrames = Math.max(1, Math.ceil(rangeDuration * sampleRate))
-        const binCount = Math.max(1, Math.min(Math.round(targetBins), availableFrames))
         const projectedPeaks = this.projectFullWaveform(rangeStart, rangeEnd, binCount)
-        const minimums = projectedPeaks ? projectedPeaks.minimums : new Float32Array(binCount)
-        const maximums = projectedPeaks ? projectedPeaks.maximums : new Float32Array(binCount)
-        const detailedBins = new Uint8Array(binCount)
-        const detailedPeaks = { minimums, maximums }
-        const sink = new AudioSampleSink(track)
-        const absoluteStart = firstTimestamp + rangeStart
-        const absoluteEnd = firstTimestamp + rangeEnd
-        const requestStart = firstTimestamp + Math.max(0, rangeStart - 0.25)
-        const binScale = binCount / rangeDuration
-        let lastUpdate = performance.now()
-        this.waveformPeaks = detailedPeaks
-        this.drawWaveform()
-
-        for await (const sample of sink.samples(requestStart, absoluteEnd)) {
-          try {
-            if (generation !== this.waveformGeneration) return
-            const frameCount = sample.numberOfFrames
-            const decodedSampleRate = sample.sampleRate || sampleRate
-            const firstFrame = this.clamp(
-              Math.ceil((absoluteStart - sample.timestamp) * decodedSampleRate - 1e-7),
-              0,
-              frameCount
-            )
-            const lastFrame = this.clamp(
-              Math.ceil((absoluteEnd - sample.timestamp) * decodedSampleRate - 1e-7),
-              0,
-              frameCount
-            )
-            const plane = new Float32Array(frameCount)
-
-            for (let channel = 0; channel < sample.numberOfChannels; channel++) {
-              sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
-              for (let frame = firstFrame; frame < lastFrame; frame++) {
-                const frameTime = sample.timestamp + frame / decodedSampleRate
-                const binIndex = this.clamp(
-                  Math.floor((frameTime - absoluteStart) * binScale),
-                  0,
-                  binCount - 1
-                )
-                if (!detailedBins[binIndex]) {
-                  minimums[binIndex] = 0
-                  maximums[binIndex] = 0
-                  detailedBins[binIndex] = 1
-                }
-                const value = plane[frame]
-                if (value < minimums[binIndex]) minimums[binIndex] = value
-                if (value > maximums[binIndex]) maximums[binIndex] = value
-              }
-            }
-
-            const decodedThrough = Math.min(absoluteEnd, sample.timestamp + sample.duration)
-            this.waveformProgress = this.clamp(
-              (decodedThrough - absoluteStart) / rangeDuration * 100,
-              0,
-              99
-            )
-          } finally {
-            sample.close()
-          }
-
-          if (performance.now() - lastUpdate > 80) {
-            this.drawWaveform()
-            await this.nextTask()
-            lastUpdate = performance.now()
-          }
-        }
-
-        if (generation !== this.waveformGeneration) return
+        const detailedPeaks = await this.scanExactWaveformRange(
+          new AudioSampleSink(track),
+          generation,
+          firstTimestamp,
+          rangeStart,
+          rangeEnd,
+          sampleRate,
+          binCount,
+          projectedPeaks
+        )
+        if (!detailedPeaks || generation !== this.waveformGeneration) return
         this.waveformPeaks = detailedPeaks
         this.detailedWaveformCache = {
           start: rangeStart,
@@ -844,14 +974,17 @@ export default {
       const absoluteStart = firstTimestamp + rangeStart
       const absoluteEnd = firstTimestamp + rangeEnd
       const rawTimes = []
-      const rawValues = []
+      const channelCount = this.audioChannels === 2 ? 2 : 1
+      const rawValuesByChannel = Array.from({ length: channelCount }, () => [])
       const sampleWaveform = {
         mode: 'samples',
-        times: [],
-        values: [],
+        channels: Array.from({ length: channelCount }, () => ({
+          times: [],
+          values: [],
+          showsIndividualSamples: false
+        })),
         rawTimes,
-        rawValues,
-        showsIndividualSamples: false,
+        rawValuesByChannel,
         fallbackPeaks: this.projectFullWaveform(rangeStart, rangeEnd),
         refinedThrough: rangeStart
       }
@@ -874,16 +1007,21 @@ export default {
             0,
             frameCount
           )
-          const mixedFrames = new Float32Array(Math.max(0, lastFrame - firstFrame))
+          const capturedFrames = Array.from(
+            { length: channelCount },
+            () => new Float32Array(Math.max(0, lastFrame - firstFrame))
+          )
           const plane = new Float32Array(frameCount)
 
           for (let channel = 0; channel < sample.numberOfChannels; channel++) {
+            const outputChannelIndex = this.audioChannels === 2 ? Math.min(channel, 1) : 0
+            const outputFrames = capturedFrames[outputChannelIndex]
             sample.copyTo(plane, { planeIndex: channel, format: 'f32-planar' })
             for (let frame = firstFrame; frame < lastFrame; frame++) {
               const outputIndex = frame - firstFrame
               const value = plane[frame]
-              if (Math.abs(value) > Math.abs(mixedFrames[outputIndex])) {
-                mixedFrames[outputIndex] = value
+              if (this.audioChannels === 2 || Math.abs(value) > Math.abs(outputFrames[outputIndex])) {
+                outputFrames[outputIndex] = value
               }
             }
           }
@@ -892,7 +1030,9 @@ export default {
             const localTime = sample.timestamp + frame / decodedSampleRate - firstTimestamp
             if (rawTimes.length && localTime <= rawTimes[rawTimes.length - 1]) continue
             rawTimes.push(localTime)
-            rawValues.push(mixedFrames[frame - firstFrame])
+            for (let channel = 0; channel < channelCount; channel++) {
+              rawValuesByChannel[channel].push(capturedFrames[channel][frame - firstFrame])
+            }
           }
 
           sampleWaveform.refinedThrough = this.clamp(
@@ -912,10 +1052,9 @@ export default {
 
         if (performance.now() - lastUpdate > 80) {
           const displayEnd = Math.max(rangeStart, sampleWaveform.refinedThrough)
-          const displayData = this.buildSampleDisplayData(rawTimes, rawValues, rangeStart, displayEnd)
-          sampleWaveform.times = displayData.times
-          sampleWaveform.values = displayData.values
-          sampleWaveform.showsIndividualSamples = displayData.showsIndividualSamples
+          sampleWaveform.channels = rawValuesByChannel.map(rawValues =>
+            this.buildSampleDisplayData(rawTimes, rawValues, rangeStart, displayEnd)
+          )
           this.drawWaveform()
           await this.nextTask()
           lastUpdate = performance.now()
@@ -923,18 +1062,23 @@ export default {
       }
 
       if (generation !== this.waveformGeneration) return
-      const displayData = this.buildSampleDisplayData(rawTimes, rawValues, rangeStart, rangeEnd)
       const completedWaveform = {
         mode: 'samples',
-        times: displayData.times,
-        values: displayData.values,
+        channels: rawValuesByChannel.map(rawValues =>
+          this.buildSampleDisplayData(rawTimes, rawValues, rangeStart, rangeEnd)
+        ),
         rawTimes: Float64Array.from(rawTimes),
-        rawValues: Float32Array.from(rawValues),
-        showsIndividualSamples: displayData.showsIndividualSamples,
+        rawValuesByChannel: rawValuesByChannel.map(rawValues => Float32Array.from(rawValues)),
         fallbackPeaks: null,
         refinedThrough: rangeEnd
       }
       this.waveformPeaks = completedWaveform
+      if (
+        rangeStart <= 1e-7 &&
+        Math.abs(rangeEnd - this.duration) <= 1e-7
+      ) {
+        this.overviewWaveformPeaks = completedWaveform
+      }
       this.detailedWaveformCache = {
         start: rangeStart,
         end: rangeEnd,
@@ -971,7 +1115,8 @@ export default {
       const canvas = this.$refs.waveformCanvas
       const canvasWidth = canvas ? canvas.width / (canvas._pixelRatio || 1) : 820
       const waveformWidth = Math.max(1, canvasWidth - Math.min(18, canvasWidth / 4) * 2)
-      const maxDisplayPoints = Math.max(32, Math.ceil(waveformWidth * 2))
+      // Never send more waveform points to the canvas than horizontal display pixels.
+      const maxDisplayPoints = Math.max(32, Math.ceil(waveformWidth))
       const interiorCount = Math.max(0, lastInside - firstInside)
       const outputTimes = [rangeStart]
       const outputValues = [valueAt(rangeStart)]
@@ -1046,27 +1191,36 @@ export default {
     projectFullWaveform (rangeStart, rangeEnd, requestedCount = null) {
       const fullPeaks = this.fullWaveformPeaks
       if (!fullPeaks || !this.duration) return null
-      const canvas = this.$refs.waveformCanvas
       const targetCount = requestedCount == null
-        ? Math.max(1, Math.round(this.clamp(canvas ? canvas.width : 820, 280, 2048)))
+        ? Math.max(1, Math.ceil(this.waveformPixelWidth()))
         : Math.max(1, Math.round(requestedCount))
-      const minimums = new Float32Array(targetCount)
-      const maximums = new Float32Array(targetCount)
-      const sourceCount = fullPeaks.maximums.length
+      const projected = this.createPeakWaveform(targetCount)
+      const sourceChannels = this.getPeakChannels(fullPeaks)
+      const sourceCount = sourceChannels[0].maximums.length
       const sourceStart = this.clamp(rangeStart / this.duration, 0, 1) * sourceCount
       const sourceEnd = this.clamp(rangeEnd / this.duration, 0, 1) * sourceCount
       const sourceSpan = Math.max(Number.EPSILON, sourceEnd - sourceStart)
 
-      for (let outputIndex = 0; outputIndex < targetCount; outputIndex++) {
-        const first = Math.floor(sourceStart + outputIndex / targetCount * sourceSpan)
-        const last = Math.max(first + 1, Math.ceil(sourceStart + (outputIndex + 1) / targetCount * sourceSpan))
-        for (let sourceIndex = first; sourceIndex < last && sourceIndex < sourceCount; sourceIndex++) {
-          minimums[outputIndex] = Math.min(minimums[outputIndex], fullPeaks.minimums[sourceIndex])
-          maximums[outputIndex] = Math.max(maximums[outputIndex], fullPeaks.maximums[sourceIndex])
+      for (let channel = 0; channel < projected.channels.length; channel++) {
+        const sourceChannel = sourceChannels[Math.min(channel, sourceChannels.length - 1)]
+        const outputChannel = projected.channels[channel]
+        for (let outputIndex = 0; outputIndex < targetCount; outputIndex++) {
+          const first = Math.floor(sourceStart + outputIndex / targetCount * sourceSpan)
+          const last = Math.max(first + 1, Math.ceil(sourceStart + (outputIndex + 1) / targetCount * sourceSpan))
+          for (let sourceIndex = first; sourceIndex < last && sourceIndex < sourceCount; sourceIndex++) {
+            outputChannel.minimums[outputIndex] = Math.min(
+              outputChannel.minimums[outputIndex],
+              sourceChannel.minimums[sourceIndex]
+            )
+            outputChannel.maximums[outputIndex] = Math.max(
+              outputChannel.maximums[outputIndex],
+              sourceChannel.maximums[sourceIndex]
+            )
+          }
         }
       }
 
-      return { minimums, maximums }
+      return projected
     },
 
     detailedWaveformForTrim () {
@@ -1130,7 +1284,7 @@ export default {
       this.waveformInput = null
       this.waveformViewStart = 0
       this.waveformViewEnd = this.duration
-      this.waveformPeaks = this.fullWaveformPeaks
+      this.waveformPeaks = this.overviewWaveformPeaks || this.fullWaveformPeaks
       this.waveformProgress = 0
       this.isGeneratingWaveform = false
       this.waveformInteraction = null
@@ -1158,6 +1312,7 @@ export default {
       this.waveformInput = null
       this.waveformPeaks = null
       this.fullWaveformPeaks = null
+      this.overviewWaveformPeaks = null
       this.detailedWaveformCache = null
       this.waveformViewStart = 0
       this.waveformViewEnd = 0
@@ -1207,8 +1362,10 @@ export default {
       const waveformWidth = Math.max(1, width - sideGutter * 2)
       const waveformRight = waveformLeft + waveformWidth
       const waveformHeight = Math.max(1, height - handleGutter)
-      const center = waveformHeight / 2
-      const amplitudeHeight = center - 18
+      const laneCount = this.audioChannels === 2 ? 2 : 1
+      const laneHeight = waveformHeight / laneCount
+      const amplitudeHeight = Math.max(1, laneHeight / 2 - (laneCount === 2 ? 9 : 18))
+      const laneCenter = channel => laneHeight * (channel + 0.5)
       const peaks = this.waveformPeaks
       const startX = this.timeToWaveformX(this.trimStart, width)
       const endX = this.timeToWaveformX(this.trimEnd, width)
@@ -1227,45 +1384,70 @@ export default {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)'
       ctx.lineWidth = 1
       ctx.beginPath()
-      ctx.moveTo(waveformLeft, center + 0.5)
-      ctx.lineTo(waveformRight, center + 0.5)
+      for (let channel = 0; channel < laneCount; channel++) {
+        const center = laneCenter(channel)
+        ctx.moveTo(waveformLeft, center + 0.5)
+        ctx.lineTo(waveformRight, center + 0.5)
+      }
       ctx.stroke()
+      if (laneCount === 2) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
+        ctx.beginPath()
+        ctx.moveTo(waveformLeft, laneHeight + 0.5)
+        ctx.lineTo(waveformRight, laneHeight + 0.5)
+        ctx.stroke()
+      }
 
       if (peaks) {
         const sampleData = peaks.mode === 'samples' ? peaks : null
         const peakData = sampleData ? sampleData.fallbackPeaks : peaks
+        const peakChannels = this.getPeakChannels(peakData)
+        const sampleChannels = sampleData ? sampleData.channels : []
         let absolutePeak = 0
-        if (peakData) {
-          for (let index = 0; index < peakData.maximums.length; index++) {
-            absolutePeak = Math.max(absolutePeak, peakData.maximums[index], -peakData.minimums[index])
+        for (const channelData of peakChannels) {
+          for (let index = 0; index < channelData.maximums.length; index++) {
+            absolutePeak = Math.max(
+              absolutePeak,
+              channelData.maximums[index],
+              -channelData.minimums[index]
+            )
           }
         }
-        if (sampleData) {
-          for (let index = 0; index < sampleData.values.length; index++) {
-            absolutePeak = Math.max(absolutePeak, Math.abs(sampleData.values[index]))
+        for (const channelData of sampleChannels) {
+          for (let index = 0; index < channelData.values.length; index++) {
+            absolutePeak = Math.max(absolutePeak, Math.abs(channelData.values[index]))
           }
         }
         const gain = 1 / Math.max(0.12, absolutePeak)
 
-        if (peakData) {
-          const drawPeaks = color => {
+        if (peakChannels.length) {
+          const drawPeakChannel = (channelData, center, color) => {
             ctx.strokeStyle = color
             ctx.lineWidth = 1
             ctx.beginPath()
             for (let offset = 0; offset < Math.ceil(waveformWidth); offset++) {
-              const first = Math.floor(offset / waveformWidth * peakData.maximums.length)
-              const last = Math.max(first + 1, Math.ceil((offset + 1) / waveformWidth * peakData.maximums.length))
+              const first = Math.floor(offset / waveformWidth * channelData.maximums.length)
+              const last = Math.max(
+                first + 1,
+                Math.ceil((offset + 1) / waveformWidth * channelData.maximums.length)
+              )
               let minimum = 0
               let maximum = 0
-              for (let index = first; index < last && index < peakData.maximums.length; index++) {
-                minimum = Math.min(minimum, peakData.minimums[index])
-                maximum = Math.max(maximum, peakData.maximums[index])
+              for (let index = first; index < last && index < channelData.maximums.length; index++) {
+                minimum = Math.min(minimum, channelData.minimums[index])
+                maximum = Math.max(maximum, channelData.maximums[index])
               }
               const x = waveformLeft + offset + 0.5
               ctx.moveTo(x, center - maximum * gain * amplitudeHeight)
               ctx.lineTo(x, center - minimum * gain * amplitudeHeight)
             }
             ctx.stroke()
+          }
+          const drawPeaks = color => {
+            for (let channel = 0; channel < laneCount; channel++) {
+              const channelData = peakChannels[Math.min(channel, peakChannels.length - 1)]
+              drawPeakChannel(channelData, laneCenter(channel), color)
+            }
           }
 
           ctx.save()
@@ -1285,8 +1467,8 @@ export default {
           ctx.restore()
         }
 
-        if (sampleData && sampleData.values.length) {
-          const drawSamples = color => {
+        if (sampleChannels.some(channel => channel.values.length)) {
+          const drawSampleChannel = (channelData, center, color) => {
             const sampleX = time => waveformLeft +
               (time - this.waveformViewStart) / (this.waveformViewEnd - this.waveformViewStart) * waveformWidth
             ctx.strokeStyle = color
@@ -1295,23 +1477,29 @@ export default {
             ctx.lineJoin = 'round'
             ctx.lineCap = 'round'
             ctx.beginPath()
-            for (let index = 0; index < sampleData.values.length; index++) {
-              const x = sampleX(sampleData.times[index])
-              const y = center - sampleData.values[index] * gain * amplitudeHeight
+            for (let index = 0; index < channelData.values.length; index++) {
+              const x = sampleX(channelData.times[index])
+              const y = center - channelData.values[index] * gain * amplitudeHeight
               if (index === 0) ctx.moveTo(x, y)
               else ctx.lineTo(x, y)
             }
             ctx.stroke()
 
-            const sampleSpacing = waveformWidth / Math.max(1, sampleData.values.length - 3)
-            if (sampleData.showsIndividualSamples && sampleSpacing >= 5) {
-              for (let index = 0; index < sampleData.values.length; index++) {
-                const x = sampleX(sampleData.times[index])
-                const y = center - sampleData.values[index] * gain * amplitudeHeight
+            const sampleSpacing = waveformWidth / Math.max(1, channelData.values.length - 3)
+            if (channelData.showsIndividualSamples && sampleSpacing >= 5) {
+              for (let index = 0; index < channelData.values.length; index++) {
+                const x = sampleX(channelData.times[index])
+                const y = center - channelData.values[index] * gain * amplitudeHeight
                 ctx.beginPath()
                 ctx.arc(x, y, 2.25, 0, Math.PI * 2)
                 ctx.fill()
               }
+            }
+          }
+          const drawSamples = color => {
+            for (let channel = 0; channel < laneCount; channel++) {
+              const channelData = sampleChannels[Math.min(channel, sampleChannels.length - 1)]
+              if (channelData) drawSampleChannel(channelData, laneCenter(channel), color)
             }
           }
 
@@ -1328,6 +1516,14 @@ export default {
           ctx.restore()
           ctx.restore()
         }
+      }
+
+      if (laneCount === 2) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.42)'
+        ctx.font = '600 10px system-ui, sans-serif'
+        ctx.textBaseline = 'top'
+        ctx.fillText('L', waveformLeft + 5, 5)
+        ctx.fillText('R', waveformLeft + 5, laneHeight + 5)
       }
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
@@ -1537,7 +1733,7 @@ export default {
         this.waveformInput = null
         this.waveformViewStart = 0
         this.waveformViewEnd = this.duration
-        this.waveformPeaks = this.fullWaveformPeaks
+        this.waveformPeaks = this.overviewWaveformPeaks || this.fullWaveformPeaks
         this.waveformProgress = 0
         this.isGeneratingWaveform = false
       }
@@ -1669,7 +1865,8 @@ export default {
       const exportOptions = {
         format: this.outputFormat,
         preset: { ...this.outputPreset },
-        bitrate: this.audioBitrate
+        bitrate: this.audioBitrate,
+        mixToMono: this.audioChannels === 2 && this.mixToMono
       }
       const filename = this.makeOutputName()
       const originalTime = this.audio.currentTime
@@ -1756,6 +1953,7 @@ export default {
       const formatName = exportOptions.format || this.outputFormat
       const preset = exportOptions.preset || this.outputPreset
       const bitrate = exportOptions.bitrate || this.audioBitrate
+      const mixToMono = Boolean(exportOptions.mixToMono)
       const input = new Input({
         source: new BlobSource(this.sourceFile, { maxCacheSize: 8 * 1024 * 1024 }),
         formats: ALL_FORMATS
@@ -1770,7 +1968,10 @@ export default {
           audioTrack.getNumberOfChannels(),
           audioTrack.getSampleRate()
         ])
-        const channels = Math.min(Math.max(1, Number(sourceChannels) || 1), 2)
+        const sourceChannelCount = Math.max(1, Number(sourceChannels) || 1)
+        const channels = mixToMono && sourceChannelCount === 2
+          ? 1
+          : Math.min(sourceChannelCount, 2)
         const sampleRate = formatName === 'wav'
           ? Math.max(1, Number(sourceSampleRate) || 48000)
           : 48000
@@ -2341,6 +2542,31 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
 .output-settings select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(136, 51, 136, 0.1);
+}
+
+.output-settings .mix-mono-option {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+}
+
+.mix-mono-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.08rem 0 0;
+  accent-color: var(--accent);
+}
+
+.mix-mono-option span {
+  color: var(--ink);
+  font-size: 0.72rem;
+}
+
+.mix-mono-option:has(input:disabled) {
+  cursor: not-allowed;
+  opacity: 0.65;
 }
 
 .output-summary { margin: 0 0 0.8rem; font-size: 0.78rem; }
