@@ -1,16 +1,16 @@
 ---
 title: Free Online Audio Trimmer with Waveform
-description: Trim MP3, WAV, M4A, Ogg, Opus, FLAC, and AAC audio with an interactive waveform. Export Ogg, MP3, M4A, or WAV locally.
+description: Trim audio with an interactive waveform. Convert MP3, WAV, M4A, Ogg, Opus, FLAC, or AAC, choose a bitrate, and mix stereo to mono locally.
 pageClass: crop-tool-layout
 permalink: /trimaudio/
 canonicalUrl: https://curvednebula.com/trimaudio/
 meta:
   - name: keywords
-    content: trim audio online, audio cutter online, MP3 trimmer, WAV trimmer, audio waveform editor, cut audio in browser, private audio trimmer
+    content: trim audio online, audio cutter online, audio bitrate converter, change audio bitrate, convert audio format, MP3 converter, MP3 trimmer, WAV trimmer, stereo to mono converter, audio waveform editor, cut audio in browser, private audio trimmer
   - property: og:title
     content: Free Online Audio Trimmer with Waveform
   - property: og:description
-    content: Select a range on an interactive waveform and export trimmed Ogg, MP3, M4A, or WAV audio locally in your browser.
+    content: Trim and convert audio locally, choose an output bitrate, mix stereo to mono, and export Ogg, MP3, M4A, or WAV.
   - property: og:type
     content: website
   - property: og:url
@@ -20,7 +20,7 @@ meta:
   - name: twitter:title
     content: Free Online Audio Trimmer with Waveform
   - name: twitter:description
-    content: Trim audio against an interactive waveform without uploading your file.
+    content: Trim and convert audio, choose an output bitrate, and optionally mix stereo to mono without uploading your file.
 ---
 
 <AudioTrim />
@@ -29,7 +29,7 @@ meta:
 
 Cut unwanted time from the beginning or end of an audio file using an interactive waveform. Click or drag the waveform to move the playhead, drag either edge handle to select the part to keep, preview the selection, and export it as Ogg Opus, MP3, M4A AAC, or WAV audio.
 
-Stereo audio can optionally be mixed down to mono when you export it.
+Convert between supported output formats, select a different bitrate for compressed audio, and optionally mix stereo audio down to mono when you export it.
 
 Your audio stays on your device and is never uploaded.
 

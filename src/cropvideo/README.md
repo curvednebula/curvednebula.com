@@ -1,16 +1,16 @@
 ---
 title: Free Online Video Cropper, Trimmer, and Resizer
-description: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos to a new duration, aspect ratio, or exact resolution. Export privately as WebM, MKV, or MP4.
+description: Crop, trim, resize, and convert MP4, WebM, MKV, MOV, or AVI video. Adjust output quality and bitrate, then export privately in your browser.
 pageClass: crop-tool-layout
 permalink: /cropvideo/
 canonicalUrl: https://curvednebula.com/cropvideo/
 meta:
   - name: keywords
-    content: crop video online, trim video online, resize video online, MKV video cropper, AVI video cropper, crop AVI video, change video aspect ratio, video resolution converter, WebCodecs video editor, crop video to 9:16, crop video to 16:9
+    content: crop video online, trim video online, resize video online, video bitrate converter, change video bitrate, convert video format, compress video online, MKV video cropper, AVI video cropper, crop AVI video, change video aspect ratio, video resolution converter, WebCodecs video editor, crop video to 9:16, crop video to 16:9
   - property: og:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - property: og:description
-    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM, MKV, or MP4.
+    content: Crop, trim, resize, and convert video locally. Adjust output quality and bitrate, then export as WebM, MKV, or MP4.
   - property: og:type
     content: website
   - property: og:url
@@ -20,7 +20,7 @@ meta:
   - name: twitter:title
     content: Free Online Video Cropper, Trimmer, and Resizer
   - name: twitter:description
-    content: Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally, then export as WebM, MKV, or MP4.
+    content: Crop, trim, resize, and convert video locally while adjusting output quality and bitrate.
 ---
 
 <VideoCrop />
@@ -28,6 +28,8 @@ meta:
 # Crop, Trim, and Resize Videos Online
 
 Crop a video to a custom area or place it inside a fixed frame, trim unwanted time from the beginning or end, resize it to an exact output resolution, and save the result as WebM, MKV, or MP4. MP4, WebM, MKV, MOV, and AVI input files are supported. Processing happens locally in your browser — your video is never uploaded.
+
+The Quality control adjusts the output video bitrate, allowing you to create a smaller file or retain more visual detail when converting between supported formats.
 
 ## How to crop a video
 
@@ -37,7 +39,7 @@ Crop a video to a custom area or place it inside a fixed frame, trim unwanted ti
 4. Drag the trim handles to select the part of the video to keep, or set either boundary to the playhead.
 5. Choose an aspect ratio such as 16:9, 1:1, 4:5, or 9:16.
 6. Keep the crop resolution, choose a long-edge preset, or enter a custom width and height.
-7. Select WebM, MKV, or MP4, set a frame rate and quality level, then choose **Save Video**.
+7. Select WebM, MKV, or MP4, set a frame rate and quality level to adjust the output bitrate, then choose **Save Video**.
 
 The editor previews only the selected time range with the same crop. Exported dimensions are kept even for broad codec compatibility.
 
