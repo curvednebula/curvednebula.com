@@ -71,6 +71,7 @@
               class="play-button"
               type="button"
               :aria-label="isPlaying ? 'Pause preview' : 'Play preview'"
+              :disabled="isExporting"
               @click="togglePlayback"
             >
               <svg v-if="!isPlaying" viewBox="0 0 24 24" aria-hidden="true">
@@ -88,6 +89,7 @@
                 :max="duration || 0"
                 step="0.01"
                 :value="currentTime"
+                :disabled="isExporting"
                 aria-label="Video position"
                 @input="scrubVideo"
               >
@@ -3006,6 +3008,10 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   background: #883388;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
+
+.timeline:disabled { opacity: 1; }
+.timeline:disabled::-webkit-slider-thumb { border-color: #b8b2bd; background: #6f6a75; }
+.timeline:disabled::-moz-range-thumb { border-color: #b8b2bd; background: #6f6a75; }
 
 .timecode {
   grid-column: 2;
