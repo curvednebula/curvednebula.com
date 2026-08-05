@@ -109,10 +109,6 @@ The complementary color is the hue directly opposite your base color on the colo
 
 The two wheels order the hues differently. The red-yellow-blue wheel comes from mixing pigment and is what most color theory teaching is based on; the RGB hue circle comes from mixing light and is what CSS `hsl()` and every screen uses. Choose RYB when you want the palette to feel like traditional color theory, and RGB when you want the hue offsets to match the values in your code.
 
-### What is the difference between saturation and value?
-
-Saturation is how much of the hue is present, from a neutral grey at 0% to the purest form of the color at 100%. Value is how bright the color is, from black at 0% to the brightest version of that hue at 100%. Lowering saturation mutes a color; lowering value darkens it.
-
 ### How are the tints and shades generated?
 
 Each hue in the scheme is converted to lightness, then five levels are derived from it: two lighter steps (100 and 300), the base level (500), and two darker steps (700 and 900). Tints are slightly desaturated and shades slightly more saturated, which keeps pale colors from looking washed out and dark colors from looking muddy.
