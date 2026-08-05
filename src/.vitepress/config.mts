@@ -35,7 +35,7 @@ export default defineConfig({
           { text: 'Crop & Resize Image', link: '/cropimage/' },
           { text: 'Crop & Trim Video', link: '/cropvideo/' },
           { text: 'Trim Audio', link: '/trimaudio/' },
-          { text: 'Color Palette Generator', link: '/colorpalette/' }
+          { text: 'UI Color Palette Generator', link: '/colorpalette/' }
         ]
       },
       {

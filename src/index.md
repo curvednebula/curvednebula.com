@@ -1,15 +1,15 @@
 ---
 title: Creative Apps and Online Tools
-description: Curved Nebula creates color grading, photo editing, sleep sound, and private browser-based image and video tools for Android, iOS, macOS, and the web.
+description: Curved Nebula creates color grading, photo editing, sleep sound, and private browser-based UI color palette, image, and video tools for Android, iOS, macOS, and the web.
 permalink: /
 canonicalUrl: https://curvednebula.com/
 meta:
   - name: keywords
-    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, sleep sounds
+    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, sleep sounds, UI color palette generator, CSS variables generator, design tokens
   - property: og:title
     content: Curved Nebula Creative Apps and Online Tools
   - property: og:description
-    content: Discover Photo Curves for color grading, Lullwave for calming sounds, and private browser-based image and video tools.
+    content: Discover Photo Curves for color grading, Lullwave for calming sounds, a UI color palette generator, and private browser-based image and video tools.
   - property: og:type
     content: website
   - property: og:url
@@ -140,8 +140,8 @@ meta:
     </div>
   </div>
   <div class="app-item">
-    <a href="/colorpalette/" aria-label="Open the free online color palette generator">
-      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Color Palette Generator online tool icon">
+    <a href="/colorpalette/" aria-label="Open the free online UI color palette generator">
+      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="UI Color Palette Generator online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
         <circle cx="64" cy="41" r="15" fill="#42a1eb"/>
         <circle cx="41" cy="80" r="15" fill="#eb42a1"/>
@@ -149,8 +149,8 @@ meta:
       </svg>
     </a>
     <div class="app-info">
-      <a href="/colorpalette/"><h3>Color Palette Generator</h3></a>
-      <p>Build a complementary, triadic, or analogous color palette from a single color using hue, saturation, and value sliders. Export hex values, CSS variables, or JSON.</p>
+      <a href="/colorpalette/"><h3>UI Color Palette Generator</h3></a>
+      <p>Build a complete UI color palette from a single color, preview it as a light and dark interface, and export CSS variables, design tokens, or JSON.</p>
     </div>
   </div>
   <div class="app-item">
