@@ -160,8 +160,6 @@
           </div>
         </div>
 
-        <p class="scheme-description">{{ activeScheme.description }}</p>
-
         <div class="palette" aria-label="Generated color palette">
           <div class="palette-headers">
             <div v-for="role in palette" :key="`${role.slug}-heading`" class="role-heading">
@@ -188,11 +186,105 @@
           </div>
         </div>
 
+        <div class="preview-block">
+          <div class="preview-head">
+            <span class="setting-heading">Preview</span>
+            <div class="chip-row" role="group" aria-label="Preview interface theme">
+              <button
+                class="chip"
+                type="button"
+                :class="{ 'is-active': previewMode === 'light' }"
+                :aria-pressed="previewMode === 'light' ? 'true' : 'false'"
+                @click="previewMode = 'light'"
+              >
+                Light UI
+              </button>
+              <button
+                class="chip"
+                type="button"
+                :class="{ 'is-active': previewMode === 'dark' }"
+                :aria-pressed="previewMode === 'dark' ? 'true' : 'false'"
+                @click="previewMode = 'dark'"
+              >
+                Dark UI
+              </button>
+            </div>
+          </div>
+
+          <div class="preview-pair">
+            <div v-for="variant in previewVariants" :key="variant.key" class="preview-pane">
+              <span class="preview-pane-label">{{ variant.label }}</span>
+              <section
+                class="preview"
+                :style="{ background: variant.theme.surface, color: variant.theme.text, borderColor: variant.theme.line }"
+                :aria-label="`Palette preview: ${variant.label}`"
+              >
+                <div class="mock-bar" :style="{ background: variant.theme.card, borderColor: variant.theme.line }">
+                  <span class="mock-logo" :style="{ background: variant.theme.primary }" />
+                  <span class="mock-brand" :style="{ color: variant.theme.cardHeading }">Dashboard</span>
+                  <span class="mock-nav">
+                    <span :style="{ color: variant.theme.cardAccent }">Overview</span>
+                    <span :style="{ color: variant.theme.cardMuted }">Reports</span>
+                  </span>
+                  <span class="mock-avatar" :style="{ background: variant.theme.muted, color: variant.theme.mutedText }">CN</span>
+                </div>
+
+                <div class="mock-hero">
+                  <span class="preview-eyebrow" :style="{ color: variant.theme.accent }">{{ activeScheme.label }}</span>
+                  <h3 :style="{ color: variant.theme.heading }">A place for every color</h3>
+                  <p>One hue leads, the rest wait their turn.</p>
+                </div>
+
+                <div class="mock-controls">
+                  <span class="preview-button" :style="{ background: variant.theme.primary, color: variant.theme.primaryText }">
+                    Primary
+                  </span>
+                  <span class="preview-button is-ghost" :style="{ borderColor: variant.theme.accent, color: variant.theme.accent }">
+                    Accent
+                  </span>
+                  <span class="preview-button" :style="{ background: variant.theme.muted, color: variant.theme.mutedText }">
+                    Subtle
+                  </span>
+                  <span
+                    v-for="role in variant.roles"
+                    :key="`tag-${variant.key}-${role.slug}`"
+                    class="mock-tag"
+                    :style="{ background: role.tint, color: role.ink, borderColor: role.line }"
+                  >
+                    {{ role.label }}
+                  </span>
+                </div>
+
+                <div class="mock-card" :style="{ background: variant.theme.card, borderColor: variant.theme.line }">
+                  <span class="mock-card-head">
+                    <span :style="{ color: variant.theme.cardHeading }">Traffic by channel</span>
+                    <span :style="{ color: variant.theme.cardMuted }">30 days</span>
+                  </span>
+                  <span
+                    v-for="role in variant.roles"
+                    :key="`row-${variant.key}-${role.slug}`"
+                    class="mock-row"
+                  >
+                    <span class="mock-row-name" :style="{ color: variant.theme.cardText }">
+                      <span class="mock-swatch" :style="{ background: role.solid, borderColor: role.line }" />
+                      {{ role.label }}
+                    </span>
+                    <span class="mock-track" :style="{ background: variant.theme.muted }">
+                      <span class="mock-fill" :style="{ background: role.solid, width: role.metric }" />
+                    </span>
+                    <span class="mock-row-value" :style="{ color: role.onCard }">{{ role.metric }}</span>
+                  </span>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+
         <div class="export-actions">
           <span class="setting-heading">Export</span>
-          <button class="text-button" type="button" @click="copyText('hex', hexListText)">Copy hex list</button>
-          <button class="text-button" type="button" @click="copyText('css', cssText)">Copy CSS variables</button>
-          <button class="text-button" type="button" @click="copyText('json', jsonText)">Copy JSON</button>
+          <button class="copy-button" type="button" @click="copyText('hex', hexListText)">Copy hex list</button>
+          <button class="copy-button" type="button" @click="copyText('css', cssText)">Copy CSS variables</button>
+          <button class="copy-button" type="button" @click="copyText('json', jsonText)">Copy JSON</button>
           <button class="primary-button" type="button" @click="downloadPalettePng">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/>
@@ -202,34 +294,6 @@
         </div>
       </aside>
     </div>
-
-    <section
-      class="preview"
-      :style="{ background: previewTheme.surface, color: previewTheme.text, borderColor: previewTheme.line }"
-      aria-label="Palette preview"
-    >
-      <div class="preview-copy">
-        <span class="preview-eyebrow" :style="{ color: previewTheme.accent }">{{ activeScheme.label }}</span>
-        <h3 :style="{ color: previewTheme.heading }">Every palette needs a place to sit</h3>
-        <p>
-          The base color carries the surface and the text, and the harmony color earns attention because
-          nothing else competes for it.
-        </p>
-        <div class="preview-buttons">
-          <span class="preview-button" :style="{ background: previewTheme.primary, color: previewTheme.primaryText }">
-            Primary action
-          </span>
-          <span class="preview-button is-ghost" :style="{ borderColor: previewTheme.accent, color: previewTheme.accent }">
-            Accent
-          </span>
-        </div>
-      </div>
-      <div class="preview-card" :style="{ background: previewTheme.card, borderColor: previewTheme.line }">
-        <span class="preview-bar" :style="{ background: previewTheme.primary, width: '82%' }" />
-        <span class="preview-bar" :style="{ background: previewTheme.accent, width: '58%' }" />
-        <span class="preview-bar" :style="{ background: previewTheme.muted, width: '34%' }" />
-      </div>
-    </section>
 
     <p v-if="message" class="status-message" :class="{ error: messageIsError }" role="status">{{ message }}</p>
   </div>
@@ -244,11 +308,23 @@ const LEVELS = [
   { key: '900', darken: 0.56, saturate: 1.12 }
 ]
 
+// Sample readings for the preview tiles and chart rows, one per role in order.
+const PREVIEW_METRICS = ['82%', '64%', '47%', '33%', '21%']
+
+// Hue offsets are measured from the base hue on whichever wheel is selected. The
+// prose explaining what each harmony is for lives on the page around the tool,
+// not here.
 const SCHEMES = [
+  {
+    key: 'monochromatic',
+    label: 'Monochromatic',
+    roles: [
+      { label: 'Base', offset: 0 }
+    ]
+  },
   {
     key: 'complementary',
     label: 'Complementary',
-    description: 'The base hue plus the hue directly opposite it on the wheel. This is the strongest contrast two hues can make, so it works best with one color dominant and the complement held back for accents.',
     roles: [
       { label: 'Base', offset: 0 },
       { label: 'Complement', offset: 180 }
@@ -257,7 +333,6 @@ const SCHEMES = [
   {
     key: 'split',
     label: 'Split complementary',
-    description: 'Rather than the exact opposite, the two hues either side of it. Keeps almost all of the contrast of a complementary pair with much less tension, which makes it the most forgiving high-contrast scheme.',
     roles: [
       { label: 'Base', offset: 0 },
       { label: 'Split A', offset: 150 },
@@ -265,9 +340,18 @@ const SCHEMES = [
     ]
   },
   {
+    key: 'double-split',
+    label: 'Double split',
+    roles: [
+      { label: 'Base split A', offset: -30 },
+      { label: 'Base split B', offset: 30 },
+      { label: 'Far split A', offset: 150 },
+      { label: 'Far split B', offset: 210 }
+    ]
+  },
+  {
     key: 'triadic',
     label: 'Triadic',
-    description: 'Three hues spaced evenly around the wheel. Vivid and balanced, but let one hue lead and use the other two sparingly or the result reads as noise.',
     roles: [
       { label: 'Base', offset: 0 },
       { label: 'Triad A', offset: 120 },
@@ -277,7 +361,6 @@ const SCHEMES = [
   {
     key: 'tetradic',
     label: 'Tetradic',
-    description: 'Two complementary pairs: the base and its complement, plus a second pair one step around the wheel. Rich, and it needs a clearly dominant color plus plenty of neutral space.',
     roles: [
       { label: 'Base', offset: 0 },
       { label: 'Complement', offset: 180 },
@@ -286,9 +369,18 @@ const SCHEMES = [
     ]
   },
   {
+    key: 'square',
+    label: 'Square',
+    roles: [
+      { label: 'Base', offset: 0 },
+      { label: 'Square B', offset: 90 },
+      { label: 'Complement', offset: 180 },
+      { label: 'Square D', offset: 270 }
+    ]
+  },
+  {
     key: 'analogous',
     label: 'Analogous',
-    description: 'Neighbouring hues. Calm and cohesive with no complementary contrast at all, so reach for a tint or a shade when you need emphasis.',
     roles: [
       { label: 'Analogous A', offset: -30 },
       { label: 'Base', offset: 0 },
@@ -296,11 +388,13 @@ const SCHEMES = [
     ]
   },
   {
-    key: 'monochromatic',
-    label: 'Monochromatic',
-    description: 'One hue across five levels of lightness. The safest scheme there is, and a good starting point before you add a single complementary accent.',
+    key: 'accented',
+    label: 'Accented analogous',
     roles: [
-      { label: 'Base', offset: 0 }
+      { label: 'Analogous A', offset: -30 },
+      { label: 'Base', offset: 0 },
+      { label: 'Analogous B', offset: 30 },
+      { label: 'Accent', offset: 180 }
     ]
   }
 ]
@@ -426,6 +520,14 @@ function hexToRgb (text) {
   }
 }
 
+function mixRgb (first, second, ratio) {
+  return {
+    r: first.r + (second.r - first.r) * ratio,
+    g: first.g + (second.g - first.g) * ratio,
+    b: first.b + (second.b - first.b) * ratio
+  }
+}
+
 function relativeLuminance (rgb) {
   const channel = input => {
     const ratio = input / 255
@@ -444,6 +546,131 @@ function readableTextColor (rgb) {
   const white = { r: 255, g: 255, b: 255 }
   const black = { r: 17, g: 17, b: 17 }
   return contrastRatio(rgb, white) >= contrastRatio(rgb, black) ? '#ffffff' : '#111111'
+}
+
+// Text in the preview has to stay legible even where a ramp is compressed: a
+// pale, unsaturated yellow's 900 shade is only about 2.5:1 against its own 100
+// tint. Take the intended level when it carries enough contrast, step to another
+// level on the same ramp when it does not, and only fall back to plain near-black
+// or near-white when the hue itself cannot do the job.
+function readableLevel (levels, backgroundHex, preferredKeys, minimum = 4.5) {
+  const background = hexToRgb(backgroundHex)
+  for (const key of preferredKeys) {
+    if (contrastRatio(hexToRgb(levels[key]), background) >= minimum) return levels[key]
+  }
+  return readableTextColor(background)
+}
+
+// Secondary text has to clear the same threshold as body copy, so asking for the
+// first level that passes can hand back something louder than the body color it
+// sits beneath. Take the quietest passing level instead, or null when the ramp
+// has nothing legible to offer and the caller should reuse its body color.
+function quietestReadableLevel (levels, backgroundHex, minimum = 4.5) {
+  const background = hexToRgb(backgroundHex)
+  let best = null
+  for (const key of Object.keys(levels)) {
+    const ratio = contrastRatio(hexToRgb(levels[key]), background)
+    if (ratio >= minimum && (!best || ratio < best.ratio)) best = { hex: levels[key], ratio }
+  }
+  return best ? best.hex : null
+}
+
+// Two ways to seat a palette, both common in real interfaces. A neutral page
+// keeps white (or near-black) behind everything and lets only the cards carry the
+// hue; a tinted page puts the color behind everything and keeps the cards plain.
+//
+// Surfaces get their own ladder rather than reusing ramp levels. A base color
+// that is very dark or very pale crushes its own ramp — a near-black base puts
+// its 900 shade within 1.003:1 of the page behind it, which is invisible.
+//
+// Page, card and quiet fill are fixed mixes toward white (light) or black (dark),
+// which is what makes them read as tints and shades of the hue rather than as the
+// hue itself. They are deliberately not luminance-matched: a pale yellow is
+// physically bright, so forcing one down to a blue tint's luminance turns it into
+// vivid #f4f43f instead of a tint. Tone alone therefore cannot always separate a
+// card from the page — which is what the border is for, so that one IS a
+// luminance target, dark enough in light mode and light enough in dark mode to
+// outline a card whatever its hue. `null` means plain white.
+const SURFACE_STEPS = {
+  light: {
+    neutral: { pageMix: null, cardMix: 0.9, quietMix: 0.74, lineLum: 0.42 },
+    tinted: { pageMix: 0.85, cardMix: null, quietMix: 0.66, lineLum: 0.38 }
+  },
+  dark: {
+    neutral: { pageMix: 0.9, cardMix: 0.78, quietMix: 0.58, lineLum: 0.1 },
+    tinted: { pageMix: 0.8, cardMix: 0.64, quietMix: 0.44, lineLum: 0.14 }
+  }
+}
+
+// One definition of the two seatings, shared by the preview panes and all three
+// exports so the labels a reader sees match the values they copy.
+const SURFACE_VARIANTS = [
+  {
+    key: 'neutral',
+    number: 1,
+    summary: 'plain page, tinted cards',
+    detail: 'The page stays white in light mode and near-black in dark mode, and only the cards carry a tint of the base hue. The more common arrangement.',
+    lightLabel: 'White page, tinted cards',
+    darkLabel: 'Near-black page, tinted cards'
+  },
+  {
+    key: 'tinted',
+    number: 2,
+    summary: 'tinted page, plain cards',
+    detail: 'The page carries a tint of the base hue and the cards stay plain: white in light mode, a lighter shade in dark mode.',
+    lightLabel: 'Tinted page, white cards',
+    darkLabel: 'Tinted page, lighter cards'
+  }
+]
+
+function purestTone (hue, saturation) {
+  return hsvToRgb(hue, Math.min(saturation, 85), 100)
+}
+
+function mixedTone (hue, saturation, ratio, mode) {
+  if (ratio === null) return '#ffffff'
+  const toward = mode === 'dark' ? { r: 0, g: 0, b: 0 } : { r: 255, g: 255, b: 255 }
+  return rgbToHex(mixRgb(purestTone(hue, saturation), toward, ratio))
+}
+
+// White and black bracket the whole luminance range, so mixing toward whichever
+// side the target lies on always converges on it.
+function toneAtLuminance (hue, saturation, target) {
+  const pure = purestTone(hue, saturation)
+  const towardWhite = target > relativeLuminance(pure)
+  const toward = towardWhite ? { r: 255, g: 255, b: 255 } : { r: 0, g: 0, b: 0 }
+  let low = 0
+  let high = 1
+  for (let step = 0; step < 20; step++) {
+    const middle = (low + high) / 2
+    const luminance = relativeLuminance(mixRgb(pure, toward, middle))
+    if (towardWhite ? luminance < target : luminance > target) low = middle
+    else high = middle
+  }
+  return rgbToHex(mixRgb(pure, toward, (low + high) / 2))
+}
+
+// A near-grey base collapses every mix toward the same near-white, which can leave
+// a chip or a progress track invisible on the card it sits on. When the tint alone
+// does not separate, step by luminance instead.
+function separatedTone (candidate, cardHex, hue, saturation, mode) {
+  if (contrastRatio(hexToRgb(candidate), hexToRgb(cardHex)) >= 1.12) return candidate
+  const cardLuminance = relativeLuminance(hexToRgb(cardHex))
+  const target = mode === 'dark'
+    ? (cardLuminance + 0.05) * 1.35 - 0.05
+    : (cardLuminance + 0.05) / 1.35 - 0.05
+  return toneAtLuminance(hue, saturation, clamp(target, 0, 1))
+}
+
+function surfacePlan (hue, saturation, mode, variant) {
+  const step = SURFACE_STEPS[mode][variant]
+  const card = mixedTone(hue, saturation, step.cardMix, mode)
+  return {
+    surface: mixedTone(hue, saturation, step.pageMix, mode),
+    card,
+    subtle: separatedTone(mixedTone(hue, saturation, step.quietMix, mode), card, hue, saturation, mode),
+    line: toneAtLuminance(hue, saturation, step.lineLum)
+  }
 }
 
 function rampColor (hue, saturation, value, level) {
@@ -467,11 +694,13 @@ export default {
 
   data () {
     return {
-      hue: 268,
-      saturation: 74,
-      value: 62,
-      scheme: 'complementary',
+      // Blue is the most-cited favourite colour across cross-cultural surveys.
+      hue: 215,
+      saturation: 50,
+      value: 82,
+      scheme: 'monochromatic',
       wheelModel: 'ryb',
+      previewMode: 'light',
       // Filled in by the immediate baseHex watcher, before the first render.
       hexInput: '',
       copiedKey: '',
@@ -585,43 +814,125 @@ export default {
         'Use the left and right arrow keys to change hue and the up and down arrow keys to change saturation.'
     },
 
-    previewTheme () {
-      const base = this.swatchesBySlugKey(this.palette[0])
-      const accentRole = this.palette.length > 1
-        ? this.palette[this.palette.length - 1]
-        : this.palette[0]
-      const accent = this.swatchesBySlugKey(accentRole)
-      return {
-        surface: base['100'],
-        card: '#ffffff',
-        line: base['300'],
-        heading: base['900'],
-        text: base['700'],
-        muted: base['300'],
-        primary: base['500'],
-        primaryText: readableTextColor(hexToRgb(base['500'])),
-        accent: accent['700']
+    // The base hue is not always the first role: analogous schemes list a
+    // neighbour ahead of it, and the double split leaves it out altogether.
+    uiBaseRole () {
+      return this.palette.find(role => role.offset === 0) || this.palette[0]
+    },
+
+    // Whichever role sits furthest from the base around the wheel makes the
+    // strongest accent — the true complement rather than just the last role in
+    // the list. Distance is measured on the scheme's own wheel offsets, not on
+    // the resulting RGB hues, so the RYB mapping cannot bend a 180° pairing into
+    // looking closer than a 120° one.
+    uiAccentRole () {
+      const baseRole = this.uiBaseRole
+      let winner = baseRole
+      let furthest = -1
+      for (const role of this.palette) {
+        if (role === baseRole) continue
+        const delta = mod360(role.offset - baseRole.offset)
+        const distance = Math.min(delta, 360 - delta)
+        if (distance > furthest) {
+          furthest = distance
+          winner = role
+        }
       }
+      return winner
+    },
+
+    previewVariants () {
+      const isDark = this.previewMode === 'dark'
+      return SURFACE_VARIANTS.map(variant => ({
+        key: variant.key,
+        label: `Variant ${variant.number} · ${isDark ? variant.darkLabel : variant.lightLabel}`,
+        theme: this.uiTheme(this.previewMode, variant.key),
+        roles: this.uiRoles(this.previewMode, variant.key)
+      }))
     },
 
     hexListText () {
-      return this.palette
-        .map(role => `${role.label}: ${role.swatches.map(swatch => swatch.hex).join(' ')}`)
-        .join('\n')
+      const lines = [
+        `${this.activeScheme.label} palette from ${this.baseHex} · curvednebula.com`,
+        '',
+        'RAMPS'
+      ]
+      for (const role of this.palette) {
+        lines.push(`  ${role.label}: ${role.swatches.map(swatch => swatch.hex).join(' ')}`)
+      }
+      for (const variant of SURFACE_VARIANTS) {
+        lines.push('', `VARIANT ${variant.number} — ${variant.summary}`, `  ${variant.detail}`)
+        for (const mode of ['light', 'dark']) {
+          const tokens = this.uiTokens(mode, variant.key)
+          const width = Math.max(...tokens.map(token => token.name.length))
+          lines.push('', `  ${mode.toUpperCase()}`)
+          for (const token of tokens) {
+            lines.push(`    ${token.name.padEnd(width)}  ${token.hex}  ${token.note}`)
+          }
+        }
+      }
+      return lines.join('\n')
     },
 
     cssText () {
-      const lines = [`/* ${this.activeScheme.label} palette from ${this.baseHex} */`, ':root {']
+      const [first, second] = SURFACE_VARIANTS
+      const lines = [
+        `/* ${this.activeScheme.label} palette from ${this.baseHex} · curvednebula.com`,
+        ' *',
+        ` * Variant ${first.number} — ${first.summary}.`,
+        ` *   ${first.detail}`,
+        ` * Variant ${second.number} — ${second.summary}.`,
+        ` *   ${second.detail}`,
+        ' *',
+        ` * Variant ${first.number} applies by default. For variant ${second.number}, put`,
+        ` * data-ui-variant="${second.number}" on <html>. Both follow the reader's`,
+        ' * light or dark system setting. */',
+        ':root {',
+        '  /* Palette ramps */'
+      ]
       for (const role of this.palette) {
         for (const swatch of role.swatches) {
           lines.push(`  ${swatch.name}: ${swatch.hex};`)
         }
       }
-      lines.push('}')
+      lines.push('', `  /* Variant ${first.number} · light — ${first.summary} */`)
+      lines.push(...this.uiTokenLines('light', first.key, '  '))
+      lines.push('}', '')
+      lines.push(`:root[data-ui-variant='${second.number}'] {`)
+      lines.push(`  /* Variant ${second.number} · light — ${second.summary} */`)
+      lines.push(...this.uiTokenLines('light', second.key, '  '))
+      lines.push('}', '')
+      // Both dark blocks sit after both light ones, and the variant 2 selector
+      // carries the same extra specificity in each, so source order decides and
+      // dark always wins over light for whichever variant is active.
+      lines.push('@media (prefers-color-scheme: dark) {', '  :root {')
+      lines.push(`    /* Variant ${first.number} · dark — ${first.summary} */`)
+      lines.push(...this.uiTokenLines('dark', first.key, '    '))
+      lines.push('  }', '')
+      lines.push(`  :root[data-ui-variant='${second.number}'] {`)
+      lines.push(`    /* Variant ${second.number} · dark — ${second.summary} */`)
+      lines.push(...this.uiTokenLines('dark', second.key, '    '))
+      lines.push('  }', '}')
       return lines.join('\n')
     },
 
     jsonText () {
+      const ui = {}
+      for (const variant of SURFACE_VARIANTS) {
+        const themes = {}
+        for (const mode of ['light', 'dark']) {
+          themes[mode] = this.uiTokens(mode, variant.key).reduce((tokens, token) => {
+            tokens[token.name] = { hex: token.hex, use: token.note }
+            return tokens
+          }, {})
+        }
+        ui[`variant${variant.number}`] = {
+          summary: variant.summary,
+          description: variant.detail,
+          isDefault: variant.number === 1,
+          ...themes
+        }
+      }
       return JSON.stringify({
         base: this.baseHex,
         hsv: {
@@ -639,7 +950,8 @@ export default {
             colors[swatch.key] = swatch.hex
             return colors
           }, {})
-        }))
+        })),
+        ui
       }, null, 2)
     }
   },
@@ -683,6 +995,99 @@ export default {
         colors[swatch.key] = swatch.hex
         return colors
       }, {})
+    },
+
+    // Maps the palette onto the interface roles a design system actually needs.
+    // Takes the mode as an argument rather than reading previewMode so the
+    // exports can emit both themes no matter which one is on screen.
+    uiTheme (mode, variant = 'neutral') {
+      const isDark = mode === 'dark'
+      const base = this.swatchesBySlugKey(this.uiBaseRole)
+      const accent = this.swatchesBySlugKey(this.uiAccentRole)
+      const { surface, card, subtle, line } = surfacePlan(this.uiBaseRole.hue, this.saturation, mode, variant)
+      const inkKeys = isDark ? ['100', '300'] : ['900', '700']
+      const bodyKeys = isDark ? ['300', '100'] : ['700', '900']
+      const cardText = readableLevel(base, card, bodyKeys)
+      return {
+        surface,
+        card,
+        line,
+        muted: subtle,
+        mutedText: readableTextColor(hexToRgb(subtle)),
+        primary: base['500'],
+        primaryText: readableTextColor(hexToRgb(base['500'])),
+        // Headings are large enough to sit at the 3:1 threshold; body copy is not.
+        heading: readableLevel(base, surface, inkKeys, 3),
+        text: readableLevel(base, surface, bodyKeys),
+        accent: readableLevel(accent, surface, bodyKeys),
+        // The top bar and the chart card sit on `card`, not on the surface, so
+        // their text has to be measured against that background instead.
+        cardHeading: readableLevel(base, card, inkKeys, 3),
+        cardText,
+        cardMuted: quietestReadableLevel(base, card) || cardText,
+        cardAccent: readableLevel(accent, card, bodyKeys)
+      }
+    },
+
+    // Every harmony hue gets the same slots, so it can fill a chart bar, tint a
+    // chip, and label a row without any per-scheme special casing.
+    uiRoles (mode, variant = 'neutral') {
+      const isDark = mode === 'dark'
+      const { card } = surfacePlan(this.uiBaseRole.hue, this.saturation, mode, variant)
+      return this.palette.map((role, index) => {
+        const levels = this.swatchesBySlugKey(role)
+        const tint = isDark ? levels['900'] : levels['100']
+        return {
+          slug: role.slug,
+          label: role.label,
+          metric: PREVIEW_METRICS[index % PREVIEW_METRICS.length],
+          tint,
+          line: isDark ? levels['700'] : levels['300'],
+          solid: levels['500'],
+          ink: readableLevel(levels, tint, isDark ? ['100', '300'] : ['900', '700'], 3),
+          soft: readableLevel(levels, tint, isDark ? ['300', '100'] : ['700', '900']),
+          onCard: readableLevel(levels, card, isDark ? ['300', '100'] : ['700', '900'])
+        }
+      })
+    },
+
+    // The same mapping as a flat, exportable token list. Names and notes say
+    // which interface element each color is for, so the export is usable
+    // without having to reverse-engineer the preview.
+    uiTokenLines (mode, variant, indent) {
+      return this.uiTokens(mode, variant)
+        .map(token => `${indent}--${token.name}: ${token.hex}; /* ${token.note} */`)
+    },
+
+    uiTokens (mode, variant = 'neutral') {
+      const theme = this.uiTheme(mode, variant)
+      const tokens = [
+        { name: 'ui-surface', hex: theme.surface, note: 'page background' },
+        { name: 'ui-surface-card', hex: theme.card, note: 'cards, panels, top bar' },
+        { name: 'ui-border', hex: theme.line, note: 'hairlines and card borders' },
+        { name: 'ui-heading', hex: theme.heading, note: 'headings on the page background' },
+        { name: 'ui-text', hex: theme.text, note: 'body copy on the page background' },
+        { name: 'ui-accent', hex: theme.accent, note: 'links and highlights on the page background' },
+        { name: 'ui-primary', hex: theme.primary, note: 'primary button fill' },
+        { name: 'ui-primary-text', hex: theme.primaryText, note: 'label on the primary button' },
+        { name: 'ui-subtle', hex: theme.muted, note: 'quiet fills: chips, avatars, progress tracks' },
+        { name: 'ui-subtle-text', hex: theme.mutedText, note: 'label on a quiet fill' },
+        { name: 'ui-card-heading', hex: theme.cardHeading, note: 'headings on a card' },
+        { name: 'ui-card-text', hex: theme.cardText, note: 'body copy on a card' },
+        { name: 'ui-card-muted', hex: theme.cardMuted, note: 'secondary and meta text on a card' },
+        { name: 'ui-card-accent', hex: theme.cardAccent, note: 'links and highlights on a card' }
+      ]
+      for (const role of this.uiRoles(mode, variant)) {
+        tokens.push(
+          { name: `ui-${role.slug}-fill`, hex: role.solid, note: `${role.label}: chart fill, dot, badge` },
+          { name: `ui-${role.slug}-tint`, hex: role.tint, note: `${role.label}: tinted panel or track` },
+          { name: `ui-${role.slug}-border`, hex: role.line, note: `${role.label}: border on its tinted panel` },
+          { name: `ui-${role.slug}-heading`, hex: role.ink, note: `${role.label}: heading on its tinted panel` },
+          { name: `ui-${role.slug}-text`, hex: role.soft, note: `${role.label}: body copy on its tinted panel` },
+          { name: `ui-${role.slug}-on-card`, hex: role.onCard, note: `${role.label}: label on a card` }
+        )
+      }
+      return tokens
     },
 
     applyHexInput () {
@@ -843,9 +1248,9 @@ export default {
         this.copiedKey = ''
         this.copyResetHandle = null
       }, 1400)
-      if (key === 'hex') this.setMessage('Hex list copied to the clipboard.')
-      else if (key === 'css') this.setMessage('CSS custom properties copied to the clipboard.')
-      else if (key === 'json') this.setMessage('Palette JSON copied to the clipboard.')
+      if (key === 'hex') this.setMessage('Hex list copied, with both surface variants in light and dark.')
+      else if (key === 'css') this.setMessage('CSS custom properties copied: the ramps plus a named role for every UI element, for both variants in light and dark.')
+      else if (key === 'json') this.setMessage('Palette JSON copied, with both surface variants in light and dark.')
     },
 
     async writeToClipboard (text) {
@@ -1195,7 +1600,7 @@ button {
 }
 
 .scheme-panel {
-  padding: 1.25rem;
+  padding: 1rem;
   border-left: 1px solid var(--line);
   background: var(--panel);
 }
@@ -1249,13 +1654,6 @@ button {
   background: var(--accent);
 }
 
-.scheme-description {
-  margin: 0.9rem 0 0;
-  color: var(--muted);
-  font-size: 0.83rem;
-  line-height: 1.55;
-}
-
 .hint {
   margin: 0.55rem 0 0;
   color: var(--muted);
@@ -1264,60 +1662,68 @@ button {
 }
 
 .export-actions {
-  margin-top: 1.3rem;
-  padding-top: 1.1rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
   border-top: 1px solid var(--line);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 1.1rem;
+  gap: 0.45rem;
 }
 
 .export-actions .setting-heading {
   margin-bottom: 0;
+  margin-right: 0.35rem;
 }
 
 .export-actions .primary-button {
   margin-left: auto;
 }
 
-.text-button {
-  border: 0;
-  padding: 0;
-  color: var(--accent);
-  background: transparent;
-  font-size: 0.83rem;
+.copy-button {
+  min-height: 2.2rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #d8d0dc;
+  border-radius: 0.5rem;
+  color: #4d4651;
+  background: #fff;
+  font-size: 0.8rem;
   font-weight: 600;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
 }
 
-.text-button:hover {
-  color: var(--accent-dark);
+.copy-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.copy-button:active {
+  background: var(--panel);
 }
 
 .primary-button {
-  min-height: 2.6rem;
-  padding: 0.6rem 1.1rem;
+  min-height: 2.2rem;
+  padding: 0.4rem 0.9rem;
   border: 0;
-  border-radius: 0.65rem;
+  border-radius: 0.5rem;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
   color: #fff;
   background: var(--accent);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(20, 20, 20, 0.2);
-  transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  box-shadow: 0 4px 12px rgba(20, 20, 20, 0.18);
+  transition: background 140ms ease, box-shadow 140ms ease;
 }
 
 .primary-button:hover {
   background: var(--accent-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(20, 20, 20, 0.28);
+  box-shadow: 0 6px 16px rgba(20, 20, 20, 0.26);
 }
 
 .primary-button svg {
-  width: 1.05rem;
+  width: 0.95rem;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.9;
@@ -1326,20 +1732,22 @@ button {
 }
 
 .palette {
-  margin-top: 1.3rem;
-  padding-top: 1.2rem;
+  margin-top: 1rem;
+  padding-top: 0.9rem;
   border-top: 1px solid var(--line);
 }
 
 .palette-headers,
 .palette-columns {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
-  gap: 0.8rem;
+  /* Capped rather than 1fr: monochromatic has a single role, and auto-fit would
+   * otherwise stretch its one column across the whole panel. */
+  grid-template-columns: repeat(auto-fit, minmax(4.6rem, 9rem));
+  gap: 0.3rem;
 }
 
 .palette-headers {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .role-heading {
@@ -1351,30 +1759,34 @@ button {
 
 .role-name {
   color: var(--ink);
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   font-weight: 650;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .role-offset {
+  flex-shrink: 0;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.6rem;
 }
 
 .role-swatches {
-  border-radius: 0.7rem;
+  border-radius: 0.4rem;
   overflow: hidden;
-  box-shadow: 0 10px 26px rgba(39, 27, 43, 0.1);
+  box-shadow: 0 5px 14px rgba(39, 27, 43, 0.1);
 }
 
 .swatch {
   width: 100%;
-  min-height: 3.9rem;
-  padding: 0.55rem 0.7rem;
+  min-height: 1.45rem;
+  padding: 0.1rem 0.32rem;
   border: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.25rem;
   text-align: left;
   transition: filter 140ms ease;
 }
@@ -1388,81 +1800,227 @@ button {
 }
 
 .swatch-level {
-  font-size: 0.75rem;
+  flex-shrink: 0;
+  font-size: 0.56rem;
   font-weight: 700;
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
 .swatch-hex {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.8rem;
+  font-size: 0.62rem;
+}
+
+.preview-block {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--line);
+}
+
+.preview-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.preview-head .setting-heading {
+  margin-bottom: 0;
+}
+
+.preview-pair {
+  margin-top: 0.7rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.55rem;
+}
+
+.preview-pane {
+  min-width: 0;
+}
+
+.preview-pane-label {
+  margin-bottom: 0.3rem;
+  display: block;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 650;
 }
 
 .preview {
-  margin-top: 1.5rem;
-  padding: 1.6rem;
+  padding: 0.6rem;
   border: 1px solid;
-  border-radius: 0.85rem;
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-  align-items: center;
-  gap: 1.5rem;
+  border-radius: 0.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
   transition: background 200ms ease, color 200ms ease;
+}
+
+.mock-bar {
+  padding: 0.38rem 0.55rem;
+  border: 1px solid;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.mock-logo {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex-shrink: 0;
+  border-radius: 0.22rem;
+}
+
+.mock-brand {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.mock-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-left: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+.mock-avatar {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  margin-left: auto;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.54rem;
+  font-weight: 700;
+}
+
+.mock-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.mock-card {
+  padding: 0.5rem 0.6rem 0.6rem;
+  border: 1px solid;
+  border-radius: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+}
+
+.mock-card-head {
+  margin-bottom: 0.06rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 650;
+}
+
+.mock-card-head span:last-child {
+  font-size: 0.62rem;
+  font-weight: 500;
+}
+
+.mock-row {
+  display: grid;
+  grid-template-columns: minmax(3.8rem, 6rem) minmax(0, 1fr) 1.9rem;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.64rem;
+}
+
+.mock-row-name {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mock-swatch {
+  width: 0.52rem;
+  height: 0.52rem;
+  flex-shrink: 0;
+  border: 1px solid;
+  border-radius: 0.16rem;
+}
+
+.mock-track {
+  height: 0.38rem;
+  display: block;
+  border-radius: 0.2rem;
+  overflow: hidden;
+}
+
+.mock-fill {
+  height: 100%;
+  display: block;
+  border-radius: 0.25rem;
+}
+
+.mock-row-value {
+  font-weight: 650;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.mock-tag {
+  padding: 0.14rem 0.42rem;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 0.6rem;
+  font-weight: 650;
+}
+
+.mock-hero {
+  padding: 0 0.15rem;
 }
 
 .preview-eyebrow {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .preview h3 {
-  margin: 0.5rem 0 0.55rem;
+  margin: 0.25rem 0 0.3rem;
   border: 0;
   padding: 0;
-  font-size: 1.35rem;
+  font-size: 0.95rem;
   line-height: 1.3;
 }
 
 .preview p {
   margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
-.preview-buttons {
-  margin-top: 1.1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
 }
 
 .preview-button {
-  padding: 0.55rem 1rem;
+  padding: 0.3rem 0.65rem;
   border: 1px solid transparent;
-  border-radius: 0.55rem;
-  font-size: 0.85rem;
+  border-radius: 0.42rem;
+  font-size: 0.7rem;
   font-weight: 600;
 }
 
 .preview-button.is-ghost {
   background: transparent;
-}
-
-.preview-card {
-  padding: 1.1rem;
-  border: 1px solid;
-  border-radius: 0.7rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-}
-
-.preview-bar {
-  height: 0.7rem;
-  border-radius: 0.35rem;
 }
 
 .status-message {
@@ -1483,10 +2041,6 @@ button {
   .scheme-panel {
     border-left: 0;
     border-top: 1px solid var(--line);
-  }
-
-  .preview {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>
