@@ -29,7 +29,7 @@ meta:
 
 This is a color palette generator built for interface work. Pick a base color with the hue, saturation, and value sliders — or drop in a hex value — and it derives a complete palette using classic color theory. Each hue in the scheme comes with five levels, from a pale tint through the base color to a deep shade.
 
-Where it goes further than a swatch generator is what happens next. The preview lays your palette out as a working interface in both a light and a dark theme, so you can see the colors doing real jobs before you commit to them. The exports then name every color by the job it does — page background, card surface, border, heading, body text, primary button — which means what you copy is a set of design tokens ready to paste into a stylesheet, not a bag of hex values you still have to assign. Take it as a hex list, as CSS custom properties, or as JSON, or save the palette as an image. Everything is calculated in your browser, and nothing is uploaded.
+Where it goes further than a swatch generator is what happens next. The preview lays your palette out as a working interface in both a light and a dark theme, so you can see the colors doing real jobs before you commit to them. The exports then name every color by the job it does — page background, card surface, border, heading, body text, primary button — which means what you copy is a set of design tokens ready to paste into a stylesheet, not a bag of hex values you still have to assign. Take it as a hex list, as CSS custom properties, or as JSON, or save the palette as an image.
 
 ## How to build a UI color palette
 
