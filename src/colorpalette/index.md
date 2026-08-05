@@ -105,10 +105,6 @@ Every other harmony in the tool is a variation on that one idea: how far around 
 
 Fewer than most palettes give you. Many production interfaces run on one hue plus neutrals. Add a second hue only when you have a job for it, typically a single accent for the one element on a screen that must be noticed. The familiar 60-30-10 guideline is a decent sanity check: roughly 60% of the area a dominant neutral or tint, 30% a secondary tone, 10% the accent. If you cannot say what each hue in your palette is *for*, you have too many.
 
-### What is a complementary color?
-
-The complementary color is the hue directly opposite your base color on the color wheel, 180 degrees away. On the traditional red-yellow-blue wheel that makes green the complement of red and orange the complement of blue. On the RGB hue circle used by screens, red's complement is cyan and blue's is yellow. Both are correct for their own wheel, which is why this tool lets you choose.
-
 ### Why do RYB and RGB give different complements?
 
 The two wheels order the hues differently. The red-yellow-blue wheel comes from mixing pigment and is what most color theory teaching is based on; the RGB hue circle comes from mixing light and is what CSS `hsl()` and every screen uses. Choose RYB when you want the palette to feel like traditional color theory, and RGB when you want the hue offsets to match the values in your code.
