@@ -101,6 +101,10 @@ Every other harmony in the tool is a variation on that one idea: how far around 
 
 ## Frequently asked questions
 
+### How many colors does an interface actually need?
+
+Fewer than most palettes give you. Many production interfaces run on one hue plus neutrals. Add a second hue only when you have a job for it, typically a single accent for the one element on a screen that must be noticed. The familiar 60-30-10 guideline is a decent sanity check: roughly 60% of the area a dominant neutral or tint, 30% a secondary tone, 10% the accent. If you cannot say what each hue in your palette is *for*, you have too many.
+
 ### What is a complementary color?
 
 The complementary color is the hue directly opposite your base color on the color wheel, 180 degrees away. On the traditional red-yellow-blue wheel that makes green the complement of red and orange the complement of blue. On the RGB hue circle used by screens, red's complement is cyan and blue's is yellow. Both are correct for their own wheel, which is why this tool lets you choose.
@@ -112,10 +116,6 @@ The two wheels order the hues differently. The red-yellow-blue wheel comes from 
 ### How are the tints and shades generated?
 
 Each hue in the scheme is converted to lightness, then five levels are derived from it: two lighter steps (100 and 300), the base level (500), and two darker steps (700 and 900). Tints are slightly desaturated and shades slightly more saturated, which keeps pale colors from looking washed out and dark colors from looking muddy.
-
-### How many colors does an interface actually need?
-
-Fewer than most palettes give you. A great many production interfaces run on one hue plus neutrals. Add a second hue only when you have a job for it, typically a single accent for the one element on a screen that must be noticed. The familiar 60-30-10 guideline is a decent sanity check: roughly 60% of the area a dominant neutral or tint, 30% a secondary tone, 10% the accent. If you cannot say what each hue in your palette is *for*, you have too many.
 
 ### Can I use these colors as design tokens in a design system?
 
