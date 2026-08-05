@@ -6,16 +6,6 @@ export default defineConfig({
   outDir: '../dist',
   appearance: false,
 
-  // VuePress treats README.md as an index page and supported custom permalinks.
-  // These rewrites keep the existing production URLs unchanged in VitePress.
-  rewrites: {
-    'cropimage/README.md': 'cropimage/index.md',
-    'cropvideo/README.md': 'cropvideo/index.md',
-    'trimaudio/README.md': 'trimaudio/index.md',
-    'lullwave/README.md': 'lullwave/index.md',
-    'photocurves/README.md': 'photocurves/index.md'
-  },
-
   head: [
     ['meta', { name: 'theme-color', content: '#883388' }],
     ['meta', { name: 'mobile-web-app-capable', content: 'yes' }],
@@ -44,7 +34,8 @@ export default defineConfig({
         items: [
           { text: 'Crop & Resize Image', link: '/cropimage/' },
           { text: 'Crop & Trim Video', link: '/cropvideo/' },
-          { text: 'Trim Audio', link: '/trimaudio/' }
+          { text: 'Trim Audio', link: '/trimaudio/' },
+          { text: 'Color Palette Generator', link: '/colorpalette/' }
         ]
       },
       {

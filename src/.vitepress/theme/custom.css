@@ -18,7 +18,7 @@
   padding-top: 12px;
 }
 
-.crop-tool-layout .vp-doc > :is(.crop-tool, .trim-audio-tool):first-child {
+.crop-tool-layout .vp-doc > :is(.crop-tool, .trim-audio-tool, .color-palette-tool):first-child {
   margin-top: 0.5rem;
 }
 
@@ -40,7 +40,7 @@
     padding-top: 8px;
   }
 
-  .crop-tool-layout .vp-doc > :is(.crop-tool, .trim-audio-tool):first-child {
+  .crop-tool-layout .vp-doc > :is(.crop-tool, .trim-audio-tool, .color-palette-tool):first-child {
     margin-top: 0.5rem;
   }
 }

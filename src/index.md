@@ -140,6 +140,20 @@ meta:
     </div>
   </div>
   <div class="app-item">
+    <a href="/colorpalette/" aria-label="Open the free online color palette generator">
+      <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Color Palette Generator online tool icon">
+        <rect width="128" height="128" rx="28" fill="#333333"/>
+        <circle cx="64" cy="41" r="15" fill="#42a1eb"/>
+        <circle cx="41" cy="80" r="15" fill="#eb42a1"/>
+        <circle cx="87" cy="80" r="15" fill="#a1eb42"/>
+      </svg>
+    </a>
+    <div class="app-info">
+      <a href="/colorpalette/"><h3>Color Palette Generator</h3></a>
+      <p>Build a complementary, triadic, or analogous color palette from a single color using hue, saturation, and value sliders. Export hex values, CSS variables, or JSON.</p>
+    </div>
+  </div>
+  <div class="app-item">
     <a href="/lullwave/">
       <img src="/images/lullwave_icon_rounded_256x256.png" alt="Lullwave sleep sounds app" class="app-icon" />
     </a>
