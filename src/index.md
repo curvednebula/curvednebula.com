@@ -34,16 +34,18 @@ meta:
   line-height: 1.7;
 }
 .apps-container {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 2.5rem;
   margin: 2.5rem auto;
-  max-width: 45rem;
+  max-width: 64rem;
 }
 .app-item {
   display: flex;
+  flex-direction: column;
   gap: 1.25rem;
   align-items: center;
+  text-align: center;
 }
 .app-icon {
   width: 8rem;
@@ -74,9 +76,14 @@ meta:
   font-size: 0.875rem;
   padding: 0.625rem 0;
 }
+@media (max-width: 768px) {
+  .apps-container {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 520px) {
-  .app-item {
-    align-items: flex-start;
+  .apps-container {
+    grid-template-columns: 1fr;
   }
   .app-icon {
     width: 5rem;
