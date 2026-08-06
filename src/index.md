@@ -95,7 +95,7 @@ meta:
 </style>
 
 <div class="home-intro">
-  <h1>Creative Apps and Online Tools </h1>
+  <h1>Creative Apps and Online Tools</h1>
 </div>
 
 <div class="apps-container">

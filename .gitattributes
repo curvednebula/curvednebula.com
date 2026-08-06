@@ -1,0 +1,3 @@
+# Keep text files consistent across platforms. Build output is generated with LF,
+# and `text=auto` prevents binary assets from being line-ending normalized.
+* text=auto eol=lf
