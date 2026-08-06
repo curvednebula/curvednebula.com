@@ -96,7 +96,6 @@ meta:
 
 <div class="home-intro">
   <h1>Creative Apps and Online Tools</h1>
-  <p>Explore our apps for Android, iOS, macOS, or use our browser-based tools directly on the web.</p>
 </div>
 
 <div class="apps-container">
