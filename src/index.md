@@ -22,7 +22,7 @@ meta:
 
 <style>
 .home-intro {
-  margin: 2.5rem auto 0;
+  margin: 0 auto;
   max-width: 45rem;
 }
 .home-intro h1 {
