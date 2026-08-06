@@ -115,6 +115,7 @@
                   :disabled="isExporting"
                   aria-label="Trim start"
                   @input="updateTrimStart"
+                  @keydown="onTrimKeydown('start', $event)"
                 >
                 <input
                   ref="trimEndRange"
@@ -126,6 +127,7 @@
                   :disabled="isExporting"
                   aria-label="Trim end"
                   @input="updateTrimEnd"
+                  @keydown="onTrimKeydown('end', $event)"
                 >
               </div>
             </div>
@@ -1572,7 +1574,9 @@ export default {
       const limit = Math.max(0, this.trimEnd - this.minimumTrimDuration)
       const value = this.parseTimestamp(event.target.value)
       this.trimStart = this.clamp(Number.isFinite(value) ? value : this.trimStart, 0, limit)
-      event.target.value = this.formatTimePrecise(this.trimStart)
+      event.target.value = event.target.type === 'range'
+        ? String(this.trimStart)
+        : this.formatTimePrecise(this.trimStart)
       this.seekPreview(this.trimStart)
       this.clearMessage()
     },
@@ -1638,12 +1642,32 @@ export default {
       this.trimInteraction = null
     },
 
+    onTrimKeydown (boundary, event) {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+      event.preventDefault()
+
+      const current = boundary === 'start' ? this.trimStart : this.trimEnd
+      const step = Number(event.target.step) || 0.01
+      const direction = event.key === 'ArrowLeft' ? -1 : 1
+      const inputEvent = {
+        target: {
+          type: 'range',
+          value: current + direction * step
+        }
+      }
+
+      if (boundary === 'start') this.updateTrimStart(inputEvent)
+      else this.updateTrimEnd(inputEvent)
+    },
+
     updateTrimEnd (event) {
       this.pausePlayback()
       const minimum = Math.min(this.duration, this.trimStart + this.minimumTrimDuration)
       const value = this.parseTimestamp(event.target.value)
       this.trimEnd = this.clamp(Number.isFinite(value) ? value : this.trimEnd, minimum, this.duration)
-      event.target.value = this.formatTimePrecise(this.trimEnd)
+      event.target.value = event.target.type === 'range'
+        ? String(this.trimEnd)
+        : this.formatTimePrecise(this.trimEnd)
       this.seekPreview(this.trimEnd)
       this.clearMessage()
     },
