@@ -901,7 +901,22 @@ export default {
         const rangeDuration = rangeEnd - rangeStart
         const binCount = this.waveformBinCount(rangeDuration, sampleRate)
 
-        if (this.duration > this.fullScanMaxDuration) {
+        // Refinement is based on the selected range, not the full file. A long
+        // source may still have a short selection that can be decoded exactly,
+        // including the sample-level waveform used at two seconds and below.
+        if (this.shouldUseSampleWaveform(rangeDuration, sampleRate)) {
+          await this.generateSampleWaveform(
+            new AudioSampleSink(track),
+            generation,
+            rangeStart,
+            rangeEnd,
+            sampleRate,
+            firstTimestamp
+          )
+          return
+        }
+
+        if (rangeDuration > this.fullScanMaxDuration) {
           const projectedPeaks = this.projectFullWaveform(rangeStart, rangeEnd, binCount)
           const detailedPeaks = await this.scanCoarseWaveformRange(
             new AudioSampleSink(track),
@@ -922,18 +937,6 @@ export default {
           this.waveformProgress = 100
           this.isGeneratingWaveform = false
           this.drawWaveform()
-          return
-        }
-
-        if (this.shouldUseSampleWaveform(rangeDuration, sampleRate)) {
-          await this.generateSampleWaveform(
-            new AudioSampleSink(track),
-            generation,
-            rangeStart,
-            rangeEnd,
-            sampleRate,
-            firstTimestamp
-          )
           return
         }
 
