@@ -1,6 +1,6 @@
 ---
 title: Creative Apps and Online Tools
-description: Curved Nebula creates color grading, photo editing, sleep sound, and private browser-based UI color palette, image, and video tools for Android, iOS, macOS, and the web.
+description: Curved Nebula creates color grading, photo editing, sleep sound, and private browser-based UI color palette, image, and video tools for Android, iOS, macOS, Windows, and the web.
 permalink: /
 canonicalUrl: https://curvednebula.com/
 meta:
@@ -105,7 +105,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/photocurves/"><h3>Photo Curves</h3></a>
-      <p>A color grading photo editor and 3D LUT creator with curves, color wheels, layer masks, and selective color tools. Available on Android, iOS, macOS, and the web.</p>
+      <p>A color grading photo editor and 3D LUT creator with curves, color wheels, layer masks, and selective color tools. Available on Android, iOS, macOS, Windows, and the web.</p>
     </div>
   </div>
   <div class="app-item">

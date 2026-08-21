@@ -1,15 +1,15 @@
 ---
 title: Photo Curves Color Grading App
-description: Edit photos with RGB, CMYK and LAB curves, color wheels, layer masks and HSL tools. Create custom 3D LUT files on Android, iOS, macOS or the web.
+description: Edit photos with RGB, CMYK and LAB curves, color wheels, layer masks and HSL tools. Create custom 3D LUT files on Android, iOS, macOS, Windows or the web.
 permalink: /photocurves/
 canonicalUrl: https://curvednebula.com/photocurves/
 meta:
   - name: keywords
-    content: Photo Curves, color grading app, photo editor, 3D LUT creator, RGB curves, color wheels, photo color correction
+    content: Photo Curves, color grading app, photo editor, RAW photo editor, Windows photo editor, 3D LUT creator, RGB curves, color wheels, photo color correction
   - property: og:title
     content: Photo Curves Color Grading App and 3D LUT Creator
   - property: og:description
-    content: Color correct photos, create cinematic looks and export custom 3D LUTs with professional curves, color wheels and layer masks.
+    content: Color correct photos on Android, iOS, macOS and Windows, create cinematic looks and export custom 3D LUTs with professional curves, color wheels and layer masks.
   - property: og:type
     content: website
   - property: og:url
@@ -24,15 +24,24 @@ meta:
 
 <img src="/images/photocurves_icon_rounded_256x256.png" alt="Photo Curves color grading app icon" height="100"/>
 
-**Photo Curves** is a multiplatform photo editor and 3D LUT creator for detailed color correction and creative color grading. Adjust tonal ranges, target individual colors, draw layer masks, and build reusable looks with editable controls.
-
-The app is available for Android, iPhone, iPad, and macOS, with basic video support. Windows and Linux users can edit photos with the browser-based version.
+**Photo Curves** is a tool for detailed color correction and creative color grading for photos and videos. The app is available for Android, iPhone, iPad, macOS, and Windows.
 
 ## Download Photo Curves or edit online
 
+<div class="store-badges" aria-label="Download Photo Curves">
+  <a href="https://play.google.com/store/apps/details?id=com.foreachi.photocurves"><img src="/images/google-play-badge.png" alt="Get Photo Curves on Google Play"/></a>
+  <a href="https://apps.microsoft.com/detail/9mt3t7393m6p"><img src="/images/microsoft-store-badge.svg" alt="Get Photo Curves for Windows from Microsoft"/></a>
+  <a href="https://apps.apple.com/app/id1606599231#?platform=iphone"><img src="/images/apple-store-badge.png" alt="Get Photo Curves for iPhone and iPad on the App Store"/></a>
+  <a href="https://apps.apple.com/app/id1638484562"><img src="/images/mac-store-badge.png" alt="Get Photo Curves for macOS on the Mac App Store"/></a>
+</div>
+
 [Use Photo Curves Online](https://photocurves.curvednebula.com) for free photo editing in a web browser.
 
-[<img src="/images/google-play-badge.png" alt="Get Photo Curves on Google Play" height="70"/>](https://play.google.com/store/apps/details?id=com.foreachi.photocurves) [<img src="/images/apple-store-badge.png" alt="Get Photo Curves for iPhone and iPad on the App Store" height="70"/>](https://apps.apple.com/app/id1606599231#?platform=iphone) [<img src="/images/mac-store-badge.png" alt="Get Photo Curves for macOS on the Mac App Store" height="70"/>](https://apps.apple.com/app/id1638484562)
+## Supported image and video formats
+
+Photo Curves supports major popular image and video formats such as JPEG, PNG, HEIC/HEIF, WebP, and BMP, including RAW files: DNG, CR2, CR3, NEF, ARW, RAF, ORF, and RW2.
+
+Video support includes popular formats such as MP4, MOV, WebM, MKV, and AVI. Exact format and codec availability may vary by operating system. Finished photos can be exported as JPEG or PNG, videos - as MP4.
 
 ## Create custom 3D LUTs and editable presets
 
@@ -44,7 +53,7 @@ Use the editor to correct or enhance colors, adjust white balance, replace color
 
 <img src="./PhotoCurvesMac-2.png" alt="Photo Curves color grading photo editor on macOS" width="600"/>
 
-## Photo color grading tools
+## Color grading tools
 
 - **Basic controls** — adjust brightness, contrast, shadows, highlights, and saturation.
 
@@ -76,17 +85,9 @@ Photo Curves can handle both corrective and creative workflows. Use curves and b
 
 ## Frequently asked questions
 
-### Which platforms support Photo Curves?
-
-Photo Curves is available as a native app on Android, iOS, iPadOS, and macOS. The online photo editor also works in modern browsers on Windows, Linux, macOS, and other supported systems.
-
 ### Can Photo Curves create `.cube` LUT files?
 
-Yes. You can create a color grade and export it as a standard `.cube` 3D LUT file for compatible applications.
-
-### Is the online photo editor free?
-
-Yes. The browser-based Photo Curves photo editor is free to use. Video editing is limited to the native apps.
+Yes. You can export your color grading preset as a standard `.cube` 3D LUT file for compatible applications.
 
 ### What is the difference between a preset and a LUT?
 

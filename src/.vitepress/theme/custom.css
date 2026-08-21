@@ -58,6 +58,40 @@
   height: 70px;
 }
 
+.store-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  white-space: nowrap;
+}
+
+.store-badges a {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.store-badges a:nth-child(1),
+.store-badges a:nth-child(3) {
+  width: 150px;
+}
+
+.store-badges a:nth-child(2) {
+  width: 147px;
+}
+
+.store-badges a:nth-child(4) {
+  width: 172px;
+}
+
+.store-badges img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .vp-doc img[height="100"] {
   width: auto;
   height: 100px;
