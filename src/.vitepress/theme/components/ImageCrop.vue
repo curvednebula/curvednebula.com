@@ -86,9 +86,6 @@
                 @change="updateCornerRadius"
               >
             </label>
-            <p v-if="cropShape !== 'square'" class="setting-hint">
-              Transparent corners are saved as PNG.
-            </p>
           </div>
 
           <div class="setting-group">
@@ -1433,13 +1430,6 @@ input:disabled {
 
 .radius-control input {
   padding: 0 0.55rem;
-}
-
-.setting-hint {
-  margin: 0.5rem 0 0;
-  color: var(--muted);
-  font-size: 0.72rem;
-  line-height: 1.4;
 }
 
 .check-control {
