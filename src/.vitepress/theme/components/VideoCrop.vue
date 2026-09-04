@@ -1003,7 +1003,7 @@ export default {
 
     layoutCanvas () {
       if (!this.hasSource || !this.$refs.stage || !this.$refs.canvas) return
-      const pad = 12
+      const pad = 16
       const availableWidth = Math.max(280, this.$refs.stage.clientWidth) - pad * 2
       const standardAvailableHeight = Math.min(610, Math.max(300, window.innerHeight * 0.52)) - pad * 2
       const sourceDisplayScale = Math.min(
@@ -1079,7 +1079,7 @@ export default {
 
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
-      ctx.strokeRect(box.x - 1, box.y - 1, box.w + 2, box.h + 2)
+      ctx.strokeRect(box.x - 2, box.y - 2, box.w + 4, box.h + 4)
       this.drawHandles(ctx, box)
     },
 
@@ -1129,7 +1129,7 @@ export default {
 
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
-      ctx.strokeRect(pad - 1, pad - 1, width + 2, height + 2)
+      ctx.strokeRect(pad - 2, pad - 2, width + 4, height + 4)
     },
 
     drawHandles (ctx, box) {
@@ -1148,7 +1148,7 @@ export default {
     },
 
     handlePositions (box) {
-      const offset = 6
+      const offset = 8
       return {
         nw: { x: box.x - offset, y: box.y - offset },
         n: { x: box.x + box.w / 2, y: box.y - offset },
@@ -1746,7 +1746,8 @@ export default {
 
     scrubVideo (event) {
       if (!this.hasSource || this.isExporting) return
-      const target = this.clamp(Number(event.target.value), 0, this.duration)
+      const target = this.clamp(Number(event.target.value), this.trimStart, this.trimEnd)
+      event.target.value = String(target)
       if (this.isAviSource) {
         this.isPlaying = false
         this.stopPreviewLoop()

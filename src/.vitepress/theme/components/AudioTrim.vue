@@ -161,7 +161,7 @@
                 id="audio-output-format"
                 v-model="outputFormat"
                 :disabled="isExporting || isCheckingCodecSupport"
-                @change="clearMessage"
+                @change="onOutputFormatChanged"
               >
                 <option value="ogg" :disabled="!codecSupport.opus">
                   Ogg Opus{{ codecSupport.opus ? '' : ' (unsupported)' }}
@@ -185,11 +185,13 @@
                 @change="clearMessage"
               >
                 <option :value="0">Auto</option>
-                <option :value="96000">96 kbps</option>
-                <option :value="128000">128 kbps</option>
-                <option :value="160000">160 kbps</option>
-                <option :value="192000">192 kbps</option>
-                <option :value="256000">256 kbps</option>
+                <option
+                  v-for="option in bitrateOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
               </select>
             </label>
 
@@ -424,6 +426,23 @@ export default {
       return this.outputBitrate || (this.outputChannelCount === 1 ? 96000 : 160000)
     },
 
+    maximumOutputBitrate () {
+      return {
+        ogg: 512000,
+        mp3: 320000,
+        m4a: 192000
+      }[this.outputFormat] || 0
+    },
+
+    bitrateOptions () {
+      return [96000, 128000, 160000, 192000, 256000, 320000, 512000]
+        .filter(value => value <= this.maximumOutputBitrate)
+        .map(value => ({
+          value,
+          label: `${Math.round(value / 1000)} kbps${value === this.maximumOutputBitrate ? ' · Max' : ''}`
+        }))
+    },
+
     outputChannelCount () {
       if (this.audioChannels === 2 && this.mixToMono) return 1
       return this.audioChannels === 1 ? 1 : 2
@@ -459,6 +478,13 @@ export default {
   },
 
   methods: {
+    onOutputFormatChanged () {
+      if (this.outputBitrate > this.maximumOutputBitrate) {
+        this.outputBitrate = this.maximumOutputBitrate
+      }
+      this.clearMessage()
+    },
+
     async detectCodecSupport () {
       this.isCheckingCodecSupport = true
       try {
@@ -1359,16 +1385,18 @@ export default {
       const width = canvas.width / ratio
       const height = canvas.height / ratio
       const ctx = canvas.getContext('2d')
+      const playheadGutter = 12
       const handleGutter = 36
       const sideGutter = Math.min(18, width / 4)
       const waveformLeft = sideGutter
       const waveformWidth = Math.max(1, width - sideGutter * 2)
       const waveformRight = waveformLeft + waveformWidth
-      const waveformHeight = Math.max(1, height - handleGutter)
+      const waveformTop = playheadGutter
+      const waveformHeight = Math.max(1, height - playheadGutter - handleGutter)
       const laneCount = this.audioChannels === 2 ? 2 : 1
       const laneHeight = waveformHeight / laneCount
       const amplitudeHeight = Math.max(1, laneHeight / 2 - (laneCount === 2 ? 9 : 18))
-      const laneCenter = channel => laneHeight * (channel + 0.5)
+      const laneCenter = channel => waveformTop + laneHeight * (channel + 0.5)
       const peaks = this.waveformPeaks
       const startX = this.timeToWaveformX(this.trimStart, width)
       const endX = this.timeToWaveformX(this.trimEnd, width)
@@ -1378,12 +1406,12 @@ export default {
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
       ctx.clearRect(0, 0, width, height)
       ctx.fillStyle = '#17171d'
-      ctx.fillRect(waveformLeft, 0, waveformWidth, waveformHeight)
+      ctx.fillRect(waveformLeft, waveformTop, waveformWidth, waveformHeight)
       ctx.fillStyle = 'rgba(0, 0, 0, 0.42)'
-      ctx.fillRect(waveformLeft, 0, Math.max(0, startX - waveformLeft), waveformHeight)
-      ctx.fillRect(endX, 0, Math.max(0, waveformRight - endX), waveformHeight)
+      ctx.fillRect(waveformLeft, waveformTop, Math.max(0, startX - waveformLeft), waveformHeight)
+      ctx.fillRect(endX, waveformTop, Math.max(0, waveformRight - endX), waveformHeight)
       ctx.fillStyle = 'rgba(136, 51, 136, 0.18)'
-      ctx.fillRect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+      ctx.fillRect(startX, waveformTop, Math.max(0, endX - startX), waveformHeight)
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)'
       ctx.lineWidth = 1
       ctx.beginPath()
@@ -1396,8 +1424,8 @@ export default {
       if (laneCount === 2) {
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)'
         ctx.beginPath()
-        ctx.moveTo(waveformLeft, laneHeight + 0.5)
-        ctx.lineTo(waveformRight, laneHeight + 0.5)
+        ctx.moveTo(waveformLeft, waveformTop + laneHeight + 0.5)
+        ctx.lineTo(waveformRight, waveformTop + laneHeight + 0.5)
         ctx.stroke()
       }
 
@@ -1457,13 +1485,13 @@ export default {
           if (sampleData) {
             const fallbackX = this.timeToWaveformX(sampleData.refinedThrough, width)
             ctx.beginPath()
-            ctx.rect(fallbackX, 0, Math.max(0, waveformRight - fallbackX), waveformHeight)
+            ctx.rect(fallbackX, waveformTop, Math.max(0, waveformRight - fallbackX), waveformHeight)
             ctx.clip()
           }
           drawPeaks('#736d78')
           ctx.save()
           ctx.beginPath()
-          ctx.rect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+          ctx.rect(startX, waveformTop, Math.max(0, endX - startX), waveformHeight)
           ctx.clip()
           drawPeaks('#d797d7')
           ctx.restore()
@@ -1508,12 +1536,12 @@ export default {
 
           ctx.save()
           ctx.beginPath()
-          ctx.rect(waveformLeft, 0, waveformWidth, waveformHeight)
+          ctx.rect(waveformLeft, waveformTop, waveformWidth, waveformHeight)
           ctx.clip()
           drawSamples('#736d78')
           ctx.save()
           ctx.beginPath()
-          ctx.rect(startX, 0, Math.max(0, endX - startX), waveformHeight)
+          ctx.rect(startX, waveformTop, Math.max(0, endX - startX), waveformHeight)
           ctx.clip()
           drawSamples('#d797d7')
           ctx.restore()
@@ -1525,32 +1553,32 @@ export default {
         ctx.fillStyle = 'rgba(255, 255, 255, 0.42)'
         ctx.font = '600 10px system-ui, sans-serif'
         ctx.textBaseline = 'top'
-        ctx.fillText('L', waveformLeft + 5, 5)
-        ctx.fillText('R', waveformLeft + 5, laneHeight + 5)
+        ctx.fillText('L', waveformLeft + 5, waveformTop + 5)
+        ctx.fillText('R', waveformLeft + 5, waveformTop + laneHeight + 5)
       }
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.14)'
       ctx.lineWidth = 1
-      ctx.strokeRect(waveformLeft + 0.5, 0.5, Math.max(0, waveformWidth - 1), Math.max(0, waveformHeight - 1))
+      ctx.strokeRect(waveformLeft + 0.5, waveformTop + 0.5, Math.max(0, waveformWidth - 1), Math.max(0, waveformHeight - 1))
 
-      if (startIsVisible) this.drawTrimHandle(ctx, startX, waveformHeight, 'start')
-      if (endIsVisible) this.drawTrimHandle(ctx, endX, waveformHeight, 'end')
+      if (startIsVisible) this.drawTrimHandle(ctx, startX, waveformTop, waveformHeight, 'start')
+      if (endIsVisible) this.drawTrimHandle(ctx, endX, waveformTop, waveformHeight, 'end')
 
       if (this.isTimeInWaveformView(this.currentTime)) {
         const playheadX = this.timeToWaveformX(this.currentTime, width)
         ctx.strokeStyle = '#fff'
         ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(playheadX, 0)
-        ctx.lineTo(playheadX, waveformHeight)
+        ctx.moveTo(playheadX, waveformTop)
+        ctx.lineTo(playheadX, waveformTop + waveformHeight)
         ctx.stroke()
         ctx.fillStyle = '#883388'
         ctx.strokeStyle = '#fff'
         ctx.lineWidth = 1.5
         ctx.beginPath()
-        ctx.moveTo(playheadX - 7, 0)
-        ctx.lineTo(playheadX + 7, 0)
-        ctx.lineTo(playheadX, 10)
+        ctx.moveTo(playheadX - 7, waveformTop - 10)
+        ctx.lineTo(playheadX + 7, waveformTop - 10)
+        ctx.lineTo(playheadX, waveformTop)
         ctx.closePath()
         ctx.fill()
         ctx.stroke()
@@ -1558,8 +1586,8 @@ export default {
 
     },
 
-    drawTrimHandle (ctx, x, height, boundary) {
-      const guideEndY = height + 18
+    drawTrimHandle (ctx, x, top, height, boundary) {
+      const guideEndY = top + height + 18
       const handleTipY = guideEndY + 1
       const guideX = Math.round(x)
       const direction = boundary === 'start' ? -1 : 1
@@ -1569,7 +1597,7 @@ export default {
       ctx.lineWidth = 2
       ctx.lineCap = 'round'
       ctx.beginPath()
-      ctx.moveTo(guideX, 0)
+      ctx.moveTo(guideX, top)
       ctx.lineTo(guideX, guideEndY)
       ctx.stroke()
       ctx.fillStyle = '#fff'
@@ -1613,17 +1641,24 @@ export default {
       const rect = this.$refs.waveformCanvas.getBoundingClientRect()
       const x = event.clientX - rect.left
       const y = event.clientY - rect.top
-      const waveformHeight = Math.max(1, rect.height - 36)
+      const waveformTop = 12
+      const waveformHeight = Math.max(1, rect.height - waveformTop - 36)
+      const waveformBottom = waveformTop + waveformHeight
       const startX = this.timeToWaveformX(this.trimStart, rect.width)
       const endX = this.timeToWaveformX(this.trimEnd, rect.width)
       const playheadX = this.timeToWaveformX(this.currentTime, rect.width)
       const handleRadius = 14
+      if (y <= waveformTop) {
+        return this.isTimeInWaveformView(this.currentTime) && Math.abs(x - playheadX) <= 9
+          ? 'playhead'
+          : 'inactive'
+      }
       const startDistance = this.isTimeInWaveformView(this.trimStart) ? Math.abs(x - startX) : Infinity
       const endDistance = this.isTimeInWaveformView(this.trimEnd) ? Math.abs(x - endX) : Infinity
       if (Math.min(startDistance, endDistance) <= handleRadius) {
         return startDistance <= endDistance ? 'start' : 'end'
       }
-      if (y > waveformHeight) return 'inactive'
+      if (y > waveformBottom) return 'inactive'
       if (this.isTimeInWaveformView(this.currentTime) && Math.abs(x - playheadX) <= 8) return 'playhead'
       return 'seek'
     },
@@ -1671,12 +1706,14 @@ export default {
         const nextStart = this.clamp(time, 0, Math.max(0, this.trimEnd - this.minimumTrimDuration))
         if (Math.abs(nextStart - this.trimStart) > 1e-7) this.invalidateDetailedWaveform()
         this.trimStart = nextStart
-        this.drawWaveform()
+        if (this.currentTime < this.trimStart) this.seekPreview(this.trimStart)
+        else this.drawWaveform()
       } else if (type === 'end') {
         const nextEnd = this.clamp(time, Math.min(this.duration, this.trimStart + this.minimumTrimDuration), this.duration)
         if (Math.abs(nextEnd - this.trimEnd) > 1e-7) this.invalidateDetailedWaveform()
         this.trimEnd = nextEnd
-        this.drawWaveform()
+        if (this.currentTime > this.trimEnd) this.seekPreview(this.trimEnd)
+        else this.drawWaveform()
       } else {
         this.seekPreview(time)
       }
@@ -1746,7 +1783,7 @@ export default {
 
     seekPreview (time) {
       if (!this.audio) return
-      const target = this.clamp(Number(time) || 0, 0, this.duration)
+      const target = this.clamp(Number(time) || 0, this.trimStart, this.trimEnd)
       this.currentTime = target
       this.audio.currentTime = Math.min(target, Math.max(0, this.duration - 0.001))
       this.drawWaveform()
