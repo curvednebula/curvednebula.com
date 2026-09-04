@@ -117,7 +117,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/cropimage/"><h3>Crop and Resize Images Online</h3></a>
-      <p>Crop and resize PNG, JPEG, and WebP images to exact output dimensions or common aspect ratios. Images are processed privately in your browser.</p>
+      <p>Crop and resize images to exact dimensions or common aspect ratios, with square, round, squircle, and custom rounded-corner shapes.</p>
     </div>
   </div>
   <div class="app-item">

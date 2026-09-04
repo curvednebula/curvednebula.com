@@ -69,8 +69,36 @@
 
         <aside class="settings-panel">
           <div class="setting-group">
+            <label for="crop-shape">Crop shape</label>
+            <select id="crop-shape" v-model="cropShape" @change="onCropShapeChange">
+              <option value="square">Square corners</option>
+              <option value="round">Round</option>
+              <option value="squircle">Squircle</option>
+              <option value="rounded">Rounded corners</option>
+            </select>
+            <label v-if="cropShape === 'rounded'" class="radius-control">
+              <span>Corner radius (output px)</span>
+              <input
+                :value="effectiveCornerRadius"
+                type="number"
+                min="0"
+                :max="maxCornerRadius"
+                @change="updateCornerRadius"
+              >
+            </label>
+            <p v-if="cropShape !== 'square'" class="setting-hint">
+              Transparent corners are saved as PNG.
+            </p>
+          </div>
+
+          <div class="setting-group">
             <label for="crop-aspect">Aspect ratio</label>
-            <select id="crop-aspect" v-model="aspect" @change="applyAspectRatio">
+            <select
+              id="crop-aspect"
+              v-model="aspect"
+              :disabled="isSquareShapeLocked"
+              @change="applyAspectRatio"
+            >
               <option value="free">Freeform</option>
               <option value="1">Square · 1:1</option>
               <option value="1.3333333333">Landscape · 4:3</option>
@@ -168,6 +196,7 @@
                 <input
                   v-model="resizeAspectLocked"
                   type="checkbox"
+                  :disabled="isSquareShapeLocked"
                   @change="updateResizeLock"
                 >
                 <span>Keep aspect ratio</span>
@@ -177,7 +206,11 @@
 
           <div class="setting-group">
             <label for="output-format">File format</label>
-            <select id="output-format" v-model="outputFormat">
+            <select
+              id="output-format"
+              v-model="outputFormat"
+              :disabled="cropShape !== 'square'"
+            >
               <option value="image/png">PNG</option>
               <option value="image/jpeg">JPEG</option>
               <option value="image/webp">WebP</option>
@@ -236,6 +269,8 @@ export default {
       imageWidth: 0,
       imageHeight: 0,
       crop: { x: 0, y: 0, w: 0, h: 0 },
+      cropShape: 'square',
+      cornerRadius: null,
       aspect: 'free',
       outputFormat: 'image/png',
       quality: 0.92,
@@ -271,12 +306,18 @@ export default {
         top + 1,
         this.imageHeight
       )
-      return {
+      const rounded = {
         x: left,
         y: top,
         w: right - left,
         h: bottom - top
       }
+      if (this.isSquareShapeLocked) {
+        const size = Math.min(rounded.w, rounded.h)
+        rounded.w = size
+        rounded.h = size
+      }
+      return rounded
     },
 
     aspectValue () {
@@ -290,6 +331,10 @@ export default {
           h: this.roundedCrop.h
         }
       }
+      if (this.isSquareShapeLocked) {
+        const size = this.clamp(Math.round(this.resizeWidth), 1, this.maxOutputDimension)
+        return { w: size, h: size }
+      }
       return {
         w: this.clamp(Math.round(this.resizeWidth), 1, this.maxOutputDimension),
         h: this.clamp(Math.round(this.resizeHeight), 1, this.maxOutputDimension)
@@ -300,6 +345,25 @@ export default {
       if (this.outputFormat === 'image/jpeg') return 'jpg'
       if (this.outputFormat === 'image/webp') return 'webp'
       return 'png'
+    },
+
+    maxCornerRadius () {
+      return Math.max(0, Math.floor(Math.min(this.outputSize.w, this.outputSize.h) / 2))
+    },
+
+    defaultCornerRadius () {
+      return Math.round(Math.min(this.outputSize.w, this.outputSize.h) * 0.2)
+    },
+
+    effectiveCornerRadius () {
+      const radius = this.cornerRadius === null
+        ? this.defaultCornerRadius
+        : Math.round(this.cornerRadius)
+      return this.clamp(radius, 0, this.maxCornerRadius)
+    },
+
+    isSquareShapeLocked () {
+      return this.cropShape === 'round' || this.cropShape === 'squircle'
     }
   },
 
@@ -342,7 +406,10 @@ export default {
         this.sourceName = file.name
         this.imageWidth = nextImage.naturalWidth
         this.imageHeight = nextImage.naturalHeight
-        this.outputFormat = file.type === 'image/jpeg' ? 'image/jpeg' : 'image/png'
+        this.outputFormat = this.cropShape === 'square' && file.type === 'image/jpeg'
+          ? 'image/jpeg'
+          : 'image/png'
+        this.cornerRadius = null
         this.resizeEnabled = false
         this.resizeAspectLocked = true
         this.message = ''
@@ -414,8 +481,7 @@ export default {
       ctx.fillRect(pad, pad, width, height)
 
       ctx.save()
-      ctx.beginPath()
-      ctx.rect(box.x, box.y, box.w, box.h)
+      this.traceCropShape(ctx, box)
       ctx.clip()
       ctx.drawImage(this.image, pad, pad, width, height)
 
@@ -433,10 +499,83 @@ export default {
       ctx.stroke()
       ctx.restore()
 
+      const borderWidth = 1
+      const borderOutset = borderWidth / 2
+      const borderBox = {
+        x: box.x - borderOutset,
+        y: box.y - borderOutset,
+        w: box.w + borderOutset * 2,
+        h: box.h + borderOutset * 2
+      }
       ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
-      ctx.strokeRect(box.x - 1, box.y - 1, box.w + 2, box.h + 2)
+      ctx.lineWidth = borderWidth
+      this.traceCropShape(ctx, borderBox)
+      ctx.stroke()
       this.drawHandles(ctx, box)
+    },
+
+    traceCropShape (ctx, box) {
+      if (this.cropShape === 'round') {
+        ctx.beginPath()
+        ctx.ellipse(
+          box.x + box.w / 2,
+          box.y + box.h / 2,
+          box.w / 2,
+          box.h / 2,
+          0,
+          0,
+          Math.PI * 2
+        )
+        return
+      }
+      if (this.cropShape === 'squircle') {
+        this.traceSquircle(ctx, box.x, box.y, box.w, box.h)
+        return
+      }
+
+      const scale = Math.min(
+        box.w / Math.max(1, this.outputSize.w),
+        box.h / Math.max(1, this.outputSize.h)
+      )
+      const radius = this.cropShape === 'rounded'
+        ? this.effectiveCornerRadius * scale
+        : 0
+      this.traceRoundedRect(ctx, box.x, box.y, box.w, box.h, radius)
+    },
+
+    traceRoundedRect (ctx, x, y, width, height, radius) {
+      const r = this.clamp(radius, 0, Math.min(width, height) / 2)
+      ctx.beginPath()
+      ctx.moveTo(x + r, y)
+      ctx.lineTo(x + width - r, y)
+      ctx.quadraticCurveTo(x + width, y, x + width, y + r)
+      ctx.lineTo(x + width, y + height - r)
+      ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height)
+      ctx.lineTo(x + r, y + height)
+      ctx.quadraticCurveTo(x, y + height, x, y + height - r)
+      ctx.lineTo(x, y + r)
+      ctx.quadraticCurveTo(x, y, x + r, y)
+      ctx.closePath()
+    },
+
+    traceSquircle (ctx, x, y, width, height) {
+      const centerX = x + width / 2
+      const centerY = y + height / 2
+      const radiusX = width / 2
+      const radiusY = height / 2
+      const segments = Math.min(4096, Math.max(512, Math.ceil(Math.max(width, height) / 2)))
+
+      ctx.beginPath()
+      for (let index = 0; index <= segments; index += 1) {
+        const angle = (index / segments) * Math.PI * 2
+        const cosine = Math.cos(angle)
+        const sine = Math.sin(angle)
+        const pointX = centerX + radiusX * Math.sign(cosine) * Math.sqrt(Math.abs(cosine))
+        const pointY = centerY + radiusY * Math.sign(sine) * Math.sqrt(Math.abs(sine))
+        if (index === 0) ctx.moveTo(pointX, pointY)
+        else ctx.lineTo(pointX, pointY)
+      }
+      ctx.closePath()
     },
 
     drawHandles (ctx, box) {
@@ -576,6 +715,11 @@ export default {
       if (!isInside) return
 
       event.preventDefault()
+      if (this.isSquareShapeLocked) {
+        this.aspect = '1'
+        this.resetCrop()
+        return
+      }
       this.aspect = 'free'
       this.crop = {
         x: 0,
@@ -714,6 +858,31 @@ export default {
       this.draw()
     },
 
+    onCropShapeChange () {
+      if (this.cropShape !== 'square') this.outputFormat = 'image/png'
+      if (this.cropShape === 'rounded') this.cornerRadius = null
+      if (this.isSquareShapeLocked) {
+        this.aspect = '1'
+        this.resizeAspectLocked = true
+        this.resizeRatio = 1
+        this.applyAspectRatio()
+        if (this.resizeEnabled) this.setResizeSizeFromCrop()
+      } else {
+        this.draw()
+      }
+      this.message = ''
+    },
+
+    updateCornerRadius (event) {
+      const value = Number(event.target.value)
+      this.cornerRadius = Number.isFinite(value)
+        ? this.clamp(Math.round(value), 0, this.maxCornerRadius)
+        : this.effectiveCornerRadius
+      event.target.value = this.effectiveCornerRadius
+      this.message = ''
+      this.draw()
+    },
+
     resetCrop () {
       if (!this.image) return
       let width = this.imageWidth
@@ -763,6 +932,13 @@ export default {
 
     setResizeSizeFromCrop () {
       const crop = this.roundedCrop
+      if (this.isSquareShapeLocked) {
+        const size = Math.min(crop.w, crop.h, this.maxOutputDimension)
+        this.resizeWidth = Math.max(1, Math.round(size))
+        this.resizeHeight = this.resizeWidth
+        this.resizeRatio = 1
+        return
+      }
       const scale = Math.min(
         1,
         this.maxOutputDimension / crop.w,
@@ -779,6 +955,11 @@ export default {
     },
 
     updateResizeLock () {
+      if (this.isSquareShapeLocked) {
+        this.resizeAspectLocked = true
+        this.resizeRatio = 1
+        return
+      }
       if (this.resizeAspectLocked) {
         this.resizeRatio = this.resizeWidth / this.resizeHeight
       }
@@ -803,6 +984,14 @@ export default {
       }
 
       const next = this.clamp(Math.round(value), 1, this.maxOutputDimension)
+      if (this.isSquareShapeLocked) {
+        this.resizeWidth = next
+        this.resizeHeight = next
+        event.target.value = next
+        this.message = ''
+        this.draw()
+        return
+      }
       if (key === 'w') {
         if (this.resizeAspectLocked) {
           this.setResizeDimensions(next, next / this.resizeRatio)
@@ -882,6 +1071,33 @@ export default {
         }
         ctx.imageSmoothingEnabled = true
         ctx.imageSmoothingQuality = 'high'
+        ctx.save()
+        if (this.cropShape === 'round') {
+          ctx.beginPath()
+          ctx.ellipse(
+            output.width / 2,
+            output.height / 2,
+            output.width / 2,
+            output.height / 2,
+            0,
+            0,
+            Math.PI * 2
+          )
+          ctx.clip()
+        } else if (this.cropShape === 'squircle') {
+          this.traceSquircle(ctx, 0, 0, output.width, output.height)
+          ctx.clip()
+        } else if (this.cropShape === 'rounded') {
+          this.traceRoundedRect(
+            ctx,
+            0,
+            0,
+            output.width,
+            output.height,
+            this.effectiveCornerRadius
+          )
+          ctx.clip()
+        }
         ctx.drawImage(
           this.image,
           crop.x,
@@ -893,6 +1109,7 @@ export default {
           outputSize.w,
           outputSize.h
         )
+        ctx.restore()
         output.toBlob(
           blob => blob ? resolve(blob) : reject(new Error('Image encoding failed')),
           this.outputFormat,
@@ -1151,7 +1368,8 @@ canvas:focus-visible {
 }
 
 select,
-.number-grid input {
+.number-grid input,
+.radius-control input {
   width: 100%;
   min-height: 2.45rem;
   border: 1px solid #d8d0dc;
@@ -1167,9 +1385,16 @@ select {
 }
 
 select:focus,
-.number-grid input:focus {
+.number-grid input:focus,
+.radius-control input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(136, 51, 136, 0.1);
+}
+
+select:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .number-grid {
@@ -1191,6 +1416,30 @@ select:focus,
 
 .number-grid input {
   padding: 0 0.55rem;
+}
+
+.radius-control {
+  margin-top: 0.65rem;
+  display: block !important;
+}
+
+.radius-control span {
+  margin-bottom: 0.25rem;
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.radius-control input {
+  padding: 0 0.55rem;
+}
+
+.setting-hint {
+  margin: 0.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
 }
 
 .check-control {
