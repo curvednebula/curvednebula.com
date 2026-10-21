@@ -1,15 +1,15 @@
 ---
 title: Creative Apps and Online Tools
-description: Curved Nebula creates color grading, photo editing, sleep sound, and private browser-based UI color palette, image, and video tools for Android, iOS, macOS, Windows, and the web.
+description: Curved Nebula creates photo and video color grading app, and private browser-based tools for quick editing of images, sounds, and videos.
 permalink: /
 canonicalUrl: https://curvednebula.com/
 meta:
   - name: keywords
-    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, sleep sounds, UI color palette generator, CSS variables generator, design tokens
+    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, video color grading, image crop and resize, video trim and resize, sleep sounds, UI color palette generator, CSS variables generator, design tokens
   - property: og:title
     content: Curved Nebula Creative Apps and Online Tools
   - property: og:description
-    content: Discover Photo Curves for color grading, Lullwave for calming sounds, a UI color palette generator, and private browser-based image and video tools.
+    content: Discover Photo Curves for photo and video color grading, image crop and resize, and video trim and resize, plus Lullwave and private browser-based creative tools.
   - property: og:type
     content: website
   - property: og:url
@@ -101,11 +101,11 @@ meta:
 <div class="apps-container">
   <div class="app-item">
     <a href="/photocurves/">
-      <img src="/images/photocurves_icon_rounded_256x256.png" alt="Photo Curves color grading app" class="app-icon" />
+      <img src="/images/photocurves_icon_rounded_256x256.png" alt="Photo Curves photo and video color grading app" class="app-icon" />
     </a>
     <div class="app-info">
       <a href="/photocurves/"><h3>Photo Curves</h3></a>
-      <p>A color grading photo editor and 3D LUT creator with curves, color wheels, layer masks, and selective color tools. Available on Android, iOS, macOS, Windows, and the web.</p>
+      <p>A photo and video color grading app and 3D LUT creator with curves, color wheels, layer masks, and selective color tools. Available on Android, iOS, macOS, Windows, and the web.</p>
     </div>
   </div>
   <div class="app-item">

@@ -1,15 +1,15 @@
 ---
-title: Photo Curves Color Grading App
-description: Edit photos with RGB, CMYK and LAB curves, color wheels, layer masks and HSL tools. Create custom 3D LUT files on Android, iOS, macOS, Windows or the web.
+title: Photo Curves - Photo and Video Color Grading
+description: Edit photos and videos with RGB, CMYK, LAB, HSL curves and color wheels. Crop and resize images, trim videos, and create 3D LUTs.
 permalink: /photocurves/
 canonicalUrl: https://curvednebula.com/photocurves/
 meta:
   - name: keywords
-    content: Photo Curves, color grading app, photo editor, RAW photo editor, Windows photo editor, 3D LUT creator, RGB curves, color wheels, photo color correction
+    content: Photo Curves, color grading app, video color grading, photo editor, RAW photo editor, Windows photo editor, 3D LUT creator, RGB curves, color wheels, photo color correction, image crop and resize, video trim and resize
   - property: og:title
-    content: Photo Curves Color Grading App and 3D LUT Creator
+    content: Photo Curves Photo and Video Color Grading App and 3D LUT Creator
   - property: og:description
-    content: Color correct photos on Android, iOS, macOS and Windows, create cinematic looks and export custom 3D LUTs with professional curves, color wheels and layer masks.
+    content: Color grade photos and videos, crop and resize images, trim and resize videos, and export custom 3D LUTs on Android, iOS, macOS and Windows.
   - property: og:type
     content: website
   - property: og:url
@@ -20,11 +20,13 @@ meta:
     content: summary
 ---
 
-# Photo Curves Color Grading App
+# Photo Curves - Color Grading App
 
 <img src="/images/photocurves_icon_rounded_256x256.png" alt="Photo Curves color grading app icon" height="100"/>
 
-**Photo Curves** is a tool for detailed color correction and creative color grading for photos and videos. The app is available for Android, iPhone, iPad, macOS, and Windows.
+**Photo Curves** is a tool for detailed color correction and creative photo and video color grading: correct or enhance colors, adjust white balance, replace color ranges, shift hue, or develop stylized cinematic looks. Crop and resize images, trim videos.
+
+The app is available for Android, iPhone, iPad, macOS, and Windows.
 
 ## Download Photo Curves or edit online
 
@@ -47,13 +49,11 @@ Video support includes popular formats such as MP4, MOV, WebM, MKV, and AVI. Exa
 
 Create your own 3D LUTs and export them as `.cube` files for use in compatible photo and video software. Photo Curves also includes example presets that remain fully editable, unlike a flattened LUT.
 
-Use the editor to correct or enhance colors, adjust white balance, replace color ranges, shift hue, or develop stylized looks such as cinematic orange and teal.
-
 <img src="./Screenshot_1_small.jpg" alt="Photo Curves mobile color grading editor" width="142"/><img src="./Screenshot_6_small.jpg" alt="Editing photo colors with curves in Photo Curves" width="142"/><img src="./Screenshot_4_small.jpg" alt="Photo Curves selective color adjustment controls" width="142"/><img src="./Screenshot_2_small.jpg" alt="Photo Curves color correction interface" width="142"/>
 
 <img src="./PhotoCurvesMac-2.png" alt="Photo Curves color grading photo editor on macOS" width="600"/>
 
-## Color grading tools
+## Color grading and editing tools
 
 - **Basic controls** — adjust brightness, contrast, shadows, highlights, and saturation.
 
@@ -79,9 +79,10 @@ Use the editor to correct or enhance colors, adjust white balance, replace color
 
 - **Saturation vs saturation curve** — boost muted colors or reduce oversaturated colors for a more even result.
 
-## Color correction and creative editing
+- **Image crop and resize** — crop images and resize them to suit your composition and output needs.
 
-Photo Curves can handle both corrective and creative workflows. Use curves and basic controls to balance exposure and color, then add targeted adjustments with hue curves, color wheels, and masks. Because the adjustments remain editable, you can refine a look before exporting the finished image or LUT.
+- **Video trim and resize** — trim videos to keep the section you need and resize them for your final output.
+
 
 ## Frequently asked questions
 
