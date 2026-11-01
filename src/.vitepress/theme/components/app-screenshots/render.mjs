@@ -47,11 +47,18 @@ export function compositionAreas(width, height, layout) {
   }
 }
 
+function screenshotSource(imageWidth, imageHeight, layout) {
+  const cropTop = Math.min(10, Math.max(0, layout.cropTop || 0))
+  const y = Math.round(imageHeight * cropTop / 100)
+  return { x: 0, y, w: imageWidth, h: imageHeight - y }
+}
+
 export function screenshotRect(imageWidth, imageHeight, width, height, layout) {
   const area = compositionAreas(width, height, layout).screenshot
-  const scale = Math.min(area.w / imageWidth, area.h / imageHeight)
-  const w = imageWidth * scale
-  const h = imageHeight * scale
+  const source = screenshotSource(imageWidth, imageHeight, layout)
+  const scale = Math.min(area.w / source.w, area.h / source.h)
+  const w = source.w * scale
+  const h = source.h * scale
   return { x: area.x + (area.w - w) / 2, y: area.y + (area.h - h) / 2, w, h }
 }
 
@@ -112,6 +119,7 @@ export function renderFrame(canvas, frame, index, count, settings, previewWidth)
   ctx.fillRect(0, 0, width, height)
 
   const { layout, text } = frameSettings(frame, settings)
+  const source = screenshotSource(frame.image.naturalWidth, frame.image.naturalHeight, layout)
   const rect = screenshotRect(frame.image.naturalWidth, frame.image.naturalHeight, width, height, layout)
   const dropShadow = layout.outline === 'drop-shadow'
   if (dropShadow) {
@@ -122,7 +130,7 @@ export function renderFrame(canvas, frame, index, count, settings, previewWidth)
     ctx.shadowOffsetX = 0
     ctx.shadowOffsetY = 0
   }
-  ctx.drawImage(frame.image, rect.x, rect.y, rect.w, rect.h)
+  ctx.drawImage(frame.image, source.x, source.y, source.w, source.h, rect.x, rect.y, rect.w, rect.h)
   if (dropShadow) ctx.restore()
   const outlineColor = OUTLINE_COLORS[layout.outline]
   if (outlineColor) {

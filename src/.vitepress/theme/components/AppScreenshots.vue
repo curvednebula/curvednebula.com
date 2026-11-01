@@ -81,6 +81,7 @@
             <div class="panel-heading"><h2>Composition</h2><label class="checkbox-field composition-scope"><input :checked="selected.customLayout" type="checkbox" aria-label="Composition: this frame only" @change="toggleOverride('layout', $event.target.checked)"><span>This frame only</span></label></div>
             <label class="slider-field"><span>Margin <output>{{ activeLayout.margin }}%</output></span><input v-model.number="activeLayout.margin" type="range" min="0" max="20" step="1"></label>
             <label class="slider-field"><span>Text field size <output>{{ activeLayout.textArea }}%</output></span><input v-model.number="activeLayout.textArea" type="range" min="0" max="70" step="1"></label>
+            <label class="slider-field"><span>Crop top (status bar) <output>{{ activeLayout.cropTop }}%</output></span><input v-model.number="activeLayout.cropTop" type="range" min="0" max="10" step="0.25"></label>
             <label class="field"><span>Text position</span><select v-model="activeLayout.textPosition"><option value="top">Top text</option><option value="bottom">Bottom text</option></select></label>
             <label class="field"><span>Screenshot decoration</span><select v-model="activeLayout.outline"><option value="none">None</option><option value="white">White outline</option><option value="dark-grey">Grey outline</option><option value="black">Black outline</option><option value="drop-shadow">Drop shadow</option></select></label>
           </section>
@@ -125,7 +126,7 @@ import { canvasJpeg, canvasPng, createZip, downloadBlob } from './app-screenshot
 
 const settings = reactive({
   width: 1080, height: 1920,
-  layout: { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' },
+  layout: { margin: 0, textArea: 22, cropTop: 0, textPosition: 'top', outline: 'none' },
   text: { font: 'sans', size: 6, weight: '700', align: 'center', color: '#ffffff' },
   gradient: { start: '#743b9b', end: '#e68b7c', angle: 0 }
 })

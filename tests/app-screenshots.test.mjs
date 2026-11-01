@@ -107,10 +107,14 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
   await toggleScope('composition', true)
   const compositionPanel = panels[1]
   const sliders = findClass(compositionPanel, 'slider-field').map(path => path.at(-1).children.find(node => node.type === 'input'))
-  assert.equal(sliders.length, 2)
+  assert.equal(sliders.length, 3)
   assert.equal(sliders[0].props.min, '0')
   sliders[0].props['onUpdate:modelValue'](6)
   sliders[1].props['onUpdate:modelValue'](40)
+  assert.equal(sliders[2].props.min, '0')
+  assert.equal(sliders[2].props.max, '10')
+  assert.equal(sliders[2].props.step, '0.25')
+  sliders[2].props['onUpdate:modelValue'](2.5)
   const positionSelect = findClass(compositionPanel, 'field')[0].at(-1).children.find(node => node.type === 'select')
   assert.deepEqual(positionSelect.children.map(option => option.children), ['Top text', 'Bottom text'])
   positionSelect.props['onUpdate:modelValue']('bottom')
@@ -120,13 +124,13 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
     [...option.children.matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map(match => match[1]))
   assert.deepEqual(outlineLabels, ['None', 'White outline', 'Grey outline', 'Black outline', 'Drop shadow'])
   outlineSelect.props['onUpdate:modelValue']('drop-shadow')
-  assert.deepEqual({ ...state.settings.layout }, { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' })
+  assert.deepEqual({ ...state.settings.layout }, { margin: 0, textArea: 22, cropTop: 0, textPosition: 'top', outline: 'none' })
   await click(within(0, 'frame-preview'))
-  assert.deepEqual({ ...state.activeLayout }, { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' })
+  assert.deepEqual({ ...state.activeLayout }, { margin: 0, textArea: 22, cropTop: 0, textPosition: 'top', outline: 'none' })
   await click(within(1, 'frame-preview'))
-  assert.deepEqual({ ...state.activeLayout }, { margin: 6, textArea: 40, textPosition: 'bottom', outline: 'drop-shadow' })
+  assert.deepEqual({ ...state.activeLayout }, { margin: 6, textArea: 40, cropTop: 2.5, textPosition: 'bottom', outline: 'drop-shadow' })
   await toggleScope('composition', false)
-  assert.deepEqual({ ...state.activeLayout }, { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' })
+  assert.deepEqual({ ...state.activeLayout }, { margin: 0, textArea: 22, cropTop: 0, textPosition: 'top', outline: 'none' })
   await toggleScope('text', true)
   state.activeText.size = 8
   assert.equal(state.settings.text.size, 6)
@@ -375,11 +379,11 @@ test('preview and export draw identical geometry and flag text overflow', () => 
       assert.deepEqual(calls.splice(0), preview)
       assert.equal(canvas.width, 1080)
       assert.equal(canvas.height, 1920)
-      const image = preview.find(call => call[0] === 'image')
+      const image = preview.find(call => call[0] === 'image').slice(-4)
       const text = preview.find(call => call[0] === 'text')
       assert.ok(text, 'The description is drawn in both positions')
-      if (textPosition === 'top') assert.ok(text[3] < image[2])
-      else assert.ok(text[3] >= image[2] + image[4])
+      if (textPosition === 'top') assert.ok(text[3] < image[1])
+      else assert.ok(text[3] >= image[1] + image[3])
     }
   }
   shared.layout = { margin: 6, textArea: 0, textPosition: 'bottom' }
@@ -418,6 +422,46 @@ test('preview and export draw identical geometry and flag text overflow', () => 
             assert.deepEqual(preview.find(call => call[0] === 'gradient').slice(1), gradientCoordinates(width, height, 1, 0, angle), 'A single frame gradient is independent of position and set length')
             assert.deepEqual(preview.filter(call => call[0] === 'gradient-stop'), [['gradient-stop', 0, colors.start], ['gradient-stop', 1, colors.end]])
           }
+        }
+      }
+    }
+  }
+})
+
+test('top crop removes source pixels and fits the remaining screenshot consistently in preview and export', () => {
+  const settings = { width: 1080, height: 1920, layout: { margin: 0, textArea: 22, cropTop: 0, textPosition: 'top', outline: 'black' }, text: { size: 6, weight: '700', font: 'sans', align: 'center', color: '#fff' } }
+  const frame = { image: {}, background: 'solid', color: '#fff', caption: '' }
+  const draws = []
+  const strokes = []
+  const ctx = {
+    setTransform() {}, fillRect() {}, save() {}, restore() {}, beginPath() {}, rect() {}, clip() {},
+    drawImage: (_, ...args) => draws.push(args),
+    strokeRect: (...args) => strokes.push({ args, lineWidth: ctx.lineWidth })
+  }
+  const canvas = { getContext: () => ctx }
+  for (const [naturalWidth, naturalHeight] of [[1080, 2400], [2400, 1080], [501, 501]]) {
+    frame.image = { naturalWidth, naturalHeight }
+    for (const [width, height] of [[1080, 1920], [1920, 1080]]) {
+      Object.assign(settings, { width, height })
+      for (const textPosition of ['top', 'bottom']) {
+        settings.layout.textPosition = textPosition
+        for (const cropTop of [0, 2.5, 10, 20]) {
+          settings.layout.cropTop = cropTop
+          renderFrame(canvas, frame, 0, 1, settings, 420)
+          renderFrame(canvas, frame, 0, 1, settings)
+          assert.deepEqual(draws[0], draws[1])
+          assert.deepEqual(strokes[0], strokes[1])
+          const sourceTop = Math.round(naturalHeight * Math.min(10, cropTop) / 100)
+          const [sx, sy, sw, sh, x, y, w, h] = draws[0]
+          assert.deepEqual([sx, sy, sw, sh], [0, sourceTop, naturalWidth, naturalHeight - sourceTop])
+          assert.ok(Math.abs(w / h - naturalWidth / (naturalHeight - sourceTop)) < 1e-12, 'Cropping preserves the remaining image aspect ratio')
+          const area = compositionAreas(width, height, settings.layout).screenshot
+          assert.ok(x >= area.x - 1e-9 && y >= area.y - 1e-9)
+          assert.ok(x + w <= area.x + area.w + 1e-9 && y + h <= area.y + area.h + 1e-9)
+          const stroke = strokes[0]
+          assert.deepEqual(stroke.args, [x - stroke.lineWidth / 2, y - stroke.lineWidth / 2, w + stroke.lineWidth, h + stroke.lineWidth], 'The decoration follows the cropped screenshot')
+          draws.splice(0)
+          strokes.splice(0)
         }
       }
     }
