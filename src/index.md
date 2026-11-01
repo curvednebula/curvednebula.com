@@ -134,23 +134,6 @@ meta:
     </div>
   </div>
   <div class="app-item">
-    <a href="/appscreenshots/" aria-label="Open the free app store screenshot creator">
-      <svg class="app-icon" viewBox="0 0 128 128" role="img" aria-label="App Screenshot Creator online tool icon">
-        <defs><linearGradient id="screenshot-card-gradient" x1="0" x2="1"><stop stop-color="#743b9b"/><stop offset="1" stop-color="#e68b7c"/></linearGradient></defs>
-        <rect width="128" height="128" rx="28" fill="#333333"/>
-        <rect x="19" y="27" width="27" height="75" rx="4" fill="url(#screenshot-card-gradient)"/>
-        <rect x="51" y="27" width="27" height="75" rx="4" fill="url(#screenshot-card-gradient)"/>
-        <rect x="83" y="27" width="27" height="75" rx="4" fill="url(#screenshot-card-gradient)"/>
-        <path d="M26 37h13m19 0h13m19 0h13" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-        <path d="M25 51h15v43H25zm32 0h15v43H57zm32 0h15v43H89z" fill="#fff" fill-opacity=".9"/>
-      </svg>
-    </a>
-    <div class="app-info">
-      <a href="/appscreenshots/"><h3>App Screenshot Creator</h3></a>
-      <p>Create App Store and Google Play screenshots with descriptions.</p>
-    </div>
-  </div>
-  <div class="app-item">
     <a href="/trimaudio/" aria-label="Open the free online audio trimmer with waveform">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Trim Audio online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
@@ -160,6 +143,31 @@ meta:
     <div class="app-info">
       <a href="/trimaudio/"><h3>Trim Audio Online</h3></a>
       <p>Navigate and trim MP3, WAV, M4A, Ogg, Opus, FLAC, and AAC files with an interactive waveform. Audio is processed privately in your browser.</p>
+    </div>
+  </div>
+  <div class="app-item">
+    <a href="/appscreenshots/" aria-label="Open the free app store screenshot creator">
+      <svg class="app-icon" viewBox="0 0 128 128" role="img" aria-label="App Screenshot Creator online tool icon">
+        <defs>
+          <linearGradient id="screenshot-card-left" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#536bc6"/><stop offset="1" stop-color="#9464b6"/></linearGradient>
+          <linearGradient id="screenshot-card-center" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#743b9b"/><stop offset="1" stop-color="#e68b7c"/></linearGradient>
+          <linearGradient id="screenshot-card-right" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e68b7c"/><stop offset="1" stop-color="#f4c28e"/></linearGradient>
+          <g id="screenshot-card-content">
+            <path d="M10 12h18" stroke="#fff" stroke-opacity=".9" stroke-width="3" stroke-linecap="round"/>
+            <path d="M13 18h12" stroke="#fff" stroke-opacity=".6" stroke-width="2" stroke-linecap="round"/>
+            <rect x="5" y="28" width="28" height="39" rx="3" fill="#fff" fill-opacity=".93"/>
+            <path d="M5 38h28M5 48h28M5 58h28" stroke="#e6e6e6" stroke-width="2"/>
+          </g>
+        </defs>
+        <rect width="128" height="128" rx="28" fill="#333333"/>
+        <g transform="translate(19 34) rotate(-10 19 36)"><rect width="38" height="72" rx="4" fill="url(#screenshot-card-left)"/><use href="#screenshot-card-content"/></g>
+        <g transform="translate(71 34) rotate(10 19 36)"><rect width="38" height="72" rx="4" fill="url(#screenshot-card-right)"/><use href="#screenshot-card-content"/></g>
+        <g transform="translate(45 23)"><rect x="-1" y="1" width="40" height="74" rx="5" fill="#000" fill-opacity=".15"/><rect width="38" height="72" rx="4" fill="url(#screenshot-card-center)"/><use href="#screenshot-card-content"/></g>
+      </svg>
+    </a>
+    <div class="app-info">
+      <a href="/appscreenshots/"><h3>App Screenshot Creator</h3></a>
+      <p>Create App Store and Google Play screenshots with descriptions.</p>
     </div>
   </div>
   <div class="app-item">

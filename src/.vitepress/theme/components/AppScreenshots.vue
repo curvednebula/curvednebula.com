@@ -79,9 +79,10 @@
 
           <section class="settings-panel">
             <div class="panel-heading"><h2>Composition</h2><label class="checkbox-field composition-scope"><input :checked="selected.customLayout" type="checkbox" aria-label="Composition: this frame only" @change="toggleOverride('layout', $event.target.checked)"><span>This frame only</span></label></div>
-            <label class="slider-field"><span>Screenshot size <output>{{ activeLayout.scale }}%</output></span><input v-model.number="activeLayout.scale" type="range" min="40" max="100" step="1"></label>
-            <label class="slider-field"><span>Text area / screenshot position <output>{{ activeLayout.top }}%</output></span><input v-model.number="activeLayout.top" type="range" min="15" max="55" step="1"></label>
-            <p class="hint">The full screenshot fits below the text. Increase the text area to move it down.</p>
+            <label class="slider-field"><span>Margin <output>{{ activeLayout.margin }}%</output></span><input v-model.number="activeLayout.margin" type="range" min="0" max="20" step="1"></label>
+            <label class="slider-field"><span>Text field size <output>{{ activeLayout.textArea }}%</output></span><input v-model.number="activeLayout.textArea" type="range" min="0" max="70" step="1"></label>
+            <label class="field"><span>Text position</span><select v-model="activeLayout.textPosition"><option value="top">Top text</option><option value="bottom">Bottom text</option></select></label>
+            <label class="field"><span>Screenshot decoration</span><select v-model="activeLayout.outline"><option value="none">None</option><option value="white">White outline</option><option value="dark-grey">Grey outline</option><option value="black">Black outline</option><option value="drop-shadow">Drop shadow</option></select></label>
           </section>
 
           <section class="settings-panel">
@@ -95,9 +96,9 @@
           </section>
           <section class="settings-panel background-panel">
           <div class="panel-heading background-heading"><h2>Background</h2><label class="checkbox-field background-scope"><input :checked="selected.customBackground" type="checkbox" aria-label="Background: this frame only" @change="toggleOverride('background', $event.target.checked)"><span>This frame only</span></label></div>
-            <label class="field background-type"><select v-model="activeBackground.background" aria-label="Background type"><option value="gradient">Continuous gradient</option><option value="solid">Solid color</option></select></label>
+            <label class="field background-type"><select v-model="activeBackground.background" aria-label="Background type"><option value="gradient">Continuous gradient</option><option value="single-gradient">Single frame gradient</option><option value="solid">Solid color</option></select></label>
           <div class="background-settings">
-            <div v-if="activeBackground.background === 'gradient'" class="gradient-controls">
+            <div v-if="activeBackground.background !== 'solid'" class="gradient-controls">
               <div class="gradient-colors"><label class="color-field"><input v-model="activeGradient.start" type="color" aria-label="Gradient start color"><span>Start</span></label><span aria-hidden="true">→</span><label class="color-field"><input v-model="activeGradient.end" type="color" aria-label="Gradient end color"><span>End</span></label></div>
               <label class="slider-field gradient-direction"><span>Direction <output>{{ activeGradient.angle }}°</output></span><input v-model.number="activeGradient.angle" type="range" min="0" max="360" step="1"></label>
               <div v-for="group in gradientPresetGroups" :key="group.name" class="gradient-preset-group">
@@ -124,7 +125,7 @@ import { canvasJpeg, canvasPng, createZip, downloadBlob } from './app-screenshot
 
 const settings = reactive({
   width: 1080, height: 1920,
-  layout: { scale: 94, top: 25, margin: 6 },
+  layout: { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' },
   text: { font: 'sans', size: 6, weight: '700', align: 'center', color: '#ffffff' },
   gradient: { start: '#743b9b', end: '#e68b7c', angle: 0 }
 })
@@ -317,6 +318,8 @@ async function addFiles(fileList) {
       try {
         const image = await decodeFile(file)
         if (disposed) break
+        if (!frames.value.length && image.naturalWidth !== image.naturalHeight &&
+          (settings.width > settings.height) !== (image.naturalWidth > image.naturalHeight)) swapDimensions()
         const frame = { id: ++nextId, name: file.name, image, caption: '', ...backgroundDefault,
           customLayout: false, customText: false, customBackground: false, gradient: { ...settings.gradient }, layout: { ...settings.layout }, text: { ...settings.text } }
         frames.value.push(frame)
@@ -395,9 +398,9 @@ async function exportImages(all) {
 .art-frame span, .art-frame i { display: block; height: 4px; border-radius: 3px; background: #ffffffdf; width: 52px; margin-bottom: 5px; }
 .art-frame i { width: 37px; opacity: 0.65; }
 .art-frame b { width: 69px; height: 112px; margin-top: 12px; border-radius: 6px 6px 0 0; background: linear-gradient(#ffffffed 0 20%, #e6e6e6 20% 24%, #ffffffed 24% 45%, #e6e6e6 45% 49%, #ffffffed 49%); box-shadow: 0 3px 10px #00000033; }
-.art-one { transform: rotate(-10deg) translate(8px, 4px); background: linear-gradient(120deg, #646464, #858585); }
-.art-two { z-index: 1; transform: translateY(-8px); background: linear-gradient(120deg, #858585, #a5a5a5); }
-.art-three { transform: rotate(10deg) translate(-8px, 4px); background: linear-gradient(120deg, #a5a5a5, #c4c4c4); }
+.art-one { transform: rotate(-10deg) translate(8px, 4px); background: linear-gradient(120deg, #536bc6, #9464b6); }
+.art-two { z-index: 1; transform: translateY(-8px); background: linear-gradient(120deg, #743b9b, #e68b7c); }
+.art-three { transform: rotate(10deg) translate(-8px, 4px); background: linear-gradient(120deg, #e68b7c, #f4c28e); }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.45; }

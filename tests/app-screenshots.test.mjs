@@ -6,7 +6,7 @@ import { mkdir, readFile, unlink, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import { parse, compileScript, compileTemplate } from '@vue/compiler-sfc'
-import { gradientCoordinates, screenshotRect, wrapText, frameSettings, validDimensions, renderFrame } from '../src/.vitepress/theme/components/app-screenshots/render.mjs'
+import { gradientCoordinates, compositionAreas, screenshotRect, wrapText, frameSettings, validDimensions, renderFrame } from '../src/.vitepress/theme/components/app-screenshots/render.mjs'
 import { crc32, canvasPng, createZip } from '../src/.vitepress/theme/components/app-screenshots/download.mjs'
 
 const vueUrl = pathToFileURL(createRequire(new URL('../node_modules/vitepress/package.json', import.meta.url)).resolve('vue')).href
@@ -27,7 +27,7 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
 
   // Render the production component into VNodes without mounting its DOM or
   // drawing canvases. This retains Vue's real reactivity and template handlers.
-  const originals = new Map(['window', 'requestAnimationFrame', 'cancelAnimationFrame'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
+  const originals = new Map(['window', 'requestAnimationFrame', 'cancelAnimationFrame', 'Image'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)]))
   globalThis.window = { addEventListener() {}, removeEventListener() {} }
   globalThis.requestAnimationFrame = () => 1
   globalThis.cancelAnimationFrame = () => {}
@@ -105,14 +105,28 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
     await nextTick()
   }
   await toggleScope('composition', true)
-  state.activeLayout.top = 40
-  assert.equal(state.settings.layout.top, 25)
+  const compositionPanel = panels[1]
+  const sliders = findClass(compositionPanel, 'slider-field').map(path => path.at(-1).children.find(node => node.type === 'input'))
+  assert.equal(sliders.length, 2)
+  assert.equal(sliders[0].props.min, '0')
+  sliders[0].props['onUpdate:modelValue'](6)
+  sliders[1].props['onUpdate:modelValue'](40)
+  const positionSelect = findClass(compositionPanel, 'field')[0].at(-1).children.find(node => node.type === 'select')
+  assert.deepEqual(positionSelect.children.map(option => option.children), ['Top text', 'Bottom text'])
+  positionSelect.props['onUpdate:modelValue']('bottom')
+  const outlineSelect = findClass(compositionPanel, 'field')[1].at(-1).children.find(node => node.type === 'select')
+  // Vue may combine static options into one HTML VNode as the list grows.
+  const outlineLabels = outlineSelect.children.flatMap(option => option.type === 'option' ? [option.children] :
+    [...option.children.matchAll(/<option[^>]*>([^<]*)<\/option>/g)].map(match => match[1]))
+  assert.deepEqual(outlineLabels, ['None', 'White outline', 'Grey outline', 'Black outline', 'Drop shadow'])
+  outlineSelect.props['onUpdate:modelValue']('drop-shadow')
+  assert.deepEqual({ ...state.settings.layout }, { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' })
   await click(within(0, 'frame-preview'))
-  assert.equal(state.activeLayout.top, 25)
+  assert.deepEqual({ ...state.activeLayout }, { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' })
   await click(within(1, 'frame-preview'))
-  assert.equal(state.activeLayout.top, 40)
+  assert.deepEqual({ ...state.activeLayout }, { margin: 6, textArea: 40, textPosition: 'bottom', outline: 'drop-shadow' })
   await toggleScope('composition', false)
-  assert.equal(state.activeLayout.top, 25)
+  assert.deepEqual({ ...state.activeLayout }, { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' })
   await toggleScope('text', true)
   state.activeText.size = 8
   assert.equal(state.settings.text.size, 6)
@@ -125,6 +139,8 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
     await nextTick()
   }
   const originalGradient = { ...state.settings.gradient }
+  const backgroundSelect = findClass(tree, 'background-type')[0].at(-1).children.find(node => node.type === 'select')
+  assert.deepEqual(backgroundSelect.children.map(option => option.children), ['Continuous gradient', 'Single frame gradient', 'Solid color'])
   assert.equal(findClass(tree, 'gradient-controls').length, 1)
   const presetGroups = findClass(tree, 'gradient-preset-group')
   assert.equal(presetGroups.length, 3)
@@ -133,6 +149,13 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
   state.activeGradient.start = '#ff0000'
   state.activeGradient.angle = 90
   assert.deepEqual({ ...state.settings.gradient }, originalGradient, 'A frame-specific gradient must not change shared settings')
+  await chooseBackground('single-gradient')
+  assert.equal(findClass(tree, 'gradient-controls').length, 1)
+  assert.equal(findClass(tree, 'solid-controls').length, 0)
+  assert.equal(state.selected.background, 'single-gradient')
+  assert.equal(state.frames[0].background, 'gradient', 'An individual gradient mode must not change other frames')
+  assert.equal(state.activeGradient.start, '#ff0000')
+  assert.equal(state.activeGradient.angle, 90)
   await chooseBackground('solid')
   assert.equal(findClass(tree, 'gradient-controls').length, 0)
   assert.equal(findClass(tree, 'solid-controls').length, 1)
@@ -153,6 +176,9 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
   assert.deepEqual({ ...state.settings.gradient }, originalGradient, 'Switching background types preserves gradient settings')
   await chooseBackground('solid')
   await toggleScope('background', false)
+  await chooseBackground('single-gradient')
+  assert.ok(state.frames.every(frame => frame.background === 'single-gradient'), 'Single frame gradients can be shared by the whole set')
+  assert.deepEqual({ ...state.activeGradient }, originalGradient, 'Gradient settings survive mode changes')
   await chooseBackground('solid')
   state.activeBackground.color = '#fedcba'
   await nextTick()
@@ -205,6 +231,40 @@ test('frame selection, toolbar controls, and per-frame settings remain independe
     assert.ok(cards()[index].at(-1).props.class.split(/\s+/).includes('selected'))
     assert.equal(within(index, 'frame-preview').at(-1).props['aria-pressed'], true)
   }
+
+  // Exercise the real upload path with decoded dimensions, including a failed
+  // file before the first usable image and later uploads in another orientation.
+  let imageSizes = []
+  globalThis.Image = class {
+    async decode() {
+      const size = imageSizes.shift()
+      if (size instanceof Error) throw size
+      ;[this.naturalWidth, this.naturalHeight] = size
+    }
+  }
+  async function uploadImages(sizes) {
+    imageSizes = [...sizes]
+    const files = sizes.map((_, i) => Object.assign(new Blob(['image'], { type: 'image/png' }), { name: `upload-${i}.png` }))
+    await state.addFiles(files)
+  }
+  state.frames = []
+  state.settings.width = 1080
+  state.settings.height = 1920
+  await uploadImages([new Error('Invalid image'), [2400, 1080], [1080, 2400]])
+  assert.equal(state.frames.length, 2)
+  assert.deepEqual([state.settings.width, state.settings.height], [1920, 1080], 'The first decoded screenshot sets landscape orientation')
+  assert.equal(state.presetId, 'android', 'Detecting orientation preserves the selected preset')
+  await uploadImages([[1080, 2400]])
+  assert.deepEqual([state.settings.width, state.settings.height], [1920, 1080], 'Later uploads do not change orientation')
+  state.frames = []
+  state.presetId = 'custom'
+  state.settings.width = 1600
+  state.settings.height = 900
+  await uploadImages([[1080, 2400]])
+  assert.deepEqual([state.settings.width, state.settings.height], [900, 1600], 'A new set detects portrait orientation and keeps the chosen dimensions')
+  state.frames = []
+  await uploadImages([[500, 500]])
+  assert.deepEqual([state.settings.width, state.settings.height], [900, 1600], 'Square images preserve the current orientation')
 })
 
 test('the same gradient color reaches both sides of every frame boundary', () => {
@@ -227,19 +287,50 @@ test('the same gradient color reaches both sides of every frame boundary', () =>
   }
 })
 
-test('mixed screenshot aspect ratios fit completely below the description', () => {
+test('mixed screenshot aspect ratios fit beside text with uniform minimum margins', () => {
   for (const [imageWidth, imageHeight] of [[1080, 2400], [2400, 1080], [500, 500]]) {
-    for (const [width, height] of [[1080, 1920], [2752, 2064]]) {
-      for (const top of [15, 25, 55]) {
-        const rect = screenshotRect(imageWidth, imageHeight, width, height, { scale: 94, top, margin: 6 })
-        assert.ok(rect.x >= width * 0.06)
-        assert.ok(rect.y >= height * top / 100)
-        assert.ok(rect.x + rect.w <= width * 0.94 + 1e-9)
-        assert.ok(rect.y + rect.h <= height * 0.96 + 1e-9)
-        assert.ok(Math.abs(rect.w / rect.h - imageWidth / imageHeight) < 1e-12)
+    for (const [width, height] of [[1080, 1920], [2752, 2064], [4096, 320], [320, 4096]]) {
+      for (const margin of [0, 6, 20]) {
+        for (const textArea of [0, 25, 70]) {
+          for (const textPosition of ['top', 'bottom']) {
+            const layout = { margin, textArea, textPosition }
+            const rect = screenshotRect(imageWidth, imageHeight, width, height, layout)
+            const areas = compositionAreas(width, height, layout)
+            const inset = Math.min(width, height) * margin / 100
+            assert.ok(rect.w > 0 && rect.h > 0)
+            assert.ok(rect.x >= inset - 1e-9)
+            assert.ok(rect.y >= inset - 1e-9)
+            assert.ok(rect.x + rect.w <= width - inset + 1e-9)
+            assert.ok(rect.y + rect.h <= height - inset + 1e-9)
+            assert.equal(areas.text.x, inset)
+            assert.equal(areas.text.w, width - 2 * inset)
+            if (textArea > 0) {
+              if (textPosition === 'top') assert.ok(rect.y >= areas.text.y + areas.text.h + inset - 1e-9)
+              else assert.ok(rect.y + rect.h + inset <= areas.text.y + 1e-9)
+            }
+            if (margin === 0) {
+              const edgeDistances = [rect.x, width - rect.x - rect.w, textPosition === 'top' ? height - rect.y - rect.h : rect.y]
+              assert.ok(edgeDistances.some(distance => Math.abs(distance) < 1e-9), 'A zero-margin screenshot touches a frame edge')
+            }
+            assert.ok(Math.abs(rect.w / rect.h - imageWidth / imageHeight) < 1e-12)
+          }
+        }
       }
     }
   }
+})
+
+test('reserving more text space shrinks the screenshot and bottom text mirrors the layout', () => {
+  const layout = { margin: 6, textArea: 25, textPosition: 'top' }
+  const first = screenshotRect(1080, 2400, 1080, 1920, layout)
+  const largerText = screenshotRect(1080, 2400, 1080, 1920, { ...layout, textArea: 55 })
+  assert.ok(largerText.w < first.w && largerText.h < first.h)
+  const bottom = screenshotRect(1080, 2400, 1080, 1920, { ...layout, textPosition: 'bottom' })
+  assert.equal(bottom.w, first.w)
+  assert.equal(bottom.h, first.h)
+  assert.ok(Math.abs(bottom.y - (1920 - first.y - first.h)) < 1e-9)
+  const fullFrame = screenshotRect(1080, 1920, 1080, 1920, { margin: 0, textArea: 0, textPosition: 'top' })
+  assert.deepEqual(fullFrame, { x: 0, y: 0, w: 1080, h: 1920 })
 })
 
 test('text wraps long words and preserves newlines, blank lines, and Unicode', () => {
@@ -251,9 +342,9 @@ test('text wraps long words and preserves newlines, blank lines, and Unicode', (
 })
 
 test('frame overrides stay separate from shared settings', () => {
-  const shared = { layout: { top: 25 }, text: { size: 6 } }
-  const frame = { layout: { top: 40 }, text: { size: 4 }, customLayout: true, customText: false }
-  assert.equal(frameSettings(frame, shared).layout.top, 40)
+  const shared = { layout: { textArea: 25 }, text: { size: 6 } }
+  const frame = { layout: { textArea: 40 }, text: { size: 4 }, customLayout: true, customText: false }
+  assert.equal(frameSettings(frame, shared).layout.textArea, 40)
   assert.equal(frameSettings(frame, shared).text.size, 6)
 })
 
@@ -263,7 +354,7 @@ test('dimensions reject invalid, fractional, and excessively large outputs', () 
 })
 
 test('preview and export draw identical geometry and flag text overflow', () => {
-  const shared = { width: 1080, height: 1920, layout: { scale: 94, top: 25, margin: 6 }, text: { size: 6, weight: '700', font: 'sans', align: 'center', color: '#fff' }, gradient: { start: '#111', end: '#aaa', angle: 45 } }
+  const shared = { width: 1080, height: 1920, layout: { margin: 6, textArea: 25, textPosition: 'top' }, text: { size: 6, weight: '700', font: 'sans', align: 'center', color: '#fff' }, gradient: { start: '#111', end: '#aaa', angle: 45 } }
   const frame = { image: { naturalWidth: 1080, naturalHeight: 2400 }, background: 'gradient', caption: 'A useful description', customText: false, customLayout: false }
   const calls = []
   const ctx = {
@@ -274,13 +365,31 @@ test('preview and export draw identical geometry and flag text overflow', () => 
     fillText: (...args) => calls.push(['text', ...args])
   }
   const canvas = { getContext: () => ctx }
-  assert.equal(renderFrame(canvas, frame, 1, 4, shared, 420).overflow, false)
-  const preview = calls.splice(0)
-  assert.equal(canvas.width, 420)
-  renderFrame(canvas, frame, 1, 4, shared)
-  assert.deepEqual(calls.splice(0), preview)
-  assert.equal(canvas.width, 1080)
-  assert.equal(canvas.height, 1920)
+  for (const textPosition of ['top', 'bottom']) {
+    for (const margin of [0, 6, 20]) {
+      shared.layout = { margin, textArea: 25, textPosition }
+      assert.equal(renderFrame(canvas, frame, 1, 4, shared, 420).overflow, false)
+      const preview = calls.splice(0)
+      assert.equal(canvas.width, 420)
+      renderFrame(canvas, frame, 1, 4, shared)
+      assert.deepEqual(calls.splice(0), preview)
+      assert.equal(canvas.width, 1080)
+      assert.equal(canvas.height, 1920)
+      const image = preview.find(call => call[0] === 'image')
+      const text = preview.find(call => call[0] === 'text')
+      assert.ok(text, 'The description is drawn in both positions')
+      if (textPosition === 'top') assert.ok(text[3] < image[2])
+      else assert.ok(text[3] >= image[2] + image[4])
+    }
+  }
+  shared.layout = { margin: 6, textArea: 0, textPosition: 'bottom' }
+  assert.equal(renderFrame(canvas, frame, 1, 4, shared).overflow, true)
+  assert.equal(calls.filter(call => call[0] === 'text').length, 0)
+  calls.splice(0)
+  frame.caption = ''
+  assert.equal(renderFrame(canvas, frame, 1, 4, shared).overflow, false)
+  calls.splice(0)
+  shared.layout.textArea = 25
   frame.caption = 'A long description '.repeat(40)
   assert.equal(renderFrame(canvas, frame, 1, 4, shared).overflow, true)
   calls.splice(0)
@@ -290,6 +399,127 @@ test('preview and export draw identical geometry and flag text overflow', () => 
   assert.deepEqual(calls.filter(call => call[0] === 'gradient-stop'), [['gradient-stop', 0, '#ff0000'], ['gradient-stop', 1, '#0000ff']])
   assert.deepEqual(calls.find(call => call[0] === 'gradient').slice(1), gradientCoordinates(1080, 1920, 4, 1, 90))
   assert.equal(shared.gradient.start, '#111')
+  calls.splice(0)
+  frame.background = 'single-gradient'
+  frame.caption = ''
+  for (const [width, height] of [[1080, 1920], [1920, 1080]]) {
+    Object.assign(shared, { width, height })
+    for (const customBackground of [false, true]) {
+      frame.customBackground = customBackground
+      const colors = customBackground ? frame.gradient : shared.gradient
+      for (const angle of [0, 45, 90, 270]) {
+        colors.angle = angle
+        for (const count of [1, 4, 10]) {
+          for (const index of [0, count - 1]) {
+            renderFrame(canvas, frame, index, count, shared, 420)
+            const preview = calls.splice(0)
+            renderFrame(canvas, frame, index, count, shared)
+            assert.deepEqual(calls.splice(0), preview)
+            assert.deepEqual(preview.find(call => call[0] === 'gradient').slice(1), gradientCoordinates(width, height, 1, 0, angle), 'A single frame gradient is independent of position and set length')
+            assert.deepEqual(preview.filter(call => call[0] === 'gradient-stop'), [['gradient-stop', 0, colors.start], ['gradient-stop', 1, colors.end]])
+          }
+        }
+      }
+    }
+  }
+})
+
+test('screenshot outlines use the selected color and sit outside image bounds in previews and exports', () => {
+  const settings = { width: 1080, height: 1920, layout: { margin: 0, textArea: 22, textPosition: 'top', outline: 'none' }, text: { size: 6, weight: '700', font: 'sans', align: 'center', color: '#fff' } }
+  const frame = { image: { naturalWidth: 1080, naturalHeight: 2400 }, background: 'solid', color: '#000', caption: '' }
+  const strokes = []
+  const ctx = {
+    setTransform() {}, fillRect() {}, drawImage() {}, save() {}, beginPath() {}, rect() {}, clip() {}, restore() {},
+    strokeRect: (...rect) => strokes.push({ color: ctx.strokeStyle, lineWidth: ctx.lineWidth, rect })
+  }
+  const canvas = { getContext: () => ctx }
+  for (const [outline, color] of [['none', null], ['white', '#ffffff'], ['dark-grey', '#444444'], ['black', '#000000']]) {
+    settings.layout.outline = outline
+    renderFrame(canvas, frame, 0, 1, settings, 420)
+    const preview = strokes.splice(0)
+    renderFrame(canvas, frame, 0, 1, settings)
+    assert.deepEqual(strokes.splice(0), preview)
+    assert.equal(preview.length, color ? 1 : 0)
+    if (color) {
+      const stroke = preview[0]
+      const image = screenshotRect(1080, 2400, 1080, 1920, settings.layout)
+      assert.equal(stroke.color, color)
+      assert.equal(stroke.lineWidth, 1080 * 0.004)
+      const [x, y, w, h] = stroke.rect
+      assert.ok(Math.abs(x + stroke.lineWidth / 2 - image.x) < 1e-9)
+      assert.ok(Math.abs(y + stroke.lineWidth / 2 - image.y) < 1e-9)
+      assert.ok(Math.abs(x + w - stroke.lineWidth / 2 - image.x - image.w) < 1e-9)
+      assert.ok(Math.abs(y + h - stroke.lineWidth / 2 - image.y - image.h) < 1e-9)
+      assert.ok(Math.abs(y + h - stroke.lineWidth / 2 - settings.height) < 1e-9, 'The bottom outline starts outside the frame when margin is zero')
+    }
+  }
+  frame.customLayout = true
+  frame.layout = { ...settings.layout, outline: 'white' }
+  renderFrame(canvas, frame, 0, 1, settings)
+  assert.equal(strokes[0].color, '#ffffff', 'Frame-specific outlines override the shared choice')
+  assert.equal(settings.layout.outline, 'black')
+})
+
+test('drop shadows spread evenly, scale with the preview, and do not affect text or later frames', () => {
+  const settings = { width: 1080, height: 1920, layout: { margin: 0, textArea: 22, textPosition: 'top', outline: 'drop-shadow' }, text: { size: 6, weight: '700', font: 'sans', align: 'center', color: '#fff' } }
+  const frame = { image: { naturalWidth: 1080, naturalHeight: 2400 }, background: 'solid', color: '#fff', caption: 'Description' }
+  const calls = []
+  const stack = []
+  const shadowState = () => ({ shadowColor: ctx.shadowColor, shadowBlur: ctx.shadowBlur, shadowOffsetX: ctx.shadowOffsetX, shadowOffsetY: ctx.shadowOffsetY })
+  const ctx = {
+    shadowColor: 'rgba(0, 0, 0, 0)', shadowBlur: 0, shadowOffsetX: 0, shadowOffsetY: 0,
+    setTransform() {}, beginPath() {}, rect() {}, clip() {},
+    save: () => stack.push(shadowState()),
+    restore: () => Object.assign(ctx, stack.pop()),
+    fillRect: () => calls.push({ type: 'background', ...shadowState() }),
+    drawImage: () => calls.push({ type: 'image', ...shadowState() }),
+    fillText: () => calls.push({ type: 'text', ...shadowState() }),
+    measureText: text => ({ width: text.length * 32 })
+  }
+  const canvas = { getContext: () => ctx }
+  for (const outline of ['drop-shadow', 'none', 'drop-shadow']) {
+    settings.layout.outline = outline
+    for (const previewWidth of [420, undefined]) {
+      renderFrame(canvas, frame, 0, 1, settings, previewWidth)
+      const image = calls.find(call => call.type === 'image')
+      assert.equal(image.shadowOffsetX, 0)
+      assert.equal(image.shadowOffsetY, 0)
+      if (outline === 'drop-shadow') {
+        assert.equal(image.shadowColor, 'rgba(0, 0, 0, 0.55)')
+        assert.equal(image.shadowBlur * settings.width / canvas.width, 81, 'Preview and export have the same proportional softness')
+      } else assert.equal(image.shadowBlur, 0)
+      assert.ok(calls.filter(call => call.type !== 'image').every(call => call.shadowBlur === 0), 'Background and text stay free of shadows')
+      assert.equal(stack.length, 0)
+      calls.splice(0)
+    }
+  }
+})
+
+test('single and wrapped descriptions are vertically centered in either text position', () => {
+  const settings = { width: 1080, height: 1920, layout: { margin: 6, textArea: 25, textPosition: 'top' }, text: { size: 6, weight: '700', font: 'sans', align: 'center', color: '#fff' } }
+  const frame = { image: { naturalWidth: 1080, naturalHeight: 2400 }, background: 'solid', color: '#000', caption: '' }
+  const calls = []
+  const ctx = {
+    setTransform() {}, fillRect() {}, drawImage() {}, save() {}, beginPath() {}, rect() {}, clip() {}, restore() {},
+    measureText: text => ({ width: Array.from(text).length * 32 }),
+    fillText: (...args) => calls.push(args)
+  }
+  const canvas = { getContext: () => ctx }
+  for (const textPosition of ['top', 'bottom']) {
+    settings.layout.textPosition = textPosition
+    for (const caption of ['One line', 'A longer description that wraps into multiple lines', 'First line\n\nThird line', 'A long description '.repeat(40)]) {
+      frame.caption = caption
+      const result = renderFrame(canvas, frame, 0, 1, settings)
+      const text = compositionAreas(settings.width, settings.height, settings.layout).text
+      assert.ok(calls.length > 0)
+      assert.equal(ctx.textBaseline, 'middle')
+      assert.ok(Math.abs((calls[0][2] + calls.at(-1)[2]) / 2 - (text.y + text.h / 2)) < 1e-9)
+      assert.ok(calls[0][2] >= text.y)
+      assert.ok(calls.at(-1)[2] <= text.y + text.h)
+      assert.equal(calls.length, Math.min(result.lines, result.maxLines))
+      calls.splice(0)
+    }
+  }
 })
 
 test('PNG export writes correct RGB pixels, dimensions, checksums, and no alpha channel', async () => {

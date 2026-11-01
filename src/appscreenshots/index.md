@@ -36,7 +36,7 @@ Turn your app screenshots into a consistent set for the App Store or Google Play
 3. Select each frame and enter its description. Use the arrow buttons to change its position in the sequence.
 4. Adjust screenshot size and the space reserved for text. Enable **This frame only** in the panel heading to customize the selected frame; leave it unchecked to edit the shared settings. Use the buttons above the selected frame to replace its image, reorder it, or remove it.
 5. Set text size, font, weight, alignment, and color. Shorten overflowing descriptions or increase the text area before exporting.
-6. In the **Background** panel, choose **Solid color** or **Continuous gradient**. **This frame only** gives the selected frame its own background type, color, and gradient settings. Leave it unchecked to edit the shared background.
+6. In the **Background** panel, choose **Solid color**, **Single frame gradient**, or **Continuous gradient**. A single frame gradient spans each frame individually; a continuous gradient spans the entire set. **This frame only** gives the selected frame its own background type, color, and gradient settings. Leave it unchecked to edit the shared background.
 7. Save the selected frame, or download all frames as numbered PNG or JPEG images in a ZIP.
 
 ### How does the continuous gradient work?

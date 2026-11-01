@@ -11,6 +11,8 @@ export const FONT_FAMILIES = {
   mono: 'Consolas, "Courier New", monospace'
 }
 
+const OUTLINE_COLORS = { white: '#ffffff', 'dark-grey': '#444444', black: '#000000' }
+
 export function validDimensions(width, height) {
   return Number.isInteger(width) && Number.isInteger(height) &&
     width >= 320 && height >= 320 && width <= 4096 && height <= 4096 &&
@@ -30,16 +32,27 @@ export function gradientCoordinates(width, height, count, index, angle) {
     cx + dx * length / 2, cy + dy * length / 2]
 }
 
+export function compositionAreas(width, height, layout) {
+  // One uniform margin, based on the shorter side, works in both orientations.
+  const margin = Math.min(width, height) * layout.margin / 100
+  const innerWidth = width - margin * 2
+  const innerHeight = height - margin * 2
+  const gap = layout.textArea > 0 ? margin : 0
+  const textHeight = (innerHeight - gap) * layout.textArea / 100
+  const screenshotHeight = innerHeight - gap - textHeight
+  const bottomText = layout.textPosition === 'bottom'
+  return {
+    text: { x: margin, y: bottomText ? height - margin - textHeight : margin, w: innerWidth, h: textHeight },
+    screenshot: { x: margin, y: bottomText ? margin : margin + textHeight + gap, w: innerWidth, h: screenshotHeight }
+  }
+}
+
 export function screenshotRect(imageWidth, imageHeight, width, height, layout) {
-  const margin = width * layout.margin / 100
-  const top = height * layout.top / 100
-  const availableWidth = width - margin * 2
-  const availableHeight = height - top - height * 0.04
-  const fit = Math.min(availableWidth / imageWidth, availableHeight / imageHeight)
-  const scale = fit * layout.scale / 100
+  const area = compositionAreas(width, height, layout).screenshot
+  const scale = Math.min(area.w / imageWidth, area.h / imageHeight)
   const w = imageWidth * scale
   const h = imageHeight * scale
-  return { x: (width - w) / 2, y: top + (availableHeight - h) / 2, w, h }
+  return { x: area.x + (area.w - w) / 2, y: area.y + (area.h - h) / 2, w, h }
 }
 
 export function wrapText(ctx, text, maxWidth) {
@@ -90,7 +103,8 @@ export function renderFrame(canvas, frame, index, count, settings, previewWidth)
     ctx.fillStyle = frame.color
   } else {
     const colors = frame.customBackground ? frame.gradient : settings.gradient
-    const gradient = ctx.createLinearGradient(...gradientCoordinates(width, height, count, index, colors.angle))
+    const singleFrame = frame.background === 'single-gradient'
+    const gradient = ctx.createLinearGradient(...gradientCoordinates(width, height, singleFrame ? 1 : count, singleFrame ? 0 : index, colors.angle))
     gradient.addColorStop(0, colors.start)
     gradient.addColorStop(1, colors.end)
     ctx.fillStyle = gradient
@@ -99,27 +113,46 @@ export function renderFrame(canvas, frame, index, count, settings, previewWidth)
 
   const { layout, text } = frameSettings(frame, settings)
   const rect = screenshotRect(frame.image.naturalWidth, frame.image.naturalHeight, width, height, layout)
+  const dropShadow = layout.outline === 'drop-shadow'
+  if (dropShadow) {
+    ctx.save()
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.55)'
+    // Canvas shadow blur uses bitmap pixels, independent of the transform.
+    ctx.shadowBlur = Math.min(width, height) * 0.075 * canvas.width / width
+    ctx.shadowOffsetX = 0
+    ctx.shadowOffsetY = 0
+  }
   ctx.drawImage(frame.image, rect.x, rect.y, rect.w, rect.h)
+  if (dropShadow) ctx.restore()
+  const outlineColor = OUTLINE_COLORS[layout.outline]
+  if (outlineColor) {
+    const lineWidth = Math.min(width, height) * 0.004
+    ctx.save()
+    ctx.strokeStyle = outlineColor
+    ctx.lineWidth = lineWidth
+    // Draw outside the image; the canvas clips edges that touch the frame.
+    ctx.strokeRect(rect.x - lineWidth / 2, rect.y - lineWidth / 2, rect.w + lineWidth, rect.h + lineWidth)
+    ctx.restore()
+  }
 
   const fontSize = width * text.size / 100
   const lineHeight = fontSize * 1.2
-  const textTop = height * 0.04
-  const textBottom = height * layout.top / 100 - height * 0.025
-  const inset = Math.max(width * layout.margin / 100, width * 0.05)
-  const maxWidth = width - inset * 2
+  const textArea = compositionAreas(width, height, layout).text
   ctx.font = `${text.weight} ${fontSize}px ${FONT_FAMILIES[text.font]}`
   ctx.fillStyle = text.color
   ctx.textAlign = text.align
-  ctx.textBaseline = 'top'
-  const lines = frame.caption.trim() ? wrapText(ctx, frame.caption, maxWidth) : []
-  const maxLines = Math.max(0, Math.floor((textBottom - textTop) / lineHeight))
+  ctx.textBaseline = 'middle'
+  const lines = frame.caption.trim() ? wrapText(ctx, frame.caption, textArea.w) : []
+  const maxLines = Math.max(0, Math.floor(textArea.h / lineHeight))
   const overflow = lines.length > maxLines
-  const x = text.align === 'left' ? inset : text.align === 'right' ? width - inset : width / 2
+  const visibleLines = lines.slice(0, maxLines)
+  const textTop = textArea.y + (textArea.h - visibleLines.length * lineHeight) / 2
+  const x = text.align === 'left' ? textArea.x : text.align === 'right' ? textArea.x + textArea.w : width / 2
   ctx.save()
   ctx.beginPath()
-  ctx.rect(inset, textTop, maxWidth, Math.max(0, textBottom - textTop))
+  ctx.rect(textArea.x, textArea.y, textArea.w, textArea.h)
   ctx.clip()
-  lines.slice(0, maxLines).forEach((line, i) => ctx.fillText(line, x, textTop + i * lineHeight))
+  visibleLines.forEach((line, i) => ctx.fillText(line, x, textTop + (i + 0.5) * lineHeight))
   ctx.restore()
   return { overflow, lines: lines.length, maxLines }
 }
