@@ -5,11 +5,11 @@ permalink: /
 canonicalUrl: https://curvednebula.com/
 meta:
   - name: keywords
-    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, video color grading, image crop and resize, video trim and resize, sleep sounds, UI color palette generator, CSS variables generator, design tokens
+    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, video color grading, image crop and resize, video trim and resize, sleep sounds, UI color palette generator, CSS variables generator, design tokens, app store screenshot creator
   - property: og:title
     content: Curved Nebula Creative Apps and Online Tools
   - property: og:description
-    content: Discover Photo Curves for photo and video color grading, image crop and resize, and video trim and resize, plus Lullwave and private browser-based creative tools.
+    content: Discover Photo Curves, Lullwave, and private browser-based creative tools for image and video editing, app store screenshots, audio trimming, and UI color palettes.
   - property: og:type
     content: website
   - property: og:url
@@ -134,6 +134,23 @@ meta:
     </div>
   </div>
   <div class="app-item">
+    <a href="/appscreenshots/" aria-label="Open the free app store screenshot creator">
+      <svg class="app-icon" viewBox="0 0 128 128" role="img" aria-label="App Screenshot Creator online tool icon">
+        <defs><linearGradient id="screenshot-card-gradient" x1="0" x2="1"><stop stop-color="#743b9b"/><stop offset="1" stop-color="#e68b7c"/></linearGradient></defs>
+        <rect width="128" height="128" rx="28" fill="#333333"/>
+        <rect x="19" y="27" width="27" height="75" rx="4" fill="url(#screenshot-card-gradient)"/>
+        <rect x="51" y="27" width="27" height="75" rx="4" fill="url(#screenshot-card-gradient)"/>
+        <rect x="83" y="27" width="27" height="75" rx="4" fill="url(#screenshot-card-gradient)"/>
+        <path d="M26 37h13m19 0h13m19 0h13" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+        <path d="M25 51h15v43H25zm32 0h15v43H57zm32 0h15v43H89z" fill="#fff" fill-opacity=".9"/>
+      </svg>
+    </a>
+    <div class="app-info">
+      <a href="/appscreenshots/"><h3>App Screenshot Creator</h3></a>
+      <p>Create App Store and Google Play screenshots with descriptions.</p>
+    </div>
+  </div>
+  <div class="app-item">
     <a href="/trimaudio/" aria-label="Open the free online audio trimmer with waveform">
       <svg class="app-icon crop-icon" viewBox="0 0 128 128" role="img" aria-label="Trim Audio online tool icon">
         <rect width="128" height="128" rx="28" fill="#333333"/>
@@ -157,15 +174,6 @@ meta:
     <div class="app-info">
       <a href="/colorpalette/"><h3>UI Color Palette Generator</h3></a>
       <p>Build a complete UI color palette from a single color, preview it as a light and dark interface, and export CSS variables, design tokens, or JSON.</p>
-    </div>
-  </div>
-  <div class="app-item">
-    <a href="/lullwave/">
-      <img src="/images/lullwave_icon_rounded_256x256.png" alt="Lullwave sleep sounds app" class="app-icon" />
-    </a>
-    <div class="app-info">
-      <a href="/lullwave/"><h3>Lullwave</h3></a>
-      <p>Colored noise and ambient sounds for sleep, relaxation, focus, and sound masking, including rain, water, sea waves, train, and fireplace sounds.</p>
     </div>
   </div>
 </div>

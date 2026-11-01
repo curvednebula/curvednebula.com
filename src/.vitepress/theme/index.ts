@@ -4,6 +4,7 @@ import ImageCrop from './components/ImageCrop.vue'
 import VideoCrop from './components/VideoCrop.vue'
 import AudioTrim from './components/AudioTrim.vue'
 import ColorPalette from './components/ColorPalette.vue'
+import AppScreenshots from './components/AppScreenshots.vue'
 import './custom.css'
 
 export default {
@@ -13,5 +14,6 @@ export default {
     app.component('VideoCrop', VideoCrop)
     app.component('AudioTrim', AudioTrim)
     app.component('ColorPalette', ColorPalette)
+    app.component('AppScreenshots', AppScreenshots)
   }
 } satisfies Theme

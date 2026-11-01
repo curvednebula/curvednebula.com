@@ -33,6 +33,7 @@ export default defineConfig({
         text: 'Online Tools',
         items: [
           { text: 'Crop & Resize Image', link: '/cropimage/' },
+          { text: 'App Screenshot Creator', link: '/appscreenshots/' },
           { text: 'Crop & Trim Video', link: '/cropvideo/' },
           { text: 'Trim Audio', link: '/trimaudio/' },
           { text: 'UI Color Palette Generator', link: '/colorpalette/' }
