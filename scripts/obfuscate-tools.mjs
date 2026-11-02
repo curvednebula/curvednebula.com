@@ -4,6 +4,7 @@ import JavaScriptObfuscator from 'javascript-obfuscator'
 
 const componentsDirectory = fileURLToPath(new URL('../src/.vitepress/theme/components/', import.meta.url)).replace(/\\/g, '/')
 
+/** @returns {import('vitepress').Plugin} */
 export function obfuscateTools({ dev = false } = {}) {
   let enabled = false
 
