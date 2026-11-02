@@ -1,10 +1,15 @@
 import { defineConfig } from 'vitepress'
+import { obfuscateTools } from '../../scripts/obfuscate-tools.mjs'
 
 export default defineConfig({
   title: 'Curved Nebula',
   description: 'Creative apps and online tools for photo editing, color grading, relaxation, and everyday image tasks.',
   outDir: '../dist',
   appearance: false,
+  vite: {
+    build: { sourcemap: false },
+    plugins: [obfuscateTools({ dev: process.argv.includes('--obfuscate-tools') })]
+  },
 
   head: [
     ['meta', { name: 'theme-color', content: '#883388' }],

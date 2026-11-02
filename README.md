@@ -7,11 +7,32 @@ npm install
 npm run dev
 ```
 
+To test obfuscation and the production domain lock during development, run:
+
+```bash
+npm run dev:obfuscated
+```
+
+This intentionally redirects localhost and other unapproved hosts to
+`https://curvednebula.com/`. Stop it and use `npm run dev` to develop locally
+without obfuscation or the domain lock.
+
 ## Production build
 
 ```bash
 npm run build
 ```
+
+Production browser builds obfuscate JavaScript from
+`src/.vitepress/theme/components/`, including its helper modules, using
+[`javascript-obfuscator`](https://github.com/javascript-obfuscator/javascript-obfuscator).
+The domain lock allows only `curvednebula.com` and `www.curvednebula.com`;
+other hosts redirect to `https://curvednebula.com/`. Consequently, use
+`npm run dev` for local tool development; the tools in `npm run preview`
+also enforce the production domain lock. Server rendering, page content,
+and third-party libraries are excluded from obfuscation.
+
+Run the obfuscation and domain-lock checks with `npm run test:obfuscation`.
 
 ## App Screenshot Creator
 

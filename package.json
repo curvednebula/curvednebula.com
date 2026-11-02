@@ -10,6 +10,7 @@
   "repository": "/",
   "scripts": {
     "dev": "vitepress dev src",
+    "dev:obfuscated": "vitepress dev src --obfuscate-tools",
     "build": "vitepress build src",
     "preview": "vitepress preview src",
     "push-master": "git add -A && git commit -m 'new deployment' && git push",
@@ -17,10 +18,12 @@
     "push-gh-force": "git push origin `git subtree split --prefix dist master`:gh-pages --force",
     "deploy": "node scripts/deploy.mjs",
     "test:deploy": "node --test tests/deploy.test.mjs",
+    "test:obfuscation": "node --test tests/obfuscation.test.mjs",
     "test:app-screenshots": "node --test tests/app-screenshots.test.mjs"
   },
   "license": "MIT",
   "devDependencies": {
+    "javascript-obfuscator": "^5.9.1",
     "vitepress": "^1.6.4"
   },
   "dependencies": {
