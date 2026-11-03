@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="256" viewBox="0 0 720 256" fill="none" color="#20263F" role="img" aria-labelledby="title desc">
+  <title id="title">Curved Nebula</title>
+  <desc id="desc">A smooth rainbow C framing a four-point star, paired with geometric lettering inspired by 1980s computer brands.</desc>
+  <defs>
+    <clipPath id="rainbow-c"><path d="M190.225 65.775A88 88 0 1 0 190.225 190.225L163.355 163.355A50 50 0 1 1 163.355 92.645Z"/></clipPath>
+    <clipPath id="r-leg-top"><rect x="0" y="33" width="64" height="40"/></clipPath>
+    <mask id="c-cross-cuts" x="0" y="0" width="256" height="256" maskUnits="userSpaceOnUse" style="mask-type: luminance">
+      <rect width="256" height="256" fill="white"/>
+      <rect x="124" y="0" width="8" height="256" fill="black"/>
+      <rect x="0" y="124" width="128" height="8" fill="black"/>
+    </mask>
+  </defs>
+  <g>
+    <g clip-path="url(#rainbow-c)" mask="url(#c-cross-cuts)">
+      <rect x="40" y="40.0000" width="176" height="29.3533" fill="#EE6556"/>
+      <rect x="40" y="69.3333" width="176" height="29.3533" fill="#F3974C"/>
+      <rect x="40" y="98.6667" width="176" height="29.3533" fill="#F2C957"/>
+      <rect x="40" y="128.0000" width="176" height="29.3533" fill="#78B97D"/>
+      <rect x="40" y="157.3333" width="176" height="29.3533" fill="#51A5BE"/>
+      <rect x="40" y="186.6667" width="176" height="29.3533" fill="#427CB5"/>
+    </g>
+    <path fill="currentColor" transform="translate(200 128) scale(1.7) translate(-184 -128)" d="M184 106C186 121 191 126 206 128C191 130 186 135 184 150C182 135 177 130 162 128C177 126 182 121 184 106Z"/>
+  </g>
+  <g stroke="currentColor" stroke-width="8" stroke-linecap="square" stroke-linejoin="round">
+    <path transform="translate(280 45)" d="M44 4H16Q4 4 4 16V44Q4 56 16 56H44"/>
+    <path transform="translate(342 45)" d="M4 4V44Q4 56 16 56H32Q44 56 44 44V4"/>
+    <path transform="translate(404 45)" d="M4 56V4H31Q44 4 44 17V20Q44 33 31 33H4"/>
+    <path transform="translate(404 45)" clip-path="url(#r-leg-top)" d="M28 33L45 56"/>
+    <path transform="translate(466 45)" d="M3 4L20 52Q24 61 28 52L45 4"/>
+    <path transform="translate(528 45)" d="M44 4H4V56H44M4 30H36"/>
+    <path transform="translate(590 45)" d="M4 4H28Q44 4 44 20V40Q44 56 28 56H4Z"/>
+    <path transform="translate(280 145)" d="M4 56V4L44 56V4"/>
+    <path transform="translate(342 145)" d="M44 4H4V56H44M4 30H36"/>
+    <path transform="translate(404 145)" d="M4 30H30Q43 30 43 17Q43 4 30 4H4V56H31Q45 56 45 43Q45 30 30 30"/>
+    <path transform="translate(466 145)" d="M4 4V44Q4 56 16 56H32Q44 56 44 44V4"/>
+    <path transform="translate(528 145)" d="M4 4V56H44"/>
+    <path transform="translate(590 145)" d="M4 56V19Q4 4 19 4H29Q44 4 44 19V56M4 33H44"/>
+  </g>
+</svg>

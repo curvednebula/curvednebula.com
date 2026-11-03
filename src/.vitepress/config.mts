@@ -16,7 +16,9 @@ export default defineConfig({
     ['meta', { name: 'mobile-web-app-capable', content: 'yes' }],
     ['meta', { name: 'apple-mobile-web-app-capable', content: 'yes' }],
     ['meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black' }],
-    ['link', { rel: 'shortcut icon', type: 'image/x-icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/x-icon', sizes: '16x16 32x32 48x48 64x64 256x256', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', type: 'image/png', sizes: '32x32', href: '/favicon-32x32.png' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', sizes: 'any', href: '/favicon.svg' }],
     ['script', { async: '', src: 'https://www.googletagmanager.com/gtag/js?id=G-Z40PJ8416Z' }],
     ['script', {}, `
       window.dataLayer = window.dataLayer || [];
@@ -27,8 +29,9 @@ export default defineConfig({
   ],
 
   themeConfig: {
+    siteTitle: false,
     logo: {
-      src: '/images/curvednebula_80.png',
+      src: '/images/curvednebula-retro.svg',
       alt: 'Curved Nebula'
     },
     nav: [

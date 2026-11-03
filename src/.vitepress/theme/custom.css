@@ -10,8 +10,15 @@
 }
 
 .VPNavBarTitle .logo {
-  margin-right: 16px;
-  height: calc(var(--vp-nav-logo-height) * 1.5);
+  margin-right: 0;
+  width: auto;
+  height: 64px;
+}
+
+@media (max-width: 767px) {
+  .VPNavBarTitle .logo {
+    height: 56px;
+  }
 }
 
 .crop-tool-layout .VPDoc {

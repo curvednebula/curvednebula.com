@@ -1,37 +1,37 @@
 {
-  "hash": "6f082bac",
-  "configHash": "a365ddc3",
+  "hash": "2e0e1d63",
+  "configHash": "c4bd0977",
   "lockfileHash": "653a3959",
-  "browserHash": "a8db04d1",
+  "browserHash": "4b3ffc2b",
   "optimized": {
     "vue": {
       "src": "../../../../node_modules/vitepress/node_modules/vue/dist/vue.runtime.esm-bundler.js",
       "file": "vue.js",
-      "fileHash": "d3389c4a",
+      "fileHash": "afae9a55",
       "needsInterop": false
     },
     "vitepress > @vue/devtools-api": {
       "src": "../../../../node_modules/@vue/devtools-api/dist/index.js",
       "file": "vitepress___@vue_devtools-api.js",
-      "fileHash": "41eaad59",
+      "fileHash": "492304da",
       "needsInterop": false
     },
     "vitepress > @vueuse/core": {
       "src": "../../../../node_modules/@vueuse/core/index.mjs",
       "file": "vitepress___@vueuse_core.js",
-      "fileHash": "cdbccede",
+      "fileHash": "050a49fd",
       "needsInterop": false
     },
     "web-demuxer": {
       "src": "../../../../node_modules/web-demuxer/dist/web-demuxer.js",
       "file": "web-demuxer.js",
-      "fileHash": "30908401",
+      "fileHash": "23132c30",
       "needsInterop": false
     },
     "mediabunny": {
       "src": "../../../../node_modules/mediabunny/dist/modules/src/index.js",
       "file": "mediabunny.js",
-      "fileHash": "0eee09e7",
+      "fileHash": "7fc03af8",
       "needsInterop": false
     }
   },
