@@ -1134,7 +1134,7 @@ export default {
 
     drawHandles (ctx, box) {
       const positions = this.handlePositions(box)
-      ctx.fillStyle = '#883388'
+      ctx.fillStyle = '#326DA7'
       ctx.strokeStyle = '#fff'
       ctx.lineWidth = 2
       Object.keys(positions).forEach(name => {
@@ -2756,8 +2756,8 @@ export default {
 
 <style scoped>
 .crop-tool {
-  --accent: #883388;
-  --accent-dark: #6d286d;
+  --accent: var(--vp-c-brand-1);
+  --accent-dark: var(--vp-c-brand-3);
   --ink: #29242e;
   --muted: #716a76;
   --line: #e5dfe8;
@@ -2769,9 +2769,9 @@ export default {
 .drop-zone {
   min-height: 27rem;
   padding: 3rem 2rem;
-  border: 2px dashed #cfbfd2;
+  border: 2px dashed #b9cbdd;
   border-radius: 1.25rem;
-  background: radial-gradient(circle at 50% 0%, rgba(136, 51, 136, 0.1), transparent 42%), #fcfbfc;
+  background: radial-gradient(circle at 50% 0%, rgba(50, 109, 167, 0.1), transparent 42%), #fcfbfc;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2782,7 +2782,7 @@ export default {
 
 .drop-zone.is-dragging {
   border-color: var(--accent);
-  background-color: #f8f1f8;
+  background-color: #f0f5fb;
   transform: scale(1.005);
 }
 
@@ -2804,7 +2804,7 @@ export default {
   display: grid;
   place-items: center;
   color: var(--accent);
-  background: #f0e4f0;
+  background: #e2edf8;
 }
 
 .upload-icon svg {
@@ -2846,14 +2846,14 @@ button:disabled, select:disabled, input:disabled { cursor: not-allowed; opacity:
   color: #fff;
   background: var(--accent);
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(96, 29, 96, 0.18);
+  box-shadow: 0 8px 20px rgba(33, 77, 121, 0.18);
   transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
 .primary-button:hover:not(:disabled) {
   background: var(--accent-dark);
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(96, 29, 96, 0.24);
+  box-shadow: 0 10px 24px rgba(33, 77, 121, 0.24);
 }
 
 .toolbar {
@@ -2935,7 +2935,7 @@ canvas {
   outline: 0;
 }
 
-canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
+canvas:focus-visible { box-shadow: 0 0 0 3px rgba(126, 177, 223, 0.8); }
 
 .playback {
   width: 100%;
@@ -3014,7 +3014,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   border: 2px solid #fff;
   border-radius: 50%;
   appearance: none;
-  background: #883388;
+  background: #326DA7;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
 
@@ -3030,7 +3030,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   box-sizing: border-box;
   border: 2px solid #fff;
   border-radius: 50%;
-  background: #883388;
+  background: #326DA7;
   box-shadow: 0 1px 5px rgba(0, 0, 0, 0.45);
 }
 
@@ -3104,7 +3104,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
   bottom: 0;
   left: var(--trim-start-position);
   border-radius: inherit;
-  background: #c47ec4;
+  background: #7eb1df;
 }
 
 .trim-guide {
@@ -3232,8 +3232,8 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 }
 
 .trim-fields input:focus {
-  border-color: #c47ec4;
-  box-shadow: 0 0 0 2px rgba(196, 126, 196, 0.2);
+  border-color: #7eb1df;
+  box-shadow: 0 0 0 2px rgba(126, 177, 223, 0.2);
 }
 
 .trim-set-button {
@@ -3249,7 +3249,7 @@ canvas:focus-visible { box-shadow: 0 0 0 3px rgba(196, 126, 196, 0.8); }
 }
 
 .trim-set-button:hover:not(:disabled), .trim-reset-button:hover:not(:disabled) {
-  border-color: #c47ec4;
+  border-color: #7eb1df;
   color: #fff;
 }
 
@@ -3343,7 +3343,7 @@ select, .number-grid input {
 }
 
 select { padding: 0 0.55rem; font-size: 0.78rem; }
-select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(136, 51, 136, 0.1); }
+select:focus, .number-grid input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(50, 109, 167, 0.1); }
 
 .number-grid {
   display: grid;

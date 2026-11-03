@@ -11,12 +11,12 @@
   </defs>
   <g>
     <g clip-path="url(#rainbow-c)" mask="url(#c-cross-cuts)">
-      <rect x="40" y="40.0000" width="176" height="29.3533" fill="#EE6556"/>
-      <rect x="40" y="69.3333" width="176" height="29.3533" fill="#F3974C"/>
-      <rect x="40" y="98.6667" width="176" height="29.3533" fill="#F2C957"/>
-      <rect x="40" y="128.0000" width="176" height="29.3533" fill="#78B97D"/>
-      <rect x="40" y="157.3333" width="176" height="29.3533" fill="#51A5BE"/>
-      <rect x="40" y="186.6667" width="176" height="29.3533" fill="#427CB5"/>
+      <rect x="40" y="40" width="176" height="28" fill="#EE6556"/>
+      <rect x="40" y="68" width="176" height="28" fill="#F3974C"/>
+      <rect x="40" y="96" width="176" height="28" fill="#F2C957"/>
+      <rect x="40" y="132" width="176" height="28" fill="#78B97D"/>
+      <rect x="40" y="160" width="176" height="28" fill="#51A5BE"/>
+      <rect x="40" y="188" width="176" height="28" fill="#427CB5"/>
     </g>
     <path fill="currentColor" transform="translate(200 128) scale(1.7) translate(-184 -128)" d="M184 106C186 121 191 126 206 128C191 130 186 135 184 150C182 135 177 130 162 128C177 126 182 121 184 106Z"/>
   </g>

@@ -33,7 +33,7 @@ Where it goes further than a swatch generator is what happens next. The preview 
 
 ## How to build a UI color palette
 
-1. Set the base color. Drag inside the color wheel to choose a hue and saturation at once, use the **Hue**, **Saturation**, and **Value** sliders for precision, or type a hex value such as `#883388`.
+1. Set the base color. Drag inside the color wheel to choose a hue and saturation at once, use the **Hue**, **Saturation**, and **Value** sliders for precision, or type a hex value such as `#326DA7`.
 2. Choose a harmony. **Complementary** takes the hue directly opposite the base on the wheel; the other schemes spread the hues differently around the same wheel. [The nine harmonies](#the-nine-harmonies) below explains what each one is good for.
 3. Choose the color wheel. **RYB** follows traditional artists' color theory, where red pairs with green. **RGB** follows the hue circle used by screens and CSS, where red pairs with cyan.
 4. Click any swatch to copy its hex value.

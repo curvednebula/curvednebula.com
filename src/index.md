@@ -15,7 +15,7 @@ meta:
   - property: og:url
     content: https://curvednebula.com/
   - property: og:image
-    content: https://curvednebula.com/images/curvednebula.png
+    content: https://curvednebula.com/images/curvednebula-emblem-white-512.png
   - name: twitter:card
     content: summary
 ---

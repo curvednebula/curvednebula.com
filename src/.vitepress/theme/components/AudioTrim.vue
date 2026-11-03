@@ -1410,7 +1410,7 @@ export default {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.42)'
       ctx.fillRect(waveformLeft, waveformTop, Math.max(0, startX - waveformLeft), waveformHeight)
       ctx.fillRect(endX, waveformTop, Math.max(0, waveformRight - endX), waveformHeight)
-      ctx.fillStyle = 'rgba(136, 51, 136, 0.18)'
+      ctx.fillStyle = 'rgba(50, 109, 167, 0.18)'
       ctx.fillRect(startX, waveformTop, Math.max(0, endX - startX), waveformHeight)
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.13)'
       ctx.lineWidth = 1
@@ -1493,7 +1493,7 @@ export default {
           ctx.beginPath()
           ctx.rect(startX, waveformTop, Math.max(0, endX - startX), waveformHeight)
           ctx.clip()
-          drawPeaks('#d797d7')
+          drawPeaks('#97c5ed')
           ctx.restore()
           ctx.restore()
         }
@@ -1543,7 +1543,7 @@ export default {
           ctx.beginPath()
           ctx.rect(startX, waveformTop, Math.max(0, endX - startX), waveformHeight)
           ctx.clip()
-          drawSamples('#d797d7')
+          drawSamples('#97c5ed')
           ctx.restore()
           ctx.restore()
         }
@@ -1572,7 +1572,7 @@ export default {
         ctx.moveTo(playheadX, waveformTop)
         ctx.lineTo(playheadX, waveformTop + waveformHeight)
         ctx.stroke()
-        ctx.fillStyle = '#883388'
+        ctx.fillStyle = '#326DA7'
         ctx.strokeStyle = '#fff'
         ctx.lineWidth = 1.5
         ctx.beginPath()
@@ -2174,8 +2174,8 @@ export default {
 
 <style scoped>
 .trim-audio-tool {
-  --accent: #883388;
-  --accent-dark: #6d286d;
+  --accent: var(--vp-c-brand-1);
+  --accent-dark: var(--vp-c-brand-3);
   --ink: #29242e;
   --muted: #716a76;
   --line: #e5dfe8;
@@ -2187,9 +2187,9 @@ export default {
 .drop-zone {
   min-height: 27rem;
   padding: 3rem 2rem;
-  border: 2px dashed #cfbfd2;
+  border: 2px dashed #b9cbdd;
   border-radius: 1.25rem;
-  background: radial-gradient(circle at 50% 0%, rgba(136, 51, 136, 0.1), transparent 42%), #fcfbfc;
+  background: radial-gradient(circle at 50% 0%, rgba(50, 109, 167, 0.1), transparent 42%), #fcfbfc;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -2200,7 +2200,7 @@ export default {
 
 .drop-zone.is-dragging {
   border-color: var(--accent);
-  background-color: #f8f1f8;
+  background-color: #f0f5fb;
   transform: scale(1.005);
 }
 
@@ -2222,7 +2222,7 @@ export default {
   display: grid;
   place-items: center;
   color: var(--accent);
-  background: #f0e4f0;
+  background: #e2edf8;
 }
 
 .upload-icon svg {
@@ -2263,14 +2263,14 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
   color: #fff;
   background: var(--accent);
   font-weight: 600;
-  box-shadow: 0 8px 20px rgba(96, 29, 96, 0.18);
+  box-shadow: 0 8px 20px rgba(33, 77, 121, 0.18);
   transition: background 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
 .primary-button:hover:not(:disabled) {
   background: var(--accent-dark);
   transform: translateY(-1px);
-  box-shadow: 0 10px 24px rgba(96, 29, 96, 0.24);
+  box-shadow: 0 10px 24px rgba(33, 77, 121, 0.24);
 }
 
 .toolbar {
@@ -2357,7 +2357,7 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
   touch-action: none;
 }
 
-.waveform-canvas:focus-visible { box-shadow: inset 0 0 0 3px rgba(196, 126, 196, 0.85); }
+.waveform-canvas:focus-visible { box-shadow: inset 0 0 0 3px rgba(126, 177, 223, 0.85); }
 
 .waveform-status {
   position: absolute;
@@ -2421,7 +2421,7 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
 }
 
 .waveform-zoom-button:hover:not(:disabled) {
-  border-color: #c47ec4;
+  border-color: #7eb1df;
   color: #fff;
   background: rgba(255, 255, 255, 0.15);
 }
@@ -2507,8 +2507,8 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
 }
 
 .trim-fields input:focus {
-  border-color: #c47ec4;
-  box-shadow: 0 0 0 2px rgba(196, 126, 196, 0.2);
+  border-color: #7eb1df;
+  box-shadow: 0 0 0 2px rgba(126, 177, 223, 0.2);
 }
 
 .trim-set-button {
@@ -2524,7 +2524,7 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
 }
 
 .trim-set-button:hover:not(:disabled), .trim-reset-button:hover:not(:disabled) {
-  border-color: #c47ec4;
+  border-color: #7eb1df;
   color: #fff;
 }
 
@@ -2581,7 +2581,7 @@ button:disabled, input:disabled { cursor: not-allowed; opacity: 0.62; }
 
 .output-settings select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(136, 51, 136, 0.1);
+  box-shadow: 0 0 0 3px rgba(50, 109, 167, 0.1);
 }
 
 .output-settings .mix-mono-option {
