@@ -28,7 +28,7 @@ meta:
 
 The app is available for Android, iPhone, iPad, macOS, and Windows.
 
-## Download Photo Curves or edit online
+## Download Photo Curves
 
 <div class="store-badges" aria-label="Download Photo Curves">
   <a href="https://play.google.com/store/apps/details?id=com.foreachi.photocurves"><img src="/images/google-play-badge.png" alt="Get Photo Curves on Google Play"/></a>
@@ -36,8 +36,6 @@ The app is available for Android, iPhone, iPad, macOS, and Windows.
   <a href="https://apps.apple.com/app/id1606599231#?platform=iphone"><img src="/images/apple-store-badge.png" alt="Get Photo Curves for iPhone and iPad on the App Store"/></a>
   <a href="https://apps.apple.com/app/id1638484562"><img src="/images/mac-store-badge.png" alt="Get Photo Curves for macOS on the Mac App Store"/></a>
 </div>
-
-[Use Photo Curves Online](https://photocurves.curvednebula.com) for free photo editing in a web browser.
 
 ## Supported image and video formats
 

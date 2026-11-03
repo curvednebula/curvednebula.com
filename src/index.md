@@ -105,7 +105,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/photocurves/"><h3>Photo Curves</h3></a>
-      <p>A photo and video color grading app and 3D LUT creator with curves, color wheels, layer masks, and selective color tools. Available on Android, iOS, macOS, Windows, and the web.</p>
+      <p>A photo and video color grading app and 3D LUT creator. Available on Android, iOS, macOS, and Windows.</p>
     </div>
   </div>
   <div class="app-item">
