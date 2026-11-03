@@ -1362,7 +1362,7 @@ export default {
   --ink: #29242e;
   --muted: #716a76;
   --line: #e5dfe8;
-  --panel: #faf8fb;
+  --panel: var(--vp-c-bg);
   margin: 2rem 0 4rem;
   color: var(--ink);
 }
@@ -1382,7 +1382,7 @@ button {
   display: grid;
   grid-template-columns: minmax(0, 20rem) minmax(0, 1fr);
   overflow: hidden;
-  background: #fff;
+  background: var(--vp-c-bg);
   box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
 }
 
@@ -1602,7 +1602,7 @@ button {
 .scheme-panel {
   padding: 1rem;
   border-left: 1px solid var(--line);
-  background: var(--panel);
+  background: #ffffff;
 }
 
 .setting-group + .setting-group {

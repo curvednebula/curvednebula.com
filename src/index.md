@@ -22,11 +22,38 @@ meta:
 
 <style>
 .home-intro {
+  position: relative;
+  isolation: isolate;
   margin: 0 auto;
   max-width: 45rem;
+  background: #fffdf9;
 }
+.home-rainbow {
+  position: absolute;
+  z-index: -1;
+  top: 8px;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  pointer-events: none;
+  mask-image: linear-gradient(to right, transparent, #000 50%);
+}
+.home-rainbow span {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+}
+.home-rainbow span:nth-child(1) { top: 0; left: 50%; background: #EE6556; }
+.home-rainbow span:nth-child(2) { top: 4px; left: 40%; background: #F3974C; }
+.home-rainbow span:nth-child(3) { top: 8px; left: 30%; background: #F2C957; }
+.home-rainbow span:nth-child(4) { top: 12px; left: 20%; background: #78B97D; }
+.home-rainbow span:nth-child(5) { top: 16px; left: 10%; background: #51A5BE; }
+.home-rainbow span:nth-child(6) { top: 20px; background: #427CB5; }
 .home-intro h1 {
   margin-bottom: 0.75rem;
+  color: #382b29;
+  text-shadow: 0 1px 12px #fffdf9, 0 0 28px #fffdf9;
 }
 .home-intro p {
   color: #666;
@@ -95,6 +122,9 @@ meta:
 </style>
 
 <div class="home-intro">
+  <div class="home-rainbow" aria-hidden="true">
+    <span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
   <h1>Creative Apps and Online Tools</h1>
 </div>
 

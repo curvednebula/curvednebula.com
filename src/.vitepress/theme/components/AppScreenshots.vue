@@ -381,7 +381,7 @@ async function exportImages(all) {
 </script>
 
 <style scoped>
-.screenshot-creator { --ink: #292929; --muted: #737373; --line: #e5e5e5; --accent: #555555; --surface: #f5f5f5; --hover: #eeeeee; --focus: #666666; color: var(--ink); margin: 1rem 0 3rem; }
+.screenshot-creator { --ink: #292929; --muted: #737373; --line: #e5e5e5; --accent: #555555; --surface: #ffffff; --hover: #eeeeee; --focus: #666666; color: var(--ink); margin: 1rem 0 3rem; }
 .creator-heading { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; margin: 0 0 1.6rem; }
 .eyebrow { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.13em; color: var(--accent); }
 .creator-heading h1 { margin: 0.45rem 0 0.6rem; font-size: clamp(1.65rem, 3vw, 2.3rem); line-height: 1.2; letter-spacing: -0.045em; border: 0; }
@@ -389,7 +389,7 @@ async function exportImages(all) {
 .privacy-icon { color: var(--accent); font-size: 1rem; }
 .privacy-copy { display: flex; flex-direction: column; gap: 0.1rem; }
 .download-reminder { color: var(--muted); font-size: 0.65rem; }
-.welcome { position: relative; text-align: center; padding: 3rem 1.5rem; border: 1px dashed #c5c5c5; border-radius: 16px; background: radial-gradient(ellipse at 50% 20%, #ededed, #fafafa 70%); transition: border-color 0.15s, background 0.15s; }
+.welcome { position: relative; text-align: center; padding: 3rem 1.5rem; border: 1px dashed #c5c5c5; border-radius: 16px; background: var(--vp-c-bg); transition: border-color 0.15s, background 0.15s; }
 .welcome.dragging, .sequence.dragging { background: #e8e8e8; outline: 2px solid var(--accent); outline-offset: -3px; }
 .welcome h2 { margin: 1.75rem 0 0.65rem; padding: 0; border: 0; font-size: 1.4rem; letter-spacing: -0.035em; }
 .welcome p { color: var(--muted); font-size: 0.9rem; line-height: 1.7; margin: 0 0 1.4rem; }
@@ -412,7 +412,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .secondary { background: white; border-color: #d4d4d4; color: var(--ink); }
 .secondary:hover:not(:disabled) { background: var(--hover); }
 .button-count { border-left: 1px solid #ffffff55; padding-left: 0.65rem; font-size: 0.72rem; }
-.studio { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: #fff; }
+.studio { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--vp-c-bg); }
 fieldset { padding: 0; margin: 0; min-width: 0; border: 0; }
 .studio-controls { display: flex; gap: 0.8rem; align-items: flex-end; flex-wrap: wrap; padding: 1rem 1.15rem; border-bottom: 1px solid var(--line); }
 label > span, .field > span { display: block; font-size: 0.7rem; font-weight: 600; margin-bottom: 0.35rem; }

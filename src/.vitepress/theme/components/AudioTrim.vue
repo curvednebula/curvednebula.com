@@ -2179,7 +2179,7 @@ export default {
   --ink: #29242e;
   --muted: #716a76;
   --line: #e5dfe8;
-  --panel: #faf8fb;
+  --panel: var(--vp-c-bg);
   margin: 2rem 0 4rem;
   color: var(--ink);
 }
@@ -2189,7 +2189,7 @@ export default {
   padding: 3rem 2rem;
   border: 2px dashed #b9cbdd;
   border-radius: 1.25rem;
-  background: radial-gradient(circle at 50% 0%, rgba(50, 109, 167, 0.1), transparent 42%), #fcfbfc;
+  background: var(--vp-c-bg);
   display: flex;
   flex-direction: column;
   align-items: center;
