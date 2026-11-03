@@ -1,5 +1,5 @@
 ---
-title: Creative Apps and Online Tools
+title: Creative Tools
 description: Curved Nebula creates photo and video color grading app, and private browser-based tools for quick editing of images, sounds, and videos.
 permalink: /
 canonicalUrl: https://curvednebula.com/
@@ -7,7 +7,7 @@ meta:
   - name: keywords
     content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, video color grading, image crop and resize, video trim and resize, sleep sounds, UI color palette generator, CSS variables generator, design tokens, app store screenshot creator
   - property: og:title
-    content: Curved Nebula Creative Apps and Online Tools
+    content: Curved Nebula Creative Tools
   - property: og:description
     content: Discover Photo Curves, Lullwave, and private browser-based creative tools for image and video editing, app store screenshots, audio trimming, and UI color palettes.
   - property: og:type
@@ -44,11 +44,11 @@ meta:
   right: 0;
   height: 4px;
 }
-.home-rainbow span:nth-child(1) { top: 0; left: 50%; background: #EE6556; }
-.home-rainbow span:nth-child(2) { top: 4px; left: 40%; background: #F3974C; }
-.home-rainbow span:nth-child(3) { top: 8px; left: 30%; background: #F2C957; }
-.home-rainbow span:nth-child(4) { top: 12px; left: 20%; background: #78B97D; }
-.home-rainbow span:nth-child(5) { top: 16px; left: 10%; background: #51A5BE; }
+.home-rainbow span:nth-child(1) { top: 0; background: #EE6556; }
+.home-rainbow span:nth-child(2) { top: 4px; background: #F3974C; }
+.home-rainbow span:nth-child(3) { top: 8px; background: #F2C957; }
+.home-rainbow span:nth-child(4) { top: 12px; background: #78B97D; }
+.home-rainbow span:nth-child(5) { top: 16px; background: #51A5BE; }
 .home-rainbow span:nth-child(6) { top: 20px; background: #427CB5; }
 .home-intro h1 {
   margin-bottom: 0.75rem;
@@ -125,7 +125,7 @@ meta:
   <div class="home-rainbow" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span><span></span>
   </div>
-  <h1>Creative Apps and Online Tools</h1>
+  <h1>Creative Tools</h1>
 </div>
 
 <div class="apps-container">
