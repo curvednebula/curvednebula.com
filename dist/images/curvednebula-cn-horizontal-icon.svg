@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" color="#20263F" role="img" aria-labelledby="title desc">
+  <title id="title">Curved Nebula logo</title>
+  <desc id="desc">A sideways rainbow horseshoe with straight arms, thin horizontal color separators, and an open center, with a four-point star to the right.</desc>
+  <defs>
+    <clipPath id="c-silhouette">
+      <path d="M176 40H128A88 88 0 0 0 128 216H176V159H128A31 31 0 0 1 128 97H176Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#c-silhouette)">
+    <rect x="40" y="40" width="176" height="26" fill="#F7B41C"/>
+    <rect x="40" y="71" width="176" height="25" fill="#E76418"/>
+    <rect x="40" y="101" width="176" height="24.5" fill="#D7596C"/>
+    <rect x="40" y="130.5" width="176" height="24.5" fill="#8A4D79"/>
+    <rect x="40" y="160" width="176" height="25" fill="#3973A4"/>
+    <rect x="40" y="190" width="176" height="26" fill="#82BAD9"/>
+  </g>
+  <path fill="currentColor" transform="translate(200 128) scale(1.7) translate(-184 -128)" d="M184 106C186 121 191 126 206 128C191 130 186 135 184 150C182 135 177 130 162 128C177 126 182 121 184 106Z"/>
+</svg>

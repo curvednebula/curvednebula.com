@@ -31,7 +31,7 @@ export default defineConfig({
   themeConfig: {
     siteTitle: false,
     logo: {
-      src: '/images/curvednebula-retro.svg',
+      src: '/images/curvednebula-cn-horizontal.svg',
       alt: 'Curved Nebula'
     },
     nav: [

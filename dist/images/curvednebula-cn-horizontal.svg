@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="256" viewBox="0 0 720 256" fill="none" color="#20263F" role="img" aria-labelledby="title desc">
+  <title id="title">Curved Nebula logo</title>
+  <desc id="desc">A sideways rainbow horseshoe with straight arms, thin horizontal color separators, and an open center, with a four-point star to the right and the Curved Nebula wordmark.</desc>
+  <defs>
+    <clipPath id="r-leg-top"><rect x="0" y="33" width="64" height="40"/></clipPath>
+    <clipPath id="c-silhouette">
+      <path d="M176 40H128A88 88 0 0 0 128 216H176V159H128A31 31 0 0 1 128 97H176Z"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#c-silhouette)">
+    <rect x="40" y="40" width="176" height="26" fill="#F7B41C"/>
+    <rect x="40" y="71" width="176" height="25" fill="#E76418"/>
+    <rect x="40" y="101" width="176" height="24.5" fill="#D7596C"/>
+    <rect x="40" y="130.5" width="176" height="24.5" fill="#8A4D79"/>
+    <rect x="40" y="160" width="176" height="25" fill="#3973A4"/>
+    <rect x="40" y="190" width="176" height="26" fill="#82BAD9"/>
+  </g>
+  <path fill="currentColor" transform="translate(200 128) scale(1.7) translate(-184 -128)" d="M184 106C186 121 191 126 206 128C191 130 186 135 184 150C182 135 177 130 162 128C177 126 182 121 184 106Z"/>
+  <g stroke="currentColor" stroke-width="8" stroke-linecap="square" stroke-linejoin="round">
+    <path transform="translate(280 45)" d="M44 4H16Q4 4 4 16V44Q4 56 16 56H44"/>
+    <path transform="translate(342 45)" d="M4 4V44Q4 56 16 56H32Q44 56 44 44V4"/>
+    <path transform="translate(404 45)" d="M4 56V4H31Q44 4 44 17V20Q44 33 31 33H4"/>
+    <path transform="translate(404 45)" clip-path="url(#r-leg-top)" d="M28 33L45 56"/>
+    <path transform="translate(466 45)" d="M3 4L20 52Q24 61 28 52L45 4"/>
+    <path transform="translate(528 45)" d="M44 4H4V56H44M4 30H36"/>
+    <path transform="translate(590 45)" d="M4 4H28Q44 4 44 20V40Q44 56 28 56H4Z"/>
+    <path transform="translate(280 145)" d="M4 56V4L44 56V4"/>
+    <path transform="translate(342 145)" d="M44 4H4V56H44M4 30H36"/>
+    <path transform="translate(404 145)" d="M4 30H30Q43 30 43 17Q43 4 30 4H4V56H31Q45 56 45 43Q45 30 30 30"/>
+    <path transform="translate(466 145)" d="M4 4V44Q4 56 16 56H32Q44 56 44 44V4"/>
+    <path transform="translate(528 145)" d="M4 4V56H44"/>
+    <path transform="translate(590 145)" d="M4 56V19Q4 4 19 4H29Q44 4 44 19V56M4 33H44"/>
+  </g>
+</svg>
