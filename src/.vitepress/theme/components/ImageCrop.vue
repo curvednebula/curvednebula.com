@@ -1351,8 +1351,10 @@ button {
 .workspace {
   position: relative;
   overflow: hidden;
+  border: 1px solid var(--line);
   border-radius: 0.85rem;
-  background: #202027;
+  background: var(--panel);
+  box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
 }
 
 .toolbar {
@@ -1360,8 +1362,7 @@ button {
   z-index: 2;
   min-height: 2.8rem;
   padding: 0.4rem 0.75rem;
-  border: 1px solid var(--line);
-  border-radius: 0.85rem 0.85rem 0 0;
+  border-bottom: 1px solid var(--line);
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -1406,14 +1407,10 @@ button {
 .editor-layout {
   --settings-width: 13rem;
   position: relative;
-  border: 1px solid var(--line);
-  border-top: 0;
-  border-radius: 0 0 0.85rem 0.85rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--settings-width);
   overflow: hidden;
-  background: #202027;
-  box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
+  background: var(--panel);
 }
 
 .canvas-panel {
