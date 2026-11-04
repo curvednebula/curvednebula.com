@@ -1,13 +1,5 @@
 <template>
   <div class="screenshot-creator">
-    <header class="creator-heading">
-      <div>
-        <span class="eyebrow">APP STORE &amp; GOOGLE PLAY</span>
-        <h1>App Screenshot Creator</h1>
-      </div>
-      <div class="local-badge"><span class="privacy-icon" aria-hidden="true">◈</span><div class="privacy-copy"><span>Private · on your device</span><span class="download-reminder">Download your frames before leaving or refreshing.</span></div></div>
-    </header>
-
     <input ref="addInput" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp" multiple aria-label="Upload app screenshots" :disabled="busy" @change="addFromInput">
     <input ref="replaceInput" class="sr-only" type="file" accept="image/png,image/jpeg,image/webp" aria-label="Replace selected screenshot" :disabled="busy" @change="replaceFromInput">
 
@@ -40,7 +32,7 @@
         </div>
         <label class="format-field"><span>Format</span><select v-model="format"><option value="png">PNG</option><option value="jpg">JPEG</option></select></label>
         <div class="export-buttons">
-          <button class="button secondary" type="button" :disabled="!canExport" @click="exportImages(false)">Save frame</button>
+          <button class="button primary" type="button" :disabled="!canExport" @click="exportImages(false)">Save frame</button>
           <button class="button primary" type="button" :disabled="!canExport" @click="exportImages(true)">Download all <span class="button-count">{{ frames.length }}</span></button>
         </div>
       </fieldset>
@@ -382,13 +374,6 @@ async function exportImages(all) {
 
 <style scoped>
 .screenshot-creator { --ink: #292929; --muted: #737373; --line: #e5e5e5; --accent: #555555; --surface: #ffffff; --hover: #eeeeee; --focus: #666666; color: var(--ink); margin: 1rem 0 3rem; }
-.creator-heading { display: flex; justify-content: space-between; align-items: center; gap: 1.5rem; margin: 0 0 1.6rem; }
-.eyebrow { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.13em; color: var(--accent); }
-.creator-heading h1 { margin: 0.45rem 0 0.6rem; font-size: clamp(1.65rem, 3vw, 2.3rem); line-height: 1.2; letter-spacing: -0.045em; border: 0; }
-.local-badge { display: flex; gap: 0.55rem; align-items: center; max-width: 350px; font-size: 0.7rem; line-height: 1.5; color: #606060; border: 1px solid var(--line); border-radius: 10px; padding: 0.55rem 0.8rem; }
-.privacy-icon { color: var(--accent); font-size: 1rem; }
-.privacy-copy { display: flex; flex-direction: column; gap: 0.1rem; }
-.download-reminder { color: var(--muted); font-size: 0.65rem; }
 .welcome { position: relative; text-align: center; padding: 3rem 1.5rem; border: 1px dashed #c5c5c5; border-radius: 16px; background: var(--vp-c-bg); transition: border-color 0.15s, background 0.15s; }
 .welcome.dragging, .sequence.dragging { background: #e8e8e8; outline: 2px solid var(--accent); outline-offset: -3px; }
 .welcome h2 { margin: 1.75rem 0 0.65rem; padding: 0; border: 0; font-size: 1.4rem; letter-spacing: -0.035em; }
@@ -407,10 +392,8 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: 0.45; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .button { display: inline-flex; justify-content: center; align-items: center; gap: 0.7rem; border-radius: 7px; border: 1px solid transparent; min-height: 39px; padding: 0.55rem 0.9rem; font-size: 0.78rem; font-weight: 600; white-space: nowrap; line-height: 1.4; }
-.primary { background: var(--accent); color: white; box-shadow: 0 2px 3px #00000012; }
-.primary:hover:not(:disabled) { background: #404040; }
-.secondary { background: white; border-color: #d4d4d4; color: var(--ink); }
-.secondary:hover:not(:disabled) { background: var(--hover); }
+.primary { background: var(--vp-c-brand-1); color: white; box-shadow: 0 2px 3px #00000012; }
+.primary:hover:not(:disabled) { background: var(--vp-c-brand-3); }
 .button-count { border-left: 1px solid #ffffff55; padding-left: 0.65rem; font-size: 0.72rem; }
 .studio { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--vp-c-bg); }
 fieldset { padding: 0; margin: 0; min-width: 0; border: 0; }
@@ -487,8 +470,6 @@ input[type=range] { display: block; width: 100%; accent-color: var(--accent); cu
 .status { background: #f1f7f3; color: #386448; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 @media (max-width: 959px) {
-  .creator-heading { align-items: flex-start; }
-  .local-badge { font-size: 0.6rem; }
   .studio-controls { gap: 0.7rem; }
   .export-buttons { margin-left: 0; flex: 1 1 auto; justify-content: flex-end; }
   .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -496,8 +477,6 @@ input[type=range] { display: block; width: 100%; accent-color: var(--accent); cu
   .settings-panel:nth-child(n+3) { border-top: 1px solid var(--line); }
 }
 @media (max-width: 599px) {
-  .creator-heading { display: block; }
-  .local-badge { display: inline-flex; max-width: 100%; margin-top: 0.8rem; }
   .welcome { padding: 2rem 1rem; }
   .welcome h2 { font-size: 1.2rem; }
   .welcome p { font-size: 0.8rem; }

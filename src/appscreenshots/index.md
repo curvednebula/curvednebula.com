@@ -25,11 +25,11 @@ meta:
 
 <AppScreenshots />
 
-## Create screenshots for your app’s store listing
+# App Screenshot Creator
 
 Turn your app screenshots into a consistent set for the App Store or Google Play. Each image sits below a description, with space around it to show off your chosen background. Use a different solid color for each frame, or create a continuous gradient that flows across the entire sequence.
 
-### How to use the screenshot creator
+## How to use the screenshot creator
 
 1. Choose several PNG, JPEG, or WebP screenshots, or drag them into the editor.
 2. Choose an Android phone, iPhone, or iPad output size. Swap width and height for landscape, or enter custom dimensions.
@@ -39,14 +39,14 @@ Turn your app screenshots into a consistent set for the App Store or Google Play
 6. In the **Background** panel, choose **Solid color**, **Single frame gradient**, or **Continuous gradient**. A single frame gradient spans each frame individually; a continuous gradient spans the entire set. **This frame only** gives the selected frame its own background type, color, and gradient settings. Leave it unchecked to edit the shared background.
 7. Save the selected frame, or download all frames as numbered PNG or JPEG images in a ZIP.
 
-### How does the continuous gradient work?
+## How does the continuous gradient work?
 
 The gradient is drawn as if all frames were placed directly beside one another. Each exported image contains its own section, so adjacent edges match when the images are displayed in order. The preview adds a small gap between frames for selection; that gap is not part of the exported background. Reordering or adding frames redistributes the gradient across the new sequence. A solid-color frame still occupies its position in that sequence.
 
-### Which output sizes are available?
+## Which output sizes are available?
 
 The presets include Android phone at 1080 × 1920, iPhone 6.9-inch at 1320 × 2868, and iPad 13-inch at 2064 × 2752 pixels, with landscape equivalents. Apple accepts specific sizes for each display category; Google Play also specifies image dimensions, aspect ratios, and screenshot counts. Check the [App Store screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/) and [Google Play preview asset requirements](https://support.google.com/googleplay/android-developer/answer/9866151?hl=en) for your app’s target devices. Custom dimensions are not automatically validated against store specifications.
 
-### Are my screenshots uploaded?
+## Are my screenshots uploaded?
 
 No. Image editing and export happen locally in your browser. Images and descriptions are kept only in the current tab, so download your work before refreshing or leaving the page. PNG export produces RGB images without an alpha channel; JPEG exports also have opaque backgrounds. The tool creates image files for you to submit through your store account.
