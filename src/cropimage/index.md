@@ -34,12 +34,14 @@ The cropper can also prepare artwork for app icons, website icons, avatars, and 
 ## Howto
 
 1. Select an image from your device or drag and drop it into the cropper.
-2. Drag inside the selection to move the crop frame. Scroll the mouse wheel to zoom; zoom out fully to fit the entire image in the preview, including after rotation.
-3. Resize the selection with the corner or edge handles. Hold Shift while dragging to reposition the image. On mobile, drag the image with one finger, or use two fingers to pan and pinch to zoom at the same time.
+2. The crop frame stays centered and fills the available preview space for its aspect ratio. Drag the image to position it inside the frame, or use the arrow keys for precise adjustments.
+3. On desktop, use the vertical zoom slider to the left of the preview for smooth adjustments, or scroll the mouse wheel. On mobile, drag with one finger, or use two fingers to pan and pinch to zoom. Panning and zooming stop before empty space enters the crop frame, including after rotation.
 4. Choose square corners, round, squircle, or rounded corners crop. Rounded corners default to 20% of the cropped image's shortest side, or you can enter a custom radius in output pixels.
-5. Choose an aspect ratio or enter exact pixel values if needed. Round and squircle crops use a locked 1:1 ratio.
+5. Choose an aspect ratio, or select **Freeform** and use the **Crop proportions** slider to adjust it. Round and squircle crops use a locked 1:1 ratio.
 6. To resize the cropped result, enable **Resize output** and enter its width or height. Keep the aspect ratio locked to avoid distortion.
 7. Select PNG, JPEG, or WebP and save the cropped image. Round, squircle, and rounded-corner crops automatically use PNG so the corners stay transparent.
+
+The 90° rotation buttons also turn the crop frame's proportions, so a fully visible landscape image stays fully visible when turned to portrait. The frame remains centered and fits the preview.
 
 ## Frequently asked questions
 
@@ -49,11 +51,11 @@ Cropping removes pixels outside the selected area. Resizing is optional; reducin
 
 ### Can I crop an image to exact pixel dimensions?
 
-Yes. Enter the X and Y position plus the width and height in the crop area controls. To make the saved image a different exact size, enable **Resize output** and enter the output width and height. The final size is shown before you save.
+Yes. Position the image inside the fixed crop frame, then enable **Resize output** and enter the exact output width and height. The final size is shown before you save.
 
 ### Can I resize an image without cropping it?
 
-Yes. Leave the crop area expanded to the full image, enable **Resize output**, and enter the new width or height. Keep the aspect ratio locked to resize without distortion.
+Yes. Use **Freeform** and reset the crop to the original image proportions, enable **Resize output**, and enter the new width or height. Keep the aspect ratio locked to resize without distortion.
 
 ### Can I crop transparent images?
 

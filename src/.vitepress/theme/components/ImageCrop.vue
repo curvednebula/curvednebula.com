@@ -49,11 +49,30 @@
 
       <div class="editor-layout">
         <section class="canvas-panel">
+          <div ref="zoomPanel" class="zoom-panel">
+            <div class="zoom-control">
+              <label for="image-zoom">Zoom</label>
+              <span aria-hidden="true">+</span>
+              <input
+                id="image-zoom"
+                :value="zoomSliderPosition"
+                type="range"
+                min="0"
+                max="100"
+                step="any"
+                aria-orientation="vertical"
+                :aria-valuetext="`${Math.round(zoomFactor / minimumZoomFactor * 100)} percent`"
+                @input="updateZoom"
+              >
+              <span aria-hidden="true">−</span>
+              <output for="image-zoom">{{ Math.round(zoomFactor / minimumZoomFactor * 100) }}%</output>
+            </div>
+          </div>
           <div ref="stage" class="canvas-stage">
             <canvas
               ref="canvas"
               tabindex="0"
-              aria-label="Image crop area. Drag to move the crop, Shift-drag to move the image, scroll or pinch to zoom, and use handles to resize the crop."
+              aria-label="Image crop area. Drag or use arrow keys to move the image within the fixed crop frame. Scroll or pinch to zoom."
               @pointerdown="onPointerDown"
               @pointermove="onPointerMove"
               @pointerup="onPointerUp"
@@ -103,187 +122,165 @@
           </div>
         </section>
 
-        <aside class="settings-panel">
-          <div class="setting-group">
-            <label for="crop-shape">Crop shape</label>
-            <select id="crop-shape" v-model="cropShape" @change="onCropShapeChange">
-              <option value="square">Square corners</option>
-              <option value="round">Round</option>
-              <option value="squircle">Squircle</option>
-              <option value="rounded">Rounded corners</option>
-            </select>
-            <label v-if="cropShape === 'rounded'" class="radius-control">
-              <span>Corner radius (output px)</span>
-              <input
-                :value="effectiveCornerRadius"
-                type="number"
-                min="0"
-                :max="maxCornerRadius"
-                @change="updateCornerRadius"
-              >
-            </label>
-          </div>
-
-          <div class="setting-group">
-            <label for="crop-aspect">Aspect ratio</label>
-            <select
-              id="crop-aspect"
-              v-model="aspect"
-              :disabled="isSquareShapeLocked"
-              @change="applyAspectRatio"
-            >
-              <option value="free">Freeform</option>
-              <option value="1">Square · 1:1</option>
-              <option value="1.3333333333">Landscape · 4:3</option>
-              <option value="0.75">Portrait · 3:4</option>
-              <option value="1.5">Photo · 3:2</option>
-              <option value="0.6666666667">Vertical Photo · 2:3</option>
-              <option value="1.7777777778">Widescreen · 16:9</option>
-              <option value="0.5625">Story · 9:16</option>
-            </select>
-          </div>
-
-          <div class="setting-group">
-            <div class="setting-heading">
-              <span>Crop area</span>
-              <button class="mini-button" type="button" @click="resetCrop">Reset</button>
-            </div>
-            <div class="number-grid">
-              <label>
-                <span>X</span>
+        <div ref="settingsPanel" class="settings-panel-slot">
+          <aside class="settings-panel">
+            <div class="setting-group">
+              <label for="crop-shape">Crop shape</label>
+              <select id="crop-shape" v-model="cropShape" @change="onCropShapeChange">
+                <option value="square">Square corners</option>
+                <option value="round">Round</option>
+                <option value="squircle">Squircle</option>
+                <option value="rounded">Rounded corners</option>
+              </select>
+              <label v-if="cropShape === 'rounded'" class="radius-control">
+                <span>Corner radius (output px)</span>
                 <input
-                  :value="roundedCrop.x"
+                  :value="effectiveCornerRadius"
                   type="number"
-                  :min="cropBounds.left"
-                  :max="cropBounds.right - roundedCrop.w"
-                  @change="updateCropValue('x', $event)"
-                >
-              </label>
-              <label>
-                <span>Y</span>
-                <input
-                  :value="roundedCrop.y"
-                  type="number"
-                  :min="cropBounds.top"
-                  :max="cropBounds.bottom - roundedCrop.h"
-                  @change="updateCropValue('y', $event)"
-                >
-              </label>
-              <label>
-                <span>Width</span>
-                <input
-                  :value="roundedCrop.w"
-                  type="number"
-                  min="1"
-                  :max="cropBounds.w"
-                  @change="updateCropValue('w', $event)"
-                >
-              </label>
-              <label>
-                <span>Height</span>
-                <input
-                  :value="roundedCrop.h"
-                  type="number"
-                  min="1"
-                  :max="cropBounds.h"
-                  @change="updateCropValue('h', $event)"
+                  min="0"
+                  :max="maxCornerRadius"
+                  @change="updateCornerRadius"
                 >
               </label>
             </div>
-          </div>
 
-          <div class="divider" />
-
-          <div class="setting-group">
-            <label class="check-control">
-              <input
-                v-model="resizeEnabled"
-                type="checkbox"
-                @change="toggleResize"
+            <div class="setting-group">
+              <label for="crop-aspect">Aspect ratio</label>
+              <select
+                id="crop-aspect"
+                v-model="aspect"
+                :disabled="isSquareShapeLocked"
+                @change="applyAspectRatio"
               >
-              <span>Resize output</span>
-            </label>
-            <template v-if="resizeEnabled">
-              <div class="number-grid resize-grid">
-                <label>
-                  <span>Width</span>
-                  <input
-                    :value="resizeWidth"
-                    type="number"
-                    min="1"
-                    :max="maxOutputDimension"
-                    @change="updateOutputDimension('w', $event)"
-                  >
-                </label>
-                <label>
-                  <span>Height</span>
-                  <input
-                    :value="resizeHeight"
-                    type="number"
-                    min="1"
-                    :max="maxOutputDimension"
-                    @change="updateOutputDimension('h', $event)"
-                  >
-                </label>
+                <option value="free">Freeform</option>
+                <option value="1">Square · 1:1</option>
+                <option value="1.3333333333">Landscape · 4:3</option>
+                <option value="0.75">Portrait · 3:4</option>
+                <option value="1.5">Photo · 3:2</option>
+                <option value="0.6666666667">Vertical Photo · 2:3</option>
+                <option value="1.7777777778">Widescreen · 16:9</option>
+                <option value="0.5625">Story · 9:16</option>
+              </select>
+              <div v-if="aspect === 'free' && !isSquareShapeLocked" class="aspect-control">
+                <div class="range-label">
+                  <label for="freeform-aspect">Crop proportions</label>
+                  <output for="freeform-aspect">{{ Math.round(freeformAspect * 100) / 100 }}:1</output>
+                </div>
+                <input
+                  id="freeform-aspect"
+                  class="quality-range"
+                  :value="freeformSliderPosition"
+                  type="range"
+                  :min="Math.min(-4, Math.log2(orientedImageSize.w / orientedImageSize.h))"
+                  :max="Math.max(4, Math.log2(orientedImageSize.w / orientedImageSize.h))"
+                  step="0.01"
+                  :aria-valuetext="`${Math.round(freeformAspect * 100) / 100} to 1`"
+                  @input="updateFreeformAspect"
+                >
               </div>
-              <label class="check-control resize-lock">
-                <input
-                  v-model="resizeAspectLocked"
-                  type="checkbox"
-                  :disabled="isSquareShapeLocked"
-                  @change="updateResizeLock"
-                >
-                <span>Keep aspect ratio</span>
-              </label>
-            </template>
-          </div>
-
-          <div class="setting-group">
-            <label for="output-format">File format</label>
-            <select
-              id="output-format"
-              v-model="outputFormat"
-              :disabled="cropShape !== 'square'"
-            >
-              <option value="image/png">PNG</option>
-              <option value="image/jpeg">JPEG</option>
-              <option value="image/webp">WebP</option>
-            </select>
-          </div>
-
-          <div v-if="outputFormat !== 'image/png'" class="setting-group">
-            <div class="range-label">
-              <label for="output-quality">Quality</label>
-              <span>{{ Math.round(quality * 100) }}%</span>
             </div>
-            <input
-              id="output-quality"
-              v-model.number="quality"
-              class="quality-range"
-              type="range"
-              min="0.4"
-              max="1"
-              step="0.01"
+
+            <div class="setting-group">
+              <div class="setting-heading">
+                <span>Crop area</span>
+                <button class="mini-button" type="button" @click="resetCrop">Reset</button>
+              </div>
+              <p class="crop-size">{{ roundedCrop.w }} × {{ roundedCrop.h }} px</p>
+            </div>
+
+            <div class="divider" />
+
+            <div class="setting-group">
+              <label class="check-control">
+                <input
+                  v-model="resizeEnabled"
+                  type="checkbox"
+                  @change="toggleResize"
+                >
+                <span>Resize output</span>
+              </label>
+              <template v-if="resizeEnabled">
+                <div class="number-grid resize-grid">
+                  <label>
+                    <span>Width</span>
+                    <input
+                      :value="resizeWidth"
+                      type="number"
+                      min="1"
+                      :max="maxOutputDimension"
+                      @change="updateOutputDimension('w', $event)"
+                    >
+                  </label>
+                  <label>
+                    <span>Height</span>
+                    <input
+                      :value="resizeHeight"
+                      type="number"
+                      min="1"
+                      :max="maxOutputDimension"
+                      @change="updateOutputDimension('h', $event)"
+                    >
+                  </label>
+                </div>
+                <label class="check-control resize-lock">
+                  <input
+                    v-model="resizeAspectLocked"
+                    type="checkbox"
+                    :disabled="isSquareShapeLocked"
+                    @change="updateResizeLock"
+                  >
+                  <span>Keep aspect ratio</span>
+                </label>
+              </template>
+            </div>
+
+            <div class="setting-group">
+              <label for="output-format">File format</label>
+              <select
+                id="output-format"
+                v-model="outputFormat"
+                :disabled="cropShape !== 'square'"
+              >
+                <option value="image/png">PNG</option>
+                <option value="image/jpeg">JPEG</option>
+                <option value="image/webp">WebP</option>
+              </select>
+            </div>
+
+            <div v-if="outputFormat !== 'image/png'" class="setting-group">
+              <div class="range-label">
+                <label for="output-quality">Quality</label>
+                <span>{{ Math.round(quality * 100) }}%</span>
+              </div>
+              <input
+                id="output-quality"
+                v-model.number="quality"
+                class="quality-range"
+                type="range"
+                min="0.4"
+                max="1"
+                step="0.01"
+              >
+            </div>
+
+            <div class="output-summary">
+              <span class="output-label">Output resolution</span>
+              <span class="output-value">{{ outputSize.w }} × {{ outputSize.h }} px</span>
+            </div>
+
+            <button
+              class="primary-button save-button"
+              type="button"
+              :disabled="isSaving"
+              @click="saveImage"
             >
-          </div>
-
-          <div class="output-summary">
-            <span class="output-label">Output resolution</span>
-            <span class="output-value">{{ outputSize.w }} × {{ outputSize.h }} px</span>
-          </div>
-
-          <button
-            class="primary-button save-button"
-            type="button"
-            :disabled="isSaving"
-            @click="saveImage"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/>
-            </svg>
-            {{ isSaving ? 'Saving…' : 'Save Image' }}
-          </button>
-        </aside>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 4v11m0 0 4-4m-4 4-4-4M5 19h14"/>
+              </svg>
+              {{ isSaving ? 'Saving…' : 'Save Image' }}
+            </button>
+          </aside>
+        </div>
       </div>
     </div>
 
@@ -314,6 +311,7 @@ export default {
       cropShape: 'square',
       cornerRadius: null,
       aspect: 'free',
+      freeformAspect: 1,
       outputFormat: 'image/png',
       quality: 0.92,
       resizeEnabled: false,
@@ -332,6 +330,20 @@ export default {
   },
 
   computed: {
+    zoomSliderPosition () {
+      return 100 * Math.log(this.zoomFactor / this.minimumZoomFactor) / Math.log(32 / this.minimumZoomFactor)
+    },
+
+    orientedImageSize () {
+      return this.quarterRotation % 180 === 0
+        ? { w: this.imageWidth, h: this.imageHeight }
+        : { w: this.imageHeight, h: this.imageWidth }
+    },
+
+    freeformSliderPosition () {
+      return Math.log2(this.freeformAspect)
+    },
+
     rotationSliderPosition () {
       return Math.sign(this.rotation) * Math.sqrt(Math.abs(this.rotation) / 45) * 45
     },
@@ -375,12 +387,7 @@ export default {
     },
 
     minimumZoomFactor () {
-      const { w: width, h: height } = this.cropBounds
-      const cosine = Math.abs(Math.cos(this.rotationRadians))
-      const sine = Math.abs(Math.sin(this.rotationRadians))
-      const rotatedWidth = this.imageWidth * cosine + this.imageHeight * sine
-      const rotatedHeight = this.imageWidth * sine + this.imageHeight * cosine
-      return Math.min(1, width / rotatedWidth, height / rotatedHeight) / this.rotationCoverZoom
+      return this.cropCoverZoom / this.rotationCoverZoom
     },
 
     imageZoom () {
@@ -388,21 +395,6 @@ export default {
     },
 
     constrainedImageOffset () {
-      if (this.imageZoom < this.cropCoverZoom - 1e-9 || this.zoomFactor <= this.minimumZoomFactor + 1e-9) {
-        const bounds = this.cropBounds
-        const cosine = Math.abs(Math.cos(this.rotationRadians))
-        const sine = Math.abs(Math.sin(this.rotationRadians))
-        const imageWidth = (this.imageWidth * cosine + this.imageHeight * sine) * this.imageZoom
-        const imageHeight = (this.imageWidth * sine + this.imageHeight * cosine) * this.imageZoom
-        const limitX = Math.abs(bounds.w - imageWidth) / 2
-        const limitY = Math.abs(bounds.h - imageHeight) / 2
-        const centerX = (bounds.left + bounds.right - this.imageWidth) / 2
-        const centerY = (bounds.top + bounds.bottom - this.imageHeight) / 2
-        return {
-          x: this.clamp(this.imageOffset.x, centerX - limitX, centerX + limitX),
-          y: this.clamp(this.imageOffset.y, centerY - limitY, centerY + limitY)
-        }
-      }
       const bounds = this.imageCropBounds
       const cosine = Math.cos(this.rotationRadians)
       const sine = Math.sin(this.rotationRadians)
@@ -418,51 +410,19 @@ export default {
       }
     },
 
-    transformedImageBounds () {
-      const cosine = Math.abs(Math.cos(this.rotationRadians))
-      const sine = Math.abs(Math.sin(this.rotationRadians))
-      const snap = value => Math.abs(value - Math.round(value)) < 1e-8 ? Math.round(value) : value
-      const width = snap((this.imageWidth * cosine + this.imageHeight * sine) * this.imageZoom)
-      const height = snap((this.imageWidth * sine + this.imageHeight * cosine) * this.imageZoom)
-      return {
-        x: snap(this.imageWidth / 2 + this.imageOffset.x - width / 2),
-        y: snap(this.imageHeight / 2 + this.imageOffset.y - height / 2),
-        w: width,
-        h: height
-      }
-    },
-
-    cropBounds () {
-      const scale = this.display.scale || 1
-      const left = this.display.canvasWidth ? Math.ceil((12 - this.display.offsetX) / scale - 1e-8) : 0
-      const top = this.display.canvasHeight ? Math.ceil((12 - this.display.offsetY) / scale - 1e-8) : 0
-      const right = Math.max(left + 1, this.display.canvasWidth
-        ? Math.floor((this.display.canvasWidth - 12 - this.display.offsetX) / scale + 1e-8) : this.imageWidth)
-      const bottom = Math.max(top + 1, this.display.canvasHeight
-        ? Math.floor(((this.display.previewHeight || this.display.canvasHeight) - 12 - this.display.offsetY) / scale + 1e-8) : this.imageHeight)
-      return { left, top, right, bottom, w: right - left, h: bottom - top }
-    },
-
     roundedCrop () {
-      const bounds = this.cropBounds
-      const left = this.clamp(Math.round(this.crop.x), bounds.left, bounds.right - 1)
-      const top = this.clamp(Math.round(this.crop.y), bounds.top, bounds.bottom - 1)
-      const rounded = {
-        x: left,
-        y: top,
-        w: this.clamp(Math.round(this.crop.x + this.crop.w), left + 1, bounds.right) - left,
-        h: this.clamp(Math.round(this.crop.y + this.crop.h), top + 1, bounds.bottom) - top
+      const w = Math.max(1, Math.round(this.crop.w))
+      const h = this.isSquareShapeLocked ? w : Math.max(1, Math.round(this.crop.h))
+      return {
+        x: this.crop.x + (this.crop.w - w) / 2,
+        y: this.crop.y + (this.crop.h - h) / 2,
+        w, h
       }
-      if (this.isSquareShapeLocked) {
-        const size = Math.min(rounded.w, rounded.h)
-        rounded.w = size
-        rounded.h = size
-      }
-      return rounded
     },
 
     aspectValue () {
-      return this.aspect === 'free' ? null : Number(this.aspect)
+      if (this.isSquareShapeLocked) return 1
+      return this.aspect === 'free' ? this.freeformAspect : Number(this.aspect)
     },
 
     outputSize () {
@@ -572,6 +532,7 @@ export default {
             this.resizeObserver = new ResizeObserver(this.layoutCanvas)
             this.resizeObserver.observe(this.$refs.stage)
             this.resizeObserver.observe(this.$refs.transformPanel)
+            this.resizeObserver.observe(this.$refs.settingsPanel)
           } else {
             window.addEventListener('resize', this.layoutCanvas)
           }
@@ -589,7 +550,27 @@ export default {
       // one axis is mirrored to keep the buttons' visible direction consistent.
       const direction = this.flipHorizontal !== this.flipVertical ? -1 : 1
       this.quarterRotation = (this.quarterRotation + degrees * direction + 360) % 360
-      this.updateImageTransform()
+      if (Math.abs(degrees) % 180 === 90) this.swapCropAspectRatio()
+      const angle = degrees * Math.PI / 180
+      const { x, y } = this.imageOffset
+      this.imageOffset = {
+        x: Math.cos(angle) * x - Math.sin(angle) * y,
+        y: Math.sin(angle) * x + Math.cos(angle) * y
+      }
+      this.applyAspectRatio()
+    },
+
+    swapCropAspectRatio () {
+      this.freeformAspect = 1 / this.freeformAspect
+      if (this.resizeEnabled && this.resizeAspectLocked) {
+        const width = this.resizeWidth
+        this.resizeWidth = this.resizeHeight
+        this.resizeHeight = width
+      }
+      if (this.aspect === 'free') return
+      const ratio = 1 / Number(this.aspect)
+      const presets = ['1', '1.3333333333', '0.75', '1.5', '0.6666666667', '1.7777777778', '0.5625']
+      this.aspect = presets.find(value => Math.abs(Number(value) - ratio) < 1e-8) || String(ratio)
     },
 
     toggleFlip (axis) {
@@ -612,13 +593,14 @@ export default {
     },
 
     resetTransforms () {
+      if (this.quarterRotation % 180 !== 0) this.swapCropAspectRatio()
       this.rotation = 0
       this.quarterRotation = 0
       this.flipHorizontal = false
       this.flipVertical = false
       this.zoomFactor = 1
       this.imageOffset = { x: 0, y: 0 }
-      this.updateImageTransform()
+      this.applyAspectRatio()
     },
 
     updateImageTransform () {
@@ -646,21 +628,21 @@ export default {
 
     layoutCanvas () {
       if (!this.image || !this.$refs.stage || !this.$refs.canvas) return
-      const wasAtMinimum = this.zoomFactor <= this.minimumZoomFactor + 1e-9
 
       const pad = 12
       const canvasWidth = Math.max(1, this.$refs.stage.clientWidth)
       const canvasHeight = Math.max(1, this.$refs.stage.clientHeight)
+      const previewLeft = this.$refs.zoomPanel?.clientWidth || 0
       const controls = this.$refs.transformPanel
       const previewHeight = controls
         ? Math.max(1, Math.min(canvasHeight, controls.offsetTop - this.$refs.stage.offsetTop))
         : canvasHeight
-      const availableWidth = Math.max(1, canvasWidth - pad * 2)
+      const previewWidth = Math.max(1, canvasWidth - previewLeft)
+      const availableWidth = Math.max(1, previewWidth - pad * 2)
       const availableHeight = Math.max(1, previewHeight - pad * 2)
       const scale = Math.min(
-        availableWidth / this.imageWidth,
-        availableHeight / this.imageHeight,
-        1
+        availableWidth / this.roundedCrop.w,
+        availableHeight / this.roundedCrop.h
       )
       const width = this.imageWidth * scale
       const height = this.imageHeight * scale
@@ -668,12 +650,11 @@ export default {
       const canvas = this.$refs.canvas
 
       this.display = {
-        width, height, scale, canvasWidth, canvasHeight, previewHeight,
-        offsetX: (canvasWidth - width) / 2,
+        width, height, scale, canvasWidth, canvasHeight, previewHeight, previewLeft,
+        offsetX: previewLeft + (previewWidth - width) / 2,
         offsetY: (previewHeight - height) / 2
       }
-      this.constrainCrop()
-      this.zoomFactor = wasAtMinimum ? this.minimumZoomFactor : this.clamp(this.zoomFactor, this.minimumZoomFactor, 32)
+      this.zoomFactor = this.clamp(this.zoomFactor, this.minimumZoomFactor, 32)
       this.imageOffset = { ...this.constrainedImageOffset }
       canvas.width = Math.round(canvasWidth * pixelRatio)
       canvas.height = Math.round(canvasHeight * pixelRatio)
@@ -742,7 +723,6 @@ export default {
       ctx.lineWidth = borderWidth
       this.traceCropShape(ctx, borderBox)
       ctx.stroke()
-      this.drawHandles(ctx, box)
     },
 
     traceCropShape (ctx, box) {
@@ -809,51 +789,6 @@ export default {
       ctx.closePath()
     },
 
-    drawHandles (ctx, box) {
-      const positions = this.handlePositions(box)
-      ctx.save()
-      ctx.fillStyle = '#ffffff'
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'
-      ctx.shadowBlur = 3
-      Object.keys(positions).forEach((name) => {
-        const point = positions[name]
-        if (name.length === 1) {
-          const horizontal = name === 'n' || name === 's'
-          const width = horizontal ? Math.min(24, box.w / 3) : 4
-          const height = horizontal ? 4 : Math.min(24, box.h / 3)
-          ctx.fillRect(point.x - width / 2, point.y - height / 2, width, height)
-          return
-        }
-        const thickness = 5
-        const lengthX = Math.min(20, box.w / 3)
-        const lengthY = Math.min(20, box.h / 3)
-        const left = name.includes('w')
-        const top = name.includes('n')
-        const x = point.x - (left ? thickness / 2 : lengthX - thickness / 2)
-        const y = point.y - (top ? thickness / 2 : lengthY - thickness / 2)
-        ctx.beginPath()
-        ctx.rect(x, point.y - thickness / 2, lengthX, thickness)
-        ctx.rect(point.x - thickness / 2, y, thickness, lengthY)
-        ctx.fill()
-      })
-      ctx.restore()
-    },
-
-    handlePositions (box) {
-      const edgeOffset = 2
-      const cornerOffset = 2.5
-      return {
-        nw: { x: box.x - cornerOffset, y: box.y - cornerOffset },
-        n: { x: box.x + box.w / 2, y: box.y - edgeOffset },
-        ne: { x: box.x + box.w + cornerOffset, y: box.y - cornerOffset },
-        e: { x: box.x + box.w + edgeOffset, y: box.y + box.h / 2 },
-        se: { x: box.x + box.w + cornerOffset, y: box.y + box.h + cornerOffset },
-        s: { x: box.x + box.w / 2, y: box.y + box.h + edgeOffset },
-        sw: { x: box.x - cornerOffset, y: box.y + box.h + cornerOffset },
-        w: { x: box.x - edgeOffset, y: box.y + box.h / 2 }
-      }
-    },
-
     displayCrop () {
       const crop = this.roundedCrop
       return {
@@ -900,34 +835,22 @@ export default {
       this.zoomImage(this.zoomFactor * Math.exp(-delta * 0.002), this.imagePoint(this.pointerPosition(event)))
     },
 
+    updateZoom (event) {
+      if (!this.image || this.interaction) return
+      const position = Number(event.target.value)
+      if (!Number.isFinite(position)) return
+      const minimum = this.minimumZoomFactor
+      const factor = minimum * (32 / minimum) ** (this.clamp(position, 0, 100) / 100)
+      const crop = this.roundedCrop
+      this.zoomImage(factor, { x: crop.x + crop.w / 2, y: crop.y + crop.h / 2 })
+    },
+
     pinchPoints () {
       const [first, second] = Object.values(this.touchPoints)
       return {
         distance: Math.hypot(second.x - first.x, second.y - first.y),
         center: this.imagePoint({ x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 })
       }
-    },
-
-    hitTest (point) {
-      const box = this.displayCrop()
-      const handles = this.handlePositions(box)
-      const hitRadius = 14
-
-      for (const name of Object.keys(handles)) {
-        if (
-          Math.abs(point.x - handles[name].x) <= hitRadius &&
-          Math.abs(point.y - handles[name].y) <= hitRadius
-        ) return name
-      }
-
-      if (
-        point.x >= box.x &&
-        point.x <= box.x + box.w &&
-        point.y >= box.y &&
-        point.y <= box.y + box.h
-      ) return 'move'
-
-      return null
     },
 
     onPointerDown (event) {
@@ -953,19 +876,12 @@ export default {
           return
         }
       }
-      const hit = this.hitTest(point)
-      const handle = hit && hit !== 'move' ? hit : event.pointerType === 'touch' || event.shiftKey ? 'image' : hit
-      if (!handle) {
-        this.interaction = null
-        return
-      }
       this.interaction = {
-        handle,
+        handle: 'image',
         start: this.imagePoint(point),
-        offset: { ...this.imageOffset },
-        crop: { ...this.crop }
+        offset: { ...this.imageOffset }
       }
-      this.setCursor(handle)
+      this.setCursor()
     },
 
     onPointerMove (event) {
@@ -974,8 +890,7 @@ export default {
         this.touchPoints[event.pointerId] = point
       }
       if (!this.interaction) {
-        const handle = this.hitTest(point)
-        this.setCursor(event.shiftKey && (!handle || handle === 'move') ? 'image' : handle)
+        this.setCursor()
         return
       }
 
@@ -1002,10 +917,6 @@ export default {
         }
         this.imageOffset = { ...this.constrainedImageOffset }
         this.message = ''
-      } else if (this.interaction.handle === 'move') {
-        this.moveCrop(delta)
-      } else {
-        this.resizeCrop(delta)
       }
       this.draw()
     },
@@ -1034,11 +945,9 @@ export default {
         }
         return
       }
-      if (this.interaction.handle !== 'image' && this.interaction.handle !== 'pinch') this.crop = { ...this.roundedCrop }
       this.interaction = null
       this.draw()
-      const handle = this.hitTest(this.pointerPosition(event))
-      this.setCursor(handle)
+      this.setCursor()
     },
 
     onCanvasDoubleClick (event) {
@@ -1057,100 +966,9 @@ export default {
       this.resetCrop()
     },
 
-    moveCrop (delta) {
-      const original = this.interaction.crop
-      const bounds = this.cropBounds
-      this.crop.x = this.clamp(original.x + delta.x, bounds.left, bounds.right - original.w)
-      this.crop.y = this.clamp(original.y + delta.y, bounds.top, bounds.bottom - original.h)
-    },
-
-    resizeCrop (delta) {
-      const handle = this.interaction.handle
-      const original = this.interaction.crop
-      const bounds = this.cropBounds
-      const minSize = Math.min(Math.max(10, 24 / this.display.scale), original.w, original.h, bounds.w, bounds.h)
-      let left = original.x
-      let right = original.x + original.w
-      let top = original.y
-      let bottom = original.y + original.h
-
-      if (handle.includes('w')) left = this.clamp(original.x + delta.x, bounds.left, right - minSize)
-      if (handle.includes('e')) right = this.clamp(original.x + original.w + delta.x, left + minSize, bounds.right)
-      if (handle.includes('n')) top = this.clamp(original.y + delta.y, bounds.top, bottom - minSize)
-      if (handle.includes('s')) bottom = this.clamp(original.y + original.h + delta.y, top + minSize, bounds.bottom)
-
-      if (this.aspectValue) {
-        const ratio = this.aspectValue
-        if (handle.length === 2) {
-          let width = right - left
-          let height = bottom - top
-          if (width / height > ratio) height = width / ratio
-          else width = height * ratio
-
-          const anchorX = handle.includes('e') ? original.x : original.x + original.w
-          const anchorY = handle.includes('s') ? original.y : original.y + original.h
-          const maxWidth = handle.includes('e') ? bounds.right - anchorX : anchorX - bounds.left
-          const maxHeight = handle.includes('s') ? bounds.bottom - anchorY : anchorY - bounds.top
-          const fitScale = Math.min(1, maxWidth / width, maxHeight / height)
-          width *= fitScale
-          height *= fitScale
-          left = handle.includes('e') ? anchorX : anchorX - width
-          right = handle.includes('e') ? anchorX + width : anchorX
-          top = handle.includes('s') ? anchorY : anchorY - height
-          bottom = handle.includes('s') ? anchorY + height : anchorY
-        } else if (handle === 'e' || handle === 'w') {
-          let width = right - left
-          let height = width / ratio
-          const centerY = original.y + original.h / 2
-          const maxHeight = 2 * Math.min(centerY - bounds.top, bounds.bottom - centerY)
-          if (height > maxHeight) {
-            height = maxHeight
-            width = height * ratio
-            if (handle === 'w') left = right - width
-            else right = left + width
-          }
-          top = centerY - height / 2
-          bottom = centerY + height / 2
-        } else {
-          let height = bottom - top
-          let width = height * ratio
-          const centerX = original.x + original.w / 2
-          const maxWidth = 2 * Math.min(centerX - bounds.left, bounds.right - centerX)
-          if (width > maxWidth) {
-            width = maxWidth
-            height = width / ratio
-            if (handle === 'n') top = bottom - height
-            else bottom = top + height
-          }
-          left = centerX - width / 2
-          right = centerX + width / 2
-        }
-      }
-
-      this.crop = {
-        x: this.clamp(left, bounds.left, bounds.right - 1),
-        y: this.clamp(top, bounds.top, bounds.bottom - 1),
-        w: this.clamp(right - left, 1, bounds.right - left),
-        h: this.clamp(bottom - top, 1, bounds.bottom - top)
-      }
-      this.constrainCrop()
-    },
-
-    setCursor (handle) {
+    setCursor () {
       if (!this.$refs.canvas) return
-      const cursors = {
-        image: this.interaction?.handle === 'image' ? 'grabbing' : 'grab',
-        move: 'move',
-        n: 'ns-resize',
-        s: 'ns-resize',
-        e: 'ew-resize',
-        w: 'ew-resize',
-        ne: 'nesw-resize',
-        sw: 'nesw-resize',
-        nw: 'nwse-resize',
-        se: 'nwse-resize'
-      }
-      this.$refs.canvas.style.cursor = cursors[handle] || 'default'
+      this.$refs.canvas.style.cursor = this.interaction ? 'grabbing' : 'grab'
     },
 
     onCanvasKeydown (event) {
@@ -1158,35 +976,38 @@ export default {
       if (!keys.includes(event.key)) return
       event.preventDefault()
       const amount = event.shiftKey ? 10 : 1
-      if (event.key === 'ArrowLeft') this.crop.x -= amount
-      if (event.key === 'ArrowRight') this.crop.x += amount
-      if (event.key === 'ArrowUp') this.crop.y -= amount
-      if (event.key === 'ArrowDown') this.crop.y += amount
-      this.crop.x = this.clamp(this.crop.x, this.cropBounds.left, this.cropBounds.right - this.crop.w)
-      this.crop.y = this.clamp(this.crop.y, this.cropBounds.top, this.cropBounds.bottom - this.crop.h)
+      if (event.key === 'ArrowLeft') this.imageOffset.x -= amount
+      if (event.key === 'ArrowRight') this.imageOffset.x += amount
+      if (event.key === 'ArrowUp') this.imageOffset.y -= amount
+      if (event.key === 'ArrowDown') this.imageOffset.y += amount
+      this.imageOffset = { ...this.constrainedImageOffset }
       this.draw()
     },
 
     applyAspectRatio () {
-      if (!this.aspectValue) return
-      const centerX = this.crop.x + this.crop.w / 2
-      const centerY = this.crop.y + this.crop.h / 2
-      let width = this.crop.w
-      let height = this.crop.h
-
-      if (width / height > this.aspectValue) width = height * this.aspectValue
-      else height = width / this.aspectValue
-
-      const fit = Math.min(1, this.cropBounds.w / width, this.cropBounds.h / height)
-      width *= fit
-      height *= fit
+      if (!this.image) return
+      const ratio = this.aspectValue
+      const size = this.orientedImageSize
+      const width = Math.min(size.w, size.h * ratio)
+      const height = width / ratio
       this.crop = {
-        x: this.clamp(centerX - width / 2, this.cropBounds.left, this.cropBounds.right - width),
-        y: this.clamp(centerY - height / 2, this.cropBounds.top, this.cropBounds.bottom - height),
-        w: width,
-        h: height
+        x: (this.imageWidth - width) / 2,
+        y: (this.imageHeight - height) / 2,
+        w: width, h: height
       }
-      this.draw()
+      if (this.resizeEnabled && this.resizeAspectLocked) {
+        this.resizeRatio = ratio
+        this.setResizeDimensions(this.resizeWidth, this.resizeWidth / this.resizeRatio)
+      }
+      this.updateImageTransform()
+      this.layoutCanvas()
+    },
+
+    updateFreeformAspect (event) {
+      const position = Number(event.target.value)
+      if (!Number.isFinite(position)) return
+      this.freeformAspect = 2 ** this.clamp(position, -16, 16)
+      this.applyAspectRatio()
     },
 
     onCropShapeChange () {
@@ -1216,77 +1037,10 @@ export default {
 
     resetCrop () {
       if (!this.image) return
-      let bounds = this.transformedImageBounds
-      const limits = this.cropBounds
-      if (this.display.canvasWidth && (
-        bounds.x < limits.left - 1e-8 || bounds.y < limits.top - 1e-8 ||
-        bounds.x + bounds.w > limits.right + 1e-8 || bounds.y + bounds.h > limits.bottom + 1e-8
-      )) {
-        this.zoomImage(this.minimumZoomFactor, { x: this.imageWidth / 2, y: this.imageHeight / 2 })
-        bounds = this.transformedImageBounds
-      }
-      const left = Math.floor(bounds.x)
-      const top = Math.floor(bounds.y)
-      let width = Math.ceil(bounds.x + bounds.w) - left
-      let height = Math.ceil(bounds.y + bounds.h) - top
-      const centerX = left + width / 2
-      const centerY = top + height / 2
-
-      if (this.aspectValue) {
-        if (width / height > this.aspectValue) width = height * this.aspectValue
-        else height = width / this.aspectValue
-      }
-
-      this.crop = {
-        x: centerX - width / 2,
-        y: centerY - height / 2,
-        w: width,
-        h: height
-      }
-      this.constrainCrop()
-      this.message = ''
-      this.draw()
-    },
-
-    constrainCrop () {
-      const bounds = this.cropBounds
-      const fit = Math.min(1, bounds.w / Math.max(1, this.crop.w), bounds.h / Math.max(1, this.crop.h))
-      const width = Math.max(1, this.crop.w * fit)
-      const height = Math.max(1, this.crop.h * fit)
-      const x = this.clamp(this.crop.x, bounds.left, bounds.right - width)
-      const y = this.clamp(this.crop.y, bounds.top, bounds.bottom - height)
-      if (x !== this.crop.x || y !== this.crop.y || width !== this.crop.w || height !== this.crop.h) {
-        this.crop = { x, y, w: width, h: height }
-      }
-    },
-
-    updateCropValue (key, event) {
-      const value = Number(event.target.value)
-      if (!Number.isFinite(value)) {
-        event.target.value = this.roundedCrop[key]
-        return
-      }
-
-      if (key === 'x') {
-        this.crop.x = this.clamp(value, this.cropBounds.left, this.cropBounds.right - this.crop.w)
-      } else if (key === 'y') {
-        this.crop.y = this.clamp(value, this.cropBounds.top, this.cropBounds.bottom - this.crop.h)
-      } else if (key === 'w') {
-        this.crop.w = this.clamp(value, 1, this.cropBounds.right - this.crop.x)
-        if (this.aspectValue) {
-          this.crop.h = Math.min(this.crop.w / this.aspectValue, this.cropBounds.bottom - this.crop.y)
-          this.crop.w = this.crop.h * this.aspectValue
-        }
-      } else if (key === 'h') {
-        this.crop.h = this.clamp(value, 1, this.cropBounds.bottom - this.crop.y)
-        if (this.aspectValue) {
-          this.crop.w = Math.min(this.crop.h * this.aspectValue, this.cropBounds.right - this.crop.x)
-          this.crop.h = this.crop.w / this.aspectValue
-        }
-      }
-      this.constrainCrop()
-      event.target.value = this.roundedCrop[key]
-      this.draw()
+      this.freeformAspect = this.orientedImageSize.w / this.orientedImageSize.h
+      this.zoomFactor = 1
+      this.imageOffset = { x: 0, y: 0 }
+      this.applyAspectRatio()
     },
 
     setResizeSizeFromCrop () {
@@ -1487,7 +1241,7 @@ export default {
   --ink: #29242e;
   --muted: #716a76;
   --line: #e5dfe8;
-  --panel: var(--vp-c-bg);
+  --panel: #eeeae6;
   margin: 2rem 0 4rem;
   color: var(--ink);
 }
@@ -1594,7 +1348,16 @@ button {
   transform: none;
 }
 
+.workspace {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0.85rem;
+  background: #202027;
+}
+
 .toolbar {
+  position: relative;
+  z-index: 2;
   min-height: 2.8rem;
   padding: 0.4rem 0.75rem;
   border: 1px solid var(--line);
@@ -1604,7 +1367,8 @@ button {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  background: #fff;
+  color: var(--ink);
+  background: var(--panel);
 }
 
 .file-summary {
@@ -1640,28 +1404,31 @@ button {
 }
 
 .editor-layout {
+  --settings-width: 13rem;
+  position: relative;
   border: 1px solid var(--line);
   border-top: 0;
   border-radius: 0 0 0.85rem 0.85rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 13rem;
+  grid-template-columns: minmax(0, 1fr) var(--settings-width);
   overflow: hidden;
-  background: #fff;
+  background: #202027;
   box-shadow: 0 18px 50px rgba(39, 27, 43, 0.08);
 }
 
 .canvas-panel {
   position: relative;
+  grid-area: 1 / 1 / 2 / 2;
   min-width: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: 3.5rem minmax(0, 1fr);
   grid-template-rows: minmax(clamp(20rem, 58vh, 40rem), 1fr) auto;
   background-color: #202027;
 }
 
 .canvas-stage {
   position: relative;
-  grid-area: 1 / 1 / 3 / 2;
+  grid-area: 1 / 1 / 3 / 3;
   min-height: 0;
   overflow: hidden;
   background-image:
@@ -1680,6 +1447,7 @@ canvas {
   height: 100%;
   display: block;
   touch-action: none;
+  cursor: grab;
   outline: 0;
 }
 
@@ -1687,22 +1455,117 @@ canvas:focus-visible {
   box-shadow: 0 0 0 3px rgba(126, 177, 223, 0.8);
 }
 
+.zoom-panel {
+  position: relative;
+  z-index: 1;
+  grid-area: 1 / 1 / 2 / 2;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.settings-panel-slot {
+  position: relative;
+  z-index: 1;
+  grid-area: 1 / 2 / 2 / 3;
+  min-width: 0;
+  display: flex;
+  pointer-events: none;
+}
+
+.zoom-control,
+.transform-panel {
+  color: #f5f5f7;
+  background: rgba(41, 41, 48, 0.5);
+  backdrop-filter: blur(8px);
+  padding: 0.3rem;
+  border: 1px solid #484850;
+  border-radius: 0.65rem;
+}
+
+.zoom-control {
+  box-sizing: border-box;
+  width: 3rem;
+  height: 80%;
+  flex: none;
+  min-height: 0;
+  margin: 0.35rem 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  pointer-events: auto;
+}
+
+.zoom-control input {
+  appearance: none;
+  writing-mode: vertical-lr;
+  direction: rtl;
+  width: 1.5rem;
+  height: 0;
+  min-height: 0;
+  flex: 1;
+  margin: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.zoom-control input::-webkit-slider-runnable-track {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: #808080;
+}
+
+.zoom-control input::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-left: -5px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.zoom-control input::-moz-range-track,
+.zoom-control input::-moz-range-progress {
+  width: 4px;
+  border-radius: 2px;
+  background: #808080;
+}
+
+.zoom-control input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.zoom-control output {
+  width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .transform-panel {
   position: relative;
   z-index: 1;
-  grid-area: 2 / 1 / 3 / 2;
-  margin: 1rem 1.35rem 0.8rem;
-  padding: 0.85rem;
-  border: 1px solid #484850;
-  border-radius: 0.65rem;
+  grid-area: 2 / 2 / 3 / 3;
+  margin: 0.35rem 0.5rem 0.4rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-wrap: wrap;
-  gap: 1rem;
-  color: #f5f5f7;
-  background: rgba(41, 41, 48, 0.85);
-  backdrop-filter: blur(8px);
+  column-gap: 1rem;
+  row-gap: 0.75rem;
 }
 
 .rotation-control {
@@ -1726,7 +1589,7 @@ canvas:focus-visible {
   width: 100%;
   height: 1.5rem;
   display: block;
-  margin-top: 0.5rem;
+  margin-top: 0.2rem;
   color: inherit;
   background: transparent;
   cursor: pointer;
@@ -1796,6 +1659,8 @@ canvas:focus-visible {
 }
 
 .transform-button:focus-visible,
+.zoom-control input:focus-visible,
+.quality-range:focus-visible,
 .rotation-control input:focus-visible {
   outline: 2px solid #a5c9ef;
   outline-offset: 3px;
@@ -1812,9 +1677,23 @@ canvas:focus-visible {
 }
 
 .settings-panel {
+  min-width: 0;
+  flex: 1;
   padding: 1.25rem;
   border-left: 1px solid var(--line);
+  color: var(--ink);
   background: var(--panel);
+  pointer-events: auto;
+}
+
+.toolbar .text-button,
+.settings-panel .mini-button {
+  color: var(--accent);
+}
+
+.toolbar .text-button:hover,
+.settings-panel .mini-button:hover {
+  color: var(--accent-dark);
 }
 
 .setting-group + .setting-group {
@@ -1945,6 +1824,16 @@ input:disabled {
   color: var(--muted);
 }
 
+.aspect-control {
+  margin-top: 0.8rem;
+}
+
+.crop-size {
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
 .quality-range {
   width: 100%;
   accent-color: var(--accent);
@@ -1993,6 +1882,14 @@ input:disabled {
   text-align: center;
 }
 
+@media (max-width: 760px), (pointer: coarse) {
+  .zoom-control,
+  .transform-panel {
+    background: #292930;
+    backdrop-filter: none;
+  }
+}
+
 @media (max-width: 760px) {
   .crop-tool {
     margin-top: 1.25rem;
@@ -2002,17 +1899,32 @@ input:disabled {
     grid-template-columns: 1fr;
   }
 
+  .canvas-panel {
+    grid-area: 1 / 1 / 2 / 2;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(clamp(14rem, 50vh, 30rem), 1fr) auto;
+  }
+
+  .zoom-panel {
+    display: none;
+  }
+
+  .settings-panel-slot {
+    grid-area: 2 / 1 / 3 / 2;
+  }
+
   .settings-panel {
     border-top: 1px solid var(--line);
     border-left: 0;
   }
 
-  .canvas-panel {
-    grid-template-rows: minmax(clamp(14rem, 50vh, 30rem), 1fr) auto;
+  .canvas-stage {
+    grid-area: 1 / 1 / 3 / 2;
   }
 
   .transform-panel {
-    margin: 0.8rem 0.8rem 0.65rem;
+    grid-area: 2 / 1 / 3 / 2;
+    margin: 0.35rem 0.5rem 0.4rem;
   }
 }
 
