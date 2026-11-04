@@ -34,8 +34,8 @@ The cropper can also prepare artwork for app icons, website icons, avatars, and 
 ## Howto
 
 1. Select an image from your device or drag and drop it into the cropper.
-2. Drag inside the crop area to reposition it.
-3. Resize the selection with the corner or edge handles.
+2. Drag inside the selection to move the crop frame. Scroll the mouse wheel to zoom; zoom out fully to fit the entire image in the preview, including after rotation.
+3. Resize the selection with the corner or edge handles. Hold Shift while dragging to reposition the image. On mobile, drag the image with one finger, or use two fingers to pan and pinch to zoom at the same time.
 4. Choose square corners, round, squircle, or rounded corners crop. Rounded corners default to 20% of the cropped image's shortest side, or you can enter a custom radius in output pixels.
 5. Choose an aspect ratio or enter exact pixel values if needed. Round and squircle crops use a locked 1:1 ratio.
 6. To resize the cropped result, enable **Resize output** and enter its width or height. Keep the aspect ratio locked to avoid distortion.

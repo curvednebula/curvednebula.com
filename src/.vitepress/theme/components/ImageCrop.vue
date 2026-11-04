@@ -53,18 +53,54 @@
             <canvas
               ref="canvas"
               tabindex="0"
-              aria-label="Image crop area. Drag to move the crop and use the handles to resize it."
+              aria-label="Image crop area. Drag to move the crop, Shift-drag to move the image, scroll or pinch to zoom, and use handles to resize the crop."
               @pointerdown="onPointerDown"
               @pointermove="onPointerMove"
               @pointerup="onPointerUp"
               @pointercancel="onPointerUp"
+              @wheel.prevent="onWheel"
               @dblclick="onCanvasDoubleClick"
               @keydown="onCanvasKeydown"
             />
           </div>
-          <p class="canvas-help">
-            Drag inside to move · Drag handles to resize · Double-click for full image · Arrow keys nudge
-          </p>
+          <div ref="transformPanel" class="transform-panel" aria-label="Image transforms">
+            <div class="rotation-control">
+              <div class="rotation-label">
+                <label for="image-rotation">Rotation</label>
+                <output for="image-rotation">{{ Math.round(rotation * 100) / 100 }}°</output>
+              </div>
+              <input
+                id="image-rotation"
+                :value="rotationSliderPosition"
+                type="range"
+                min="-45"
+                max="45"
+                step="0.01"
+                :aria-valuetext="`${Math.round(rotation * 100) / 100} degrees`"
+                @input="updateRotation"
+                @dblclick="resetRotation"
+              >
+            </div>
+            <div class="transform-buttons">
+              <button class="transform-button" type="button" title="Rotate left 90°" aria-label="Rotate left 90 degrees" @click="rotateImage(-90)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg>
+                <span>−90°</span>
+              </button>
+              <button class="transform-button" type="button" title="Rotate right 90°" aria-label="Rotate right 90 degrees" @click="rotateImage(90)">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10a8 8 0 1 0-1 7M20 4v6h-6"/></svg>
+                <span>+90°</span>
+              </button>
+              <button class="transform-button" type="button" title="Flip horizontally" aria-label="Flip horizontally" :aria-pressed="flipHorizontal" @click="toggleFlip('horizontal')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M8 6 3 12l5 6V6Zm8 0 5 6-5 6V6Z"/></svg>
+              </button>
+              <button class="transform-button" type="button" title="Flip vertically" aria-label="Flip vertically" :aria-pressed="flipVertical" @click="toggleFlip('vertical')">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h18M6 8l6-5 6 5H6Zm0 8 6 5 6-5H6Z"/></svg>
+              </button>
+              <button class="transform-button" type="button" title="Reset image transforms" aria-label="Reset image transforms" @click="resetTransforms">
+                Reset
+              </button>
+            </div>
+          </div>
         </section>
 
         <aside class="settings-panel">
@@ -99,9 +135,10 @@
               <option value="free">Freeform</option>
               <option value="1">Square · 1:1</option>
               <option value="1.3333333333">Landscape · 4:3</option>
-              <option value="1.5">Photo · 3:2</option>
-              <option value="1.7777777778">Widescreen · 16:9</option>
               <option value="0.75">Portrait · 3:4</option>
+              <option value="1.5">Photo · 3:2</option>
+              <option value="0.6666666667">Vertical Photo · 2:3</option>
+              <option value="1.7777777778">Widescreen · 16:9</option>
               <option value="0.5625">Story · 9:16</option>
             </select>
           </div>
@@ -117,8 +154,8 @@
                 <input
                   :value="roundedCrop.x"
                   type="number"
-                  min="0"
-                  :max="Math.max(0, imageWidth - roundedCrop.w)"
+                  :min="cropBounds.left"
+                  :max="cropBounds.right - roundedCrop.w"
                   @change="updateCropValue('x', $event)"
                 >
               </label>
@@ -127,8 +164,8 @@
                 <input
                   :value="roundedCrop.y"
                   type="number"
-                  min="0"
-                  :max="Math.max(0, imageHeight - roundedCrop.h)"
+                  :min="cropBounds.top"
+                  :max="cropBounds.bottom - roundedCrop.h"
                   @change="updateCropValue('y', $event)"
                 >
               </label>
@@ -138,7 +175,7 @@
                   :value="roundedCrop.w"
                   type="number"
                   min="1"
-                  :max="imageWidth"
+                  :max="cropBounds.w"
                   @change="updateCropValue('w', $event)"
                 >
               </label>
@@ -148,7 +185,7 @@
                   :value="roundedCrop.h"
                   type="number"
                   min="1"
-                  :max="imageHeight"
+                  :max="cropBounds.h"
                   @change="updateCropValue('h', $event)"
                 >
               </label>
@@ -265,6 +302,14 @@ export default {
       sourceName: '',
       imageWidth: 0,
       imageHeight: 0,
+      rotation: 0,
+      quarterRotation: 0,
+      flipHorizontal: false,
+      flipVertical: false,
+      zoomFactor: 1,
+      rotationCoverZoom: 1,
+      imageOffset: { x: 0, y: 0 },
+      touchPoints: {},
       crop: { x: 0, y: 0, w: 0, h: 0 },
       cropShape: 'square',
       cornerRadius: null,
@@ -277,7 +322,7 @@ export default {
       resizeAspectLocked: true,
       resizeRatio: 1,
       maxOutputDimension: 8192,
-      display: { width: 0, height: 0, scale: 1, pad: 0 },
+      display: { width: 0, height: 0, scale: 1, offsetX: 0, offsetY: 0, canvasWidth: 0, canvasHeight: 0 },
       interaction: null,
       isDraggingOver: false,
       isSaving: false,
@@ -287,27 +332,126 @@ export default {
   },
 
   computed: {
-    roundedCrop () {
-      if (!this.imageWidth || !this.imageHeight) {
-        return { x: 0, y: 0, w: 1, h: 1 }
+    rotationSliderPosition () {
+      return Math.sign(this.rotation) * Math.sqrt(Math.abs(this.rotation) / 45) * 45
+    },
+
+    rotationRadians () {
+      return (this.quarterRotation + this.rotation) * Math.PI / 180
+    },
+
+    imageCropBounds () {
+      const crop = this.roundedCrop
+      const halfWidth = this.imageWidth / 2
+      const halfHeight = this.imageHeight / 2
+      const cosine = Math.cos(this.rotationRadians)
+      const sine = Math.sin(this.rotationRadians)
+      const bounds = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity }
+
+      for (const x of [crop.x, crop.x + crop.w]) {
+        for (const y of [crop.y, crop.y + crop.h]) {
+          const dx = (x - halfWidth) * (this.flipHorizontal ? -1 : 1)
+          const dy = (y - halfHeight) * (this.flipVertical ? -1 : 1)
+          const sourceX = cosine * dx + sine * dy
+          const sourceY = -sine * dx + cosine * dy
+          bounds.minX = Math.min(bounds.minX, sourceX)
+          bounds.maxX = Math.max(bounds.maxX, sourceX)
+          bounds.minY = Math.min(bounds.minY, sourceY)
+          bounds.maxY = Math.max(bounds.maxY, sourceY)
+        }
       }
-      const left = this.clamp(Math.round(this.crop.x), 0, this.imageWidth - 1)
-      const top = this.clamp(Math.round(this.crop.y), 0, this.imageHeight - 1)
-      const right = this.clamp(
-        Math.round(this.crop.x + this.crop.w),
-        left + 1,
-        this.imageWidth
+      return bounds
+    },
+
+    cropCoverZoom () {
+      if (!this.image) return 1
+      const bounds = this.imageCropBounds
+      const minimum = Math.max(
+        1,
+        Math.max(Math.abs(bounds.minX), Math.abs(bounds.maxX)) / (this.imageWidth / 2),
+        Math.max(Math.abs(bounds.minY), Math.abs(bounds.maxY)) / (this.imageHeight / 2)
       )
-      const bottom = this.clamp(
-        Math.round(this.crop.y + this.crop.h),
-        top + 1,
-        this.imageHeight
-      )
+      return minimum
+    },
+
+    minimumZoomFactor () {
+      const { w: width, h: height } = this.cropBounds
+      const cosine = Math.abs(Math.cos(this.rotationRadians))
+      const sine = Math.abs(Math.sin(this.rotationRadians))
+      const rotatedWidth = this.imageWidth * cosine + this.imageHeight * sine
+      const rotatedHeight = this.imageWidth * sine + this.imageHeight * cosine
+      return Math.min(1, width / rotatedWidth, height / rotatedHeight) / this.rotationCoverZoom
+    },
+
+    imageZoom () {
+      return this.rotationCoverZoom * this.zoomFactor
+    },
+
+    constrainedImageOffset () {
+      if (this.imageZoom < this.cropCoverZoom - 1e-9 || this.zoomFactor <= this.minimumZoomFactor + 1e-9) {
+        const bounds = this.cropBounds
+        const cosine = Math.abs(Math.cos(this.rotationRadians))
+        const sine = Math.abs(Math.sin(this.rotationRadians))
+        const imageWidth = (this.imageWidth * cosine + this.imageHeight * sine) * this.imageZoom
+        const imageHeight = (this.imageWidth * sine + this.imageHeight * cosine) * this.imageZoom
+        const limitX = Math.abs(bounds.w - imageWidth) / 2
+        const limitY = Math.abs(bounds.h - imageHeight) / 2
+        const centerX = (bounds.left + bounds.right - this.imageWidth) / 2
+        const centerY = (bounds.top + bounds.bottom - this.imageHeight) / 2
+        return {
+          x: this.clamp(this.imageOffset.x, centerX - limitX, centerX + limitX),
+          y: this.clamp(this.imageOffset.y, centerY - limitY, centerY + limitY)
+        }
+      }
+      const bounds = this.imageCropBounds
+      const cosine = Math.cos(this.rotationRadians)
+      const sine = Math.sin(this.rotationRadians)
+      const dx = this.imageOffset.x * (this.flipHorizontal ? -1 : 1)
+      const dy = this.imageOffset.y * (this.flipVertical ? -1 : 1)
+      const halfWidth = this.imageWidth * this.imageZoom / 2
+      const halfHeight = this.imageHeight * this.imageZoom / 2
+      const x = this.clamp(cosine * dx + sine * dy, bounds.maxX - halfWidth, bounds.minX + halfWidth)
+      const y = this.clamp(-sine * dx + cosine * dy, bounds.maxY - halfHeight, bounds.minY + halfHeight)
+      return {
+        x: (cosine * x - sine * y) * (this.flipHorizontal ? -1 : 1),
+        y: (sine * x + cosine * y) * (this.flipVertical ? -1 : 1)
+      }
+    },
+
+    transformedImageBounds () {
+      const cosine = Math.abs(Math.cos(this.rotationRadians))
+      const sine = Math.abs(Math.sin(this.rotationRadians))
+      const snap = value => Math.abs(value - Math.round(value)) < 1e-8 ? Math.round(value) : value
+      const width = snap((this.imageWidth * cosine + this.imageHeight * sine) * this.imageZoom)
+      const height = snap((this.imageWidth * sine + this.imageHeight * cosine) * this.imageZoom)
+      return {
+        x: snap(this.imageWidth / 2 + this.imageOffset.x - width / 2),
+        y: snap(this.imageHeight / 2 + this.imageOffset.y - height / 2),
+        w: width,
+        h: height
+      }
+    },
+
+    cropBounds () {
+      const scale = this.display.scale || 1
+      const left = this.display.canvasWidth ? Math.ceil((12 - this.display.offsetX) / scale - 1e-8) : 0
+      const top = this.display.canvasHeight ? Math.ceil((12 - this.display.offsetY) / scale - 1e-8) : 0
+      const right = Math.max(left + 1, this.display.canvasWidth
+        ? Math.floor((this.display.canvasWidth - 12 - this.display.offsetX) / scale + 1e-8) : this.imageWidth)
+      const bottom = Math.max(top + 1, this.display.canvasHeight
+        ? Math.floor(((this.display.previewHeight || this.display.canvasHeight) - 12 - this.display.offsetY) / scale + 1e-8) : this.imageHeight)
+      return { left, top, right, bottom, w: right - left, h: bottom - top }
+    },
+
+    roundedCrop () {
+      const bounds = this.cropBounds
+      const left = this.clamp(Math.round(this.crop.x), bounds.left, bounds.right - 1)
+      const top = this.clamp(Math.round(this.crop.y), bounds.top, bounds.bottom - 1)
       const rounded = {
         x: left,
         y: top,
-        w: right - left,
-        h: bottom - top
+        w: this.clamp(Math.round(this.crop.x + this.crop.w), left + 1, bounds.right) - left,
+        h: this.clamp(Math.round(this.crop.y + this.crop.h), top + 1, bounds.bottom) - top
       }
       if (this.isSquareShapeLocked) {
         const size = Math.min(rounded.w, rounded.h)
@@ -401,6 +545,15 @@ export default {
         this.imageUrl = nextUrl
         this.image = nextImage
         this.sourceName = file.name
+        this.rotation = 0
+        this.quarterRotation = 0
+        this.flipHorizontal = false
+        this.flipVertical = false
+        this.zoomFactor = 1
+        this.rotationCoverZoom = 1
+        this.imageOffset = { x: 0, y: 0 }
+        this.touchPoints = {}
+        this.display = { width: 0, height: 0, scale: 1, offsetX: 0, offsetY: 0, canvasWidth: 0, canvasHeight: 0 }
         this.imageWidth = nextImage.naturalWidth
         this.imageHeight = nextImage.naturalHeight
         this.outputFormat = this.cropShape === 'square' && file.type === 'image/jpeg'
@@ -418,6 +571,7 @@ export default {
             if (this.resizeObserver) this.resizeObserver.disconnect()
             this.resizeObserver = new ResizeObserver(this.layoutCanvas)
             this.resizeObserver.observe(this.$refs.stage)
+            this.resizeObserver.observe(this.$refs.transformPanel)
           } else {
             window.addEventListener('resize', this.layoutCanvas)
           }
@@ -430,27 +584,99 @@ export default {
       nextImage.src = nextUrl
     },
 
+    rotateImage (degrees) {
+      // Flips act in preview coordinates, so reverse the source rotation when
+      // one axis is mirrored to keep the buttons' visible direction consistent.
+      const direction = this.flipHorizontal !== this.flipVertical ? -1 : 1
+      this.quarterRotation = (this.quarterRotation + degrees * direction + 360) % 360
+      this.updateImageTransform()
+    },
+
+    toggleFlip (axis) {
+      if (axis === 'horizontal') this.flipHorizontal = !this.flipHorizontal
+      else this.flipVertical = !this.flipVertical
+      this.imageOffset = { ...this.constrainedImageOffset }
+      this.message = ''
+      this.draw()
+    },
+
+    updateRotation (event) {
+      const position = this.clamp(Number(event.target.value), -45, 45) / 45
+      this.rotation = Math.sign(position) * position * position * 45
+      this.updateImageTransform()
+    },
+
+    resetRotation () {
+      this.rotation = 0
+      this.updateImageTransform()
+    },
+
+    resetTransforms () {
+      this.rotation = 0
+      this.quarterRotation = 0
+      this.flipHorizontal = false
+      this.flipVertical = false
+      this.zoomFactor = 1
+      this.imageOffset = { x: 0, y: 0 }
+      this.updateImageTransform()
+    },
+
+    updateImageTransform () {
+      if (!this.image) return
+      this.rotationCoverZoom = this.cropCoverZoom
+      this.zoomFactor = this.clamp(this.zoomFactor, this.minimumZoomFactor, 32)
+      this.imageOffset = { ...this.constrainedImageOffset }
+      this.message = ''
+      this.interaction = null
+      this.draw()
+    },
+
+    drawTransformedImage (ctx, x, y, width, height) {
+      ctx.save()
+      ctx.translate(x, y)
+      ctx.scale(width / this.imageWidth, height / this.imageHeight)
+      const offset = this.imageOffset
+      ctx.translate(this.imageWidth / 2 + offset.x, this.imageHeight / 2 + offset.y)
+      ctx.scale(this.flipHorizontal ? -1 : 1, this.flipVertical ? -1 : 1)
+      ctx.rotate(this.rotationRadians)
+      ctx.scale(this.imageZoom, this.imageZoom)
+      ctx.drawImage(this.image, -this.image.naturalWidth / 2, -this.image.naturalHeight / 2)
+      ctx.restore()
+    },
+
     layoutCanvas () {
       if (!this.image || !this.$refs.stage || !this.$refs.canvas) return
+      const wasAtMinimum = this.zoomFactor <= this.minimumZoomFactor + 1e-9
 
       const pad = 12
-      const availableWidth = Math.max(280, this.$refs.stage.clientWidth) - pad * 2
-      const availableHeight = Math.min(640, Math.max(320, window.innerHeight * 0.58)) - pad * 2
+      const canvasWidth = Math.max(1, this.$refs.stage.clientWidth)
+      const canvasHeight = Math.max(1, this.$refs.stage.clientHeight)
+      const controls = this.$refs.transformPanel
+      const previewHeight = controls
+        ? Math.max(1, Math.min(canvasHeight, controls.offsetTop - this.$refs.stage.offsetTop))
+        : canvasHeight
+      const availableWidth = Math.max(1, canvasWidth - pad * 2)
+      const availableHeight = Math.max(1, previewHeight - pad * 2)
       const scale = Math.min(
         availableWidth / this.imageWidth,
         availableHeight / this.imageHeight,
         1
       )
-      const width = Math.max(1, Math.round(this.imageWidth * scale))
-      const height = Math.max(1, Math.round(this.imageHeight * scale))
+      const width = this.imageWidth * scale
+      const height = this.imageHeight * scale
       const pixelRatio = Math.min(window.devicePixelRatio || 1, 2)
       const canvas = this.$refs.canvas
 
-      this.display = { width, height, scale: width / this.imageWidth, pad }
-      canvas.style.width = `${width + pad * 2}px`
-      canvas.style.height = `${height + pad * 2}px`
-      canvas.width = Math.round((width + pad * 2) * pixelRatio)
-      canvas.height = Math.round((height + pad * 2) * pixelRatio)
+      this.display = {
+        width, height, scale, canvasWidth, canvasHeight, previewHeight,
+        offsetX: (canvasWidth - width) / 2,
+        offsetY: (previewHeight - height) / 2
+      }
+      this.constrainCrop()
+      this.zoomFactor = wasAtMinimum ? this.minimumZoomFactor : this.clamp(this.zoomFactor, this.minimumZoomFactor, 32)
+      this.imageOffset = { ...this.constrainedImageOffset }
+      canvas.width = Math.round(canvasWidth * pixelRatio)
+      canvas.height = Math.round(canvasHeight * pixelRatio)
       canvas._pixelRatio = pixelRatio
       this.draw()
     },
@@ -461,26 +687,34 @@ export default {
 
       const ratio = canvas._pixelRatio || 1
       const ctx = canvas.getContext('2d')
-      const pad = this.display.pad
+      const x = this.display.offsetX
+      const y = this.display.offsetY
       const width = this.display.width
       const height = this.display.height
+      const canvasWidth = this.display.canvasWidth
+      const canvasHeight = this.display.canvasHeight
       const box = this.displayCrop()
 
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0)
-      ctx.clearRect(0, 0, width + pad * 2, height + pad * 2)
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+      this.drawTransformedImage(ctx, x, y, width, height)
       ctx.save()
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.28)'
-      ctx.shadowBlur = 24
-      ctx.shadowOffsetY = 8
-      ctx.drawImage(this.image, pad, pad, width, height)
-      ctx.restore()
+      ctx.globalCompositeOperation = 'source-atop'
       ctx.fillStyle = 'rgba(13, 18, 28, 0.62)'
-      ctx.fillRect(pad, pad, width, height)
+      ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+      ctx.restore()
 
       ctx.save()
       this.traceCropShape(ctx, box)
       ctx.clip()
-      ctx.drawImage(this.image, pad, pad, width, height)
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+      this.drawTransformedImage(ctx, x, y, width, height)
+
+      ctx.save()
+      ctx.globalCompositeOperation = 'destination-over'
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.35)'
+      ctx.fillRect(box.x, box.y, box.w, box.h)
+      ctx.restore()
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.48)'
       ctx.lineWidth = 1
@@ -577,38 +811,54 @@ export default {
 
     drawHandles (ctx, box) {
       const positions = this.handlePositions(box)
-      ctx.fillStyle = '#326DA7'
-      ctx.strokeStyle = '#ffffff'
-      ctx.lineWidth = 2
+      ctx.save()
+      ctx.fillStyle = '#ffffff'
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.65)'
+      ctx.shadowBlur = 3
       Object.keys(positions).forEach((name) => {
         const point = positions[name]
-        const size = name.length === 1 ? 9 : 11
+        if (name.length === 1) {
+          const horizontal = name === 'n' || name === 's'
+          const width = horizontal ? Math.min(24, box.w / 3) : 4
+          const height = horizontal ? 4 : Math.min(24, box.h / 3)
+          ctx.fillRect(point.x - width / 2, point.y - height / 2, width, height)
+          return
+        }
+        const thickness = 5
+        const lengthX = Math.min(20, box.w / 3)
+        const lengthY = Math.min(20, box.h / 3)
+        const left = name.includes('w')
+        const top = name.includes('n')
+        const x = point.x - (left ? thickness / 2 : lengthX - thickness / 2)
+        const y = point.y - (top ? thickness / 2 : lengthY - thickness / 2)
         ctx.beginPath()
-        ctx.rect(point.x - size / 2, point.y - size / 2, size, size)
+        ctx.rect(x, point.y - thickness / 2, lengthX, thickness)
+        ctx.rect(point.x - thickness / 2, y, thickness, lengthY)
         ctx.fill()
-        ctx.stroke()
       })
+      ctx.restore()
     },
 
     handlePositions (box) {
-      const offset = 6
+      const edgeOffset = 2
+      const cornerOffset = 2.5
       return {
-        nw: { x: box.x - offset, y: box.y - offset },
-        n: { x: box.x + box.w / 2, y: box.y - offset },
-        ne: { x: box.x + box.w + offset, y: box.y - offset },
-        e: { x: box.x + box.w + offset, y: box.y + box.h / 2 },
-        se: { x: box.x + box.w + offset, y: box.y + box.h + offset },
-        s: { x: box.x + box.w / 2, y: box.y + box.h + offset },
-        sw: { x: box.x - offset, y: box.y + box.h + offset },
-        w: { x: box.x - offset, y: box.y + box.h / 2 }
+        nw: { x: box.x - cornerOffset, y: box.y - cornerOffset },
+        n: { x: box.x + box.w / 2, y: box.y - edgeOffset },
+        ne: { x: box.x + box.w + cornerOffset, y: box.y - cornerOffset },
+        e: { x: box.x + box.w + edgeOffset, y: box.y + box.h / 2 },
+        se: { x: box.x + box.w + cornerOffset, y: box.y + box.h + cornerOffset },
+        s: { x: box.x + box.w / 2, y: box.y + box.h + edgeOffset },
+        sw: { x: box.x - cornerOffset, y: box.y + box.h + cornerOffset },
+        w: { x: box.x - edgeOffset, y: box.y + box.h / 2 }
       }
     },
 
     displayCrop () {
       const crop = this.roundedCrop
       return {
-        x: crop.x * this.display.scale + this.display.pad,
-        y: crop.y * this.display.scale + this.display.pad,
+        x: crop.x * this.display.scale + this.display.offsetX,
+        y: crop.y * this.display.scale + this.display.offsetY,
         w: crop.w * this.display.scale,
         h: crop.h * this.display.scale
       }
@@ -619,6 +869,42 @@ export default {
       return {
         x: event.clientX - rect.left,
         y: event.clientY - rect.top
+      }
+    },
+
+    imagePoint (point) {
+      return {
+        x: (point.x - this.display.offsetX) / this.display.scale,
+        y: (point.y - this.display.offsetY) / this.display.scale
+      }
+    },
+
+    zoomImage (factor, anchor, previousZoom = this.imageZoom, previousOffset = this.imageOffset, destination = anchor) {
+      this.zoomFactor = this.clamp(factor, this.minimumZoomFactor, 32)
+      const ratio = this.imageZoom / previousZoom
+      const centerX = this.imageWidth / 2
+      const centerY = this.imageHeight / 2
+      this.imageOffset = {
+        x: destination.x - centerX - (anchor.x - centerX - previousOffset.x) * ratio,
+        y: destination.y - centerY - (anchor.y - centerY - previousOffset.y) * ratio
+      }
+      this.imageOffset = { ...this.constrainedImageOffset }
+      this.message = ''
+      this.draw()
+    },
+
+    onWheel (event) {
+      if (!this.image || this.interaction || !event.deltaY) return
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? this.display.canvasHeight : 1
+      const delta = this.clamp(event.deltaY * unit, -500, 500)
+      this.zoomImage(this.zoomFactor * Math.exp(-delta * 0.002), this.imagePoint(this.pointerPosition(event)))
+    },
+
+    pinchPoints () {
+      const [first, second] = Object.values(this.touchPoints)
+      return {
+        distance: Math.hypot(second.x - first.x, second.y - first.y),
+        center: this.imagePoint({ x: (first.x + second.x) / 2, y: (first.y + second.y) / 2 })
       }
     },
 
@@ -645,19 +931,38 @@ export default {
     },
 
     onPointerDown (event) {
+      if (event.pointerType !== 'touch' && event.button !== 0) return
       const point = this.pointerPosition(event)
-      const handle = this.hitTest(point)
-      if (!handle) return
-
       event.preventDefault()
-      this.$refs.canvas.focus()
+      this.$refs.canvas.focus({ preventScroll: true })
       this.$refs.canvas.setPointerCapture(event.pointerId)
+      if (event.pointerType === 'touch') {
+        this.touchPoints[event.pointerId] = point
+        if (Object.keys(this.touchPoints).length >= 2) {
+          if (this.interaction?.handle !== 'pinch') {
+            const pinch = this.pinchPoints()
+            this.interaction = {
+              handle: 'pinch',
+              start: pinch.center,
+              distance: Math.max(1, pinch.distance),
+              zoomFactor: this.zoomFactor,
+              imageZoom: this.imageZoom,
+              offset: { ...this.imageOffset }
+            }
+          }
+          return
+        }
+      }
+      const hit = this.hitTest(point)
+      const handle = hit && hit !== 'move' ? hit : event.pointerType === 'touch' || event.shiftKey ? 'image' : hit
+      if (!handle) {
+        this.interaction = null
+        return
+      }
       this.interaction = {
         handle,
-        start: {
-          x: (point.x - this.display.pad) / this.display.scale,
-          y: (point.y - this.display.pad) / this.display.scale
-        },
+        start: this.imagePoint(point),
+        offset: { ...this.imageOffset },
         crop: { ...this.crop }
       }
       this.setCursor(handle)
@@ -665,23 +970,39 @@ export default {
 
     onPointerMove (event) {
       const point = this.pointerPosition(event)
+      if (event.pointerType === 'touch' && this.touchPoints[event.pointerId]) {
+        this.touchPoints[event.pointerId] = point
+      }
       if (!this.interaction) {
         const handle = this.hitTest(point)
-        this.setCursor(handle)
+        this.setCursor(event.shiftKey && (!handle || handle === 'move') ? 'image' : handle)
         return
       }
 
       event.preventDefault()
-      const naturalPoint = {
-        x: (point.x - this.display.pad) / this.display.scale,
-        y: (point.y - this.display.pad) / this.display.scale
+      if (this.interaction.handle === 'pinch') {
+        const pinch = this.pinchPoints()
+        const original = this.interaction
+        this.zoomImage(
+          original.zoomFactor * pinch.distance / original.distance,
+          original.start, original.imageZoom, original.offset, pinch.center
+        )
+        return
       }
+      const naturalPoint = this.imagePoint(point)
       const delta = {
         x: naturalPoint.x - this.interaction.start.x,
         y: naturalPoint.y - this.interaction.start.y
       }
 
-      if (this.interaction.handle === 'move') {
+      if (this.interaction.handle === 'image') {
+        this.imageOffset = {
+          x: this.interaction.offset.x + delta.x,
+          y: this.interaction.offset.y + delta.y
+        }
+        this.imageOffset = { ...this.constrainedImageOffset }
+        this.message = ''
+      } else if (this.interaction.handle === 'move') {
         this.moveCrop(delta)
       } else {
         this.resizeCrop(delta)
@@ -690,14 +1011,34 @@ export default {
     },
 
     onPointerUp (event) {
-      if (!this.interaction) return
+      delete this.touchPoints[event.pointerId]
       if (this.$refs.canvas.hasPointerCapture(event.pointerId)) {
         this.$refs.canvas.releasePointerCapture(event.pointerId)
       }
-      this.crop = { ...this.roundedCrop }
+      if (!this.interaction) return
+      if (this.interaction.handle === 'pinch' && Object.keys(this.touchPoints).length) {
+        if (Object.keys(this.touchPoints).length >= 2) {
+          const pinch = this.pinchPoints()
+          this.interaction = {
+            handle: 'pinch', start: pinch.center,
+            distance: Math.max(1, pinch.distance),
+            zoomFactor: this.zoomFactor, imageZoom: this.imageZoom,
+            offset: { ...this.imageOffset }
+          }
+          return
+        }
+        this.interaction = {
+          handle: 'image',
+          start: this.imagePoint(Object.values(this.touchPoints)[0]),
+          offset: { ...this.imageOffset }
+        }
+        return
+      }
+      if (this.interaction.handle !== 'image' && this.interaction.handle !== 'pinch') this.crop = { ...this.roundedCrop }
       this.interaction = null
       this.draw()
-      this.setCursor(this.hitTest(this.pointerPosition(event)))
+      const handle = this.hitTest(this.pointerPosition(event))
+      this.setCursor(handle)
     },
 
     onCanvasDoubleClick (event) {
@@ -712,41 +1053,31 @@ export default {
       if (!isInside) return
 
       event.preventDefault()
-      if (this.isSquareShapeLocked) {
-        this.aspect = '1'
-        this.resetCrop()
-        return
-      }
-      this.aspect = 'free'
-      this.crop = {
-        x: 0,
-        y: 0,
-        w: this.imageWidth,
-        h: this.imageHeight
-      }
-      this.message = ''
-      this.draw()
+      this.aspect = this.isSquareShapeLocked ? '1' : 'free'
+      this.resetCrop()
     },
 
     moveCrop (delta) {
       const original = this.interaction.crop
-      this.crop.x = this.clamp(original.x + delta.x, 0, this.imageWidth - original.w)
-      this.crop.y = this.clamp(original.y + delta.y, 0, this.imageHeight - original.h)
+      const bounds = this.cropBounds
+      this.crop.x = this.clamp(original.x + delta.x, bounds.left, bounds.right - original.w)
+      this.crop.y = this.clamp(original.y + delta.y, bounds.top, bounds.bottom - original.h)
     },
 
     resizeCrop (delta) {
       const handle = this.interaction.handle
       const original = this.interaction.crop
-      const minSize = Math.max(10, 24 / this.display.scale)
+      const bounds = this.cropBounds
+      const minSize = Math.min(Math.max(10, 24 / this.display.scale), original.w, original.h, bounds.w, bounds.h)
       let left = original.x
       let right = original.x + original.w
       let top = original.y
       let bottom = original.y + original.h
 
-      if (handle.includes('w')) left = this.clamp(original.x + delta.x, 0, right - minSize)
-      if (handle.includes('e')) right = this.clamp(original.x + original.w + delta.x, left + minSize, this.imageWidth)
-      if (handle.includes('n')) top = this.clamp(original.y + delta.y, 0, bottom - minSize)
-      if (handle.includes('s')) bottom = this.clamp(original.y + original.h + delta.y, top + minSize, this.imageHeight)
+      if (handle.includes('w')) left = this.clamp(original.x + delta.x, bounds.left, right - minSize)
+      if (handle.includes('e')) right = this.clamp(original.x + original.w + delta.x, left + minSize, bounds.right)
+      if (handle.includes('n')) top = this.clamp(original.y + delta.y, bounds.top, bottom - minSize)
+      if (handle.includes('s')) bottom = this.clamp(original.y + original.h + delta.y, top + minSize, bounds.bottom)
 
       if (this.aspectValue) {
         const ratio = this.aspectValue
@@ -758,8 +1089,8 @@ export default {
 
           const anchorX = handle.includes('e') ? original.x : original.x + original.w
           const anchorY = handle.includes('s') ? original.y : original.y + original.h
-          const maxWidth = handle.includes('e') ? this.imageWidth - anchorX : anchorX
-          const maxHeight = handle.includes('s') ? this.imageHeight - anchorY : anchorY
+          const maxWidth = handle.includes('e') ? bounds.right - anchorX : anchorX - bounds.left
+          const maxHeight = handle.includes('s') ? bounds.bottom - anchorY : anchorY - bounds.top
           const fitScale = Math.min(1, maxWidth / width, maxHeight / height)
           width *= fitScale
           height *= fitScale
@@ -771,7 +1102,7 @@ export default {
           let width = right - left
           let height = width / ratio
           const centerY = original.y + original.h / 2
-          const maxHeight = 2 * Math.min(centerY, this.imageHeight - centerY)
+          const maxHeight = 2 * Math.min(centerY - bounds.top, bounds.bottom - centerY)
           if (height > maxHeight) {
             height = maxHeight
             width = height * ratio
@@ -784,7 +1115,7 @@ export default {
           let height = bottom - top
           let width = height * ratio
           const centerX = original.x + original.w / 2
-          const maxWidth = 2 * Math.min(centerX, this.imageWidth - centerX)
+          const maxWidth = 2 * Math.min(centerX - bounds.left, bounds.right - centerX)
           if (width > maxWidth) {
             width = maxWidth
             height = width / ratio
@@ -797,16 +1128,18 @@ export default {
       }
 
       this.crop = {
-        x: this.clamp(left, 0, this.imageWidth - 1),
-        y: this.clamp(top, 0, this.imageHeight - 1),
-        w: this.clamp(right - left, 1, this.imageWidth - left),
-        h: this.clamp(bottom - top, 1, this.imageHeight - top)
+        x: this.clamp(left, bounds.left, bounds.right - 1),
+        y: this.clamp(top, bounds.top, bounds.bottom - 1),
+        w: this.clamp(right - left, 1, bounds.right - left),
+        h: this.clamp(bottom - top, 1, bounds.bottom - top)
       }
+      this.constrainCrop()
     },
 
     setCursor (handle) {
       if (!this.$refs.canvas) return
       const cursors = {
+        image: this.interaction?.handle === 'image' ? 'grabbing' : 'grab',
         move: 'move',
         n: 'ns-resize',
         s: 'ns-resize',
@@ -817,7 +1150,7 @@ export default {
         nw: 'nwse-resize',
         se: 'nwse-resize'
       }
-      this.$refs.canvas.style.cursor = cursors[handle] || 'crosshair'
+      this.$refs.canvas.style.cursor = cursors[handle] || 'default'
     },
 
     onCanvasKeydown (event) {
@@ -829,8 +1162,8 @@ export default {
       if (event.key === 'ArrowRight') this.crop.x += amount
       if (event.key === 'ArrowUp') this.crop.y -= amount
       if (event.key === 'ArrowDown') this.crop.y += amount
-      this.crop.x = this.clamp(this.crop.x, 0, this.imageWidth - this.crop.w)
-      this.crop.y = this.clamp(this.crop.y, 0, this.imageHeight - this.crop.h)
+      this.crop.x = this.clamp(this.crop.x, this.cropBounds.left, this.cropBounds.right - this.crop.w)
+      this.crop.y = this.clamp(this.crop.y, this.cropBounds.top, this.cropBounds.bottom - this.crop.h)
       this.draw()
     },
 
@@ -844,11 +1177,12 @@ export default {
       if (width / height > this.aspectValue) width = height * this.aspectValue
       else height = width / this.aspectValue
 
-      width = Math.min(width, this.imageWidth)
-      height = Math.min(height, this.imageHeight)
+      const fit = Math.min(1, this.cropBounds.w / width, this.cropBounds.h / height)
+      width *= fit
+      height *= fit
       this.crop = {
-        x: this.clamp(centerX - width / 2, 0, this.imageWidth - width),
-        y: this.clamp(centerY - height / 2, 0, this.imageHeight - height),
+        x: this.clamp(centerX - width / 2, this.cropBounds.left, this.cropBounds.right - width),
+        y: this.clamp(centerY - height / 2, this.cropBounds.top, this.cropBounds.bottom - height),
         w: width,
         h: height
       }
@@ -882,8 +1216,21 @@ export default {
 
     resetCrop () {
       if (!this.image) return
-      let width = this.imageWidth
-      let height = this.imageHeight
+      let bounds = this.transformedImageBounds
+      const limits = this.cropBounds
+      if (this.display.canvasWidth && (
+        bounds.x < limits.left - 1e-8 || bounds.y < limits.top - 1e-8 ||
+        bounds.x + bounds.w > limits.right + 1e-8 || bounds.y + bounds.h > limits.bottom + 1e-8
+      )) {
+        this.zoomImage(this.minimumZoomFactor, { x: this.imageWidth / 2, y: this.imageHeight / 2 })
+        bounds = this.transformedImageBounds
+      }
+      const left = Math.floor(bounds.x)
+      const top = Math.floor(bounds.y)
+      let width = Math.ceil(bounds.x + bounds.w) - left
+      let height = Math.ceil(bounds.y + bounds.h) - top
+      const centerX = left + width / 2
+      const centerY = top + height / 2
 
       if (this.aspectValue) {
         if (width / height > this.aspectValue) width = height * this.aspectValue
@@ -891,12 +1238,26 @@ export default {
       }
 
       this.crop = {
-        x: (this.imageWidth - width) / 2,
-        y: (this.imageHeight - height) / 2,
+        x: centerX - width / 2,
+        y: centerY - height / 2,
         w: width,
         h: height
       }
+      this.constrainCrop()
+      this.message = ''
       this.draw()
+    },
+
+    constrainCrop () {
+      const bounds = this.cropBounds
+      const fit = Math.min(1, bounds.w / Math.max(1, this.crop.w), bounds.h / Math.max(1, this.crop.h))
+      const width = Math.max(1, this.crop.w * fit)
+      const height = Math.max(1, this.crop.h * fit)
+      const x = this.clamp(this.crop.x, bounds.left, bounds.right - width)
+      const y = this.clamp(this.crop.y, bounds.top, bounds.bottom - height)
+      if (x !== this.crop.x || y !== this.crop.y || width !== this.crop.w || height !== this.crop.h) {
+        this.crop = { x, y, w: width, h: height }
+      }
     },
 
     updateCropValue (key, event) {
@@ -907,22 +1268,23 @@ export default {
       }
 
       if (key === 'x') {
-        this.crop.x = this.clamp(value, 0, this.imageWidth - this.crop.w)
+        this.crop.x = this.clamp(value, this.cropBounds.left, this.cropBounds.right - this.crop.w)
       } else if (key === 'y') {
-        this.crop.y = this.clamp(value, 0, this.imageHeight - this.crop.h)
+        this.crop.y = this.clamp(value, this.cropBounds.top, this.cropBounds.bottom - this.crop.h)
       } else if (key === 'w') {
-        this.crop.w = this.clamp(value, 1, this.imageWidth - this.crop.x)
+        this.crop.w = this.clamp(value, 1, this.cropBounds.right - this.crop.x)
         if (this.aspectValue) {
-          this.crop.h = Math.min(this.crop.w / this.aspectValue, this.imageHeight - this.crop.y)
+          this.crop.h = Math.min(this.crop.w / this.aspectValue, this.cropBounds.bottom - this.crop.y)
           this.crop.w = this.crop.h * this.aspectValue
         }
       } else if (key === 'h') {
-        this.crop.h = this.clamp(value, 1, this.imageHeight - this.crop.y)
+        this.crop.h = this.clamp(value, 1, this.cropBounds.bottom - this.crop.y)
         if (this.aspectValue) {
-          this.crop.w = Math.min(this.crop.h * this.aspectValue, this.imageWidth - this.crop.x)
+          this.crop.w = Math.min(this.crop.h * this.aspectValue, this.cropBounds.right - this.crop.x)
           this.crop.h = this.crop.w / this.aspectValue
         }
       }
+      this.constrainCrop()
       event.target.value = this.roundedCrop[key]
       this.draw()
     },
@@ -1095,17 +1457,8 @@ export default {
           )
           ctx.clip()
         }
-        ctx.drawImage(
-          this.image,
-          crop.x,
-          crop.y,
-          crop.w,
-          crop.h,
-          0,
-          0,
-          outputSize.w,
-          outputSize.h
-        )
+        ctx.scale(outputSize.w / crop.w, outputSize.h / crop.h)
+        this.drawTransformedImage(ctx, -crop.x, -crop.y, this.imageWidth, this.imageHeight)
         ctx.restore()
         output.toBlob(
           blob => blob ? resolve(blob) : reject(new Error('Image encoding failed')),
@@ -1298,9 +1651,19 @@ button {
 }
 
 .canvas-panel {
+  position: relative;
   min-width: 0;
-  padding: 1.35rem 1.35rem 0.8rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(clamp(20rem, 58vh, 40rem), 1fr) auto;
   background-color: #202027;
+}
+
+.canvas-stage {
+  position: relative;
+  grid-area: 1 / 1 / 3 / 2;
+  min-height: 0;
+  overflow: hidden;
   background-image:
     linear-gradient(45deg, #25252d 25%, transparent 25%),
     linear-gradient(-45deg, #25252d 25%, transparent 25%),
@@ -1310,15 +1673,11 @@ button {
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
 }
 
-.canvas-stage {
-  min-height: 20rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 canvas {
-  max-width: 100%;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
   touch-action: none;
   outline: 0;
@@ -1328,11 +1687,128 @@ canvas:focus-visible {
   box-shadow: 0 0 0 3px rgba(126, 177, 223, 0.8);
 }
 
-.canvas-help {
-  margin: 0.8rem 0 0;
-  color: #aaa3ad;
+.transform-panel {
+  position: relative;
+  z-index: 1;
+  grid-area: 2 / 1 / 3 / 2;
+  margin: 1rem 1.35rem 0.8rem;
+  padding: 0.85rem;
+  border: 1px solid #484850;
+  border-radius: 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  color: #f5f5f7;
+  background: rgba(41, 41, 48, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+.rotation-control {
+  flex: 1 1 10rem;
+  max-width: 22rem;
+}
+
+.rotation-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.8rem;
+}
+
+.rotation-label output {
+  font-variant-numeric: tabular-nums;
+}
+
+.rotation-control input {
+  appearance: none;
+  width: 100%;
+  height: 1.5rem;
+  display: block;
+  margin-top: 0.5rem;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.rotation-control input::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #808080;
+}
+
+.rotation-control input::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.rotation-control input::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: #808080;
+}
+
+.rotation-control input::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.transform-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.transform-button {
+  min-width: 2.6rem;
+  min-height: 2.6rem;
+  padding: 0.45rem;
+  border: 1px solid #64646e;
+  border-radius: 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  color: #fff;
+  background: #36363f;
   font-size: 0.75rem;
-  text-align: center;
+  cursor: pointer;
+}
+
+.transform-button:hover {
+  background: #484854;
+}
+
+.transform-button[aria-pressed="true"] {
+  border-color: #a5c9ef;
+  color: #dcecff;
+  background: #355574;
+}
+
+.transform-button:focus-visible,
+.rotation-control input:focus-visible {
+  outline: 2px solid #a5c9ef;
+  outline-offset: 3px;
+}
+
+.transform-button svg {
+  width: 1.15rem;
+  height: 1.15rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .settings-panel {
@@ -1532,11 +2008,11 @@ input:disabled {
   }
 
   .canvas-panel {
-    padding: 0.8rem 0.8rem 0.65rem;
+    grid-template-rows: minmax(clamp(14rem, 50vh, 30rem), 1fr) auto;
   }
 
-  .canvas-stage {
-    min-height: 14rem;
+  .transform-panel {
+    margin: 0.8rem 0.8rem 0.65rem;
   }
 }
 
@@ -1565,10 +2041,6 @@ input:disabled {
   .text-button {
     padding-right: 0;
     text-align: right;
-  }
-
-  .canvas-help {
-    line-height: 1.45;
   }
 }
 </style>
