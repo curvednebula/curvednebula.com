@@ -1,8 +1,8 @@
-$iconSvg = Get-Content src/public/images/curvednebula-cn-horizontal-icon.svg -Raw
-$iconSvg = $iconSvg.Replace('  <defs>', '  <circle cx="128" cy="128" r="126" fill="#FFFFFF"/>' + [Environment]::NewLine + '  <defs>')
+$iconSvg = Get-Content src/public/images/curvednebula-emblem-white-512.svg -Raw
+$iconSvg = $iconSvg.Replace('  <rect width="256" height="256" fill="#FFFFFF"/>', '  <circle cx="128" cy="128" r="126" fill="#FFFFFF"/>')
 [IO.File]::WriteAllText((Join-Path $PWD 'src/public/favicon.svg'),$iconSvg)
 Add-Type -AssemblyName System.Drawing
-$sourceIcon = [Drawing.Image]::FromFile("$PWD/src/public/images/curvednebula-cn-horizontal-icon.png")
+$sourceIcon = [Drawing.Image]::FromFile("$PWD/src/public/images/curvednebula-emblem-white-512.png")
 $sizes = @(16,32,48,64,256)
 $streams = @()
 foreach ($size in $sizes) {
@@ -12,7 +12,12 @@ foreach ($size in $sizes) {
   $circleInset = $size / 128.0
   $graphics.FillEllipse([Drawing.Brushes]::White,[single]$circleInset,[single]$circleInset,[single]($size-2*$circleInset),[single]($size-2*$circleInset))
   $graphics.InterpolationMode = [Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+  $clip = [Drawing.Drawing2D.GraphicsPath]::new()
+  $clip.AddEllipse([single]$circleInset,[single]$circleInset,[single]($size-2*$circleInset),[single]($size-2*$circleInset))
+  $graphics.SetClip($clip)
   $graphics.DrawImage($sourceIcon,0,0,$size,$size)
+  $graphics.ResetClip()
+  $clip.Dispose()
   $stream = [IO.MemoryStream]::new()
   $bitmap.Save($stream,[Drawing.Imaging.ImageFormat]::Png)
   $streams += ,$stream.ToArray()

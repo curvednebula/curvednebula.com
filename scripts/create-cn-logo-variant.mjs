@@ -17,16 +17,16 @@ const emblem = `  <defs>
   <path fill="currentColor" transform="translate(200 128) scale(1.7) translate(-184 -128)" d="M184 106C186 121 191 126 206 128C191 130 186 135 184 150C182 135 177 130 162 128C177 126 182 121 184 106Z"/>`;
 
 for (const dark of [false, true]) {
-  const suffix = dark ? '-dark' : '';
-  await writeFile(new URL(`curvednebula-cn-horizontal-icon${suffix}.svg`, directory), `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" fill="none" color="${dark ? '#FFFFFF' : '#20263F'}" role="img" aria-labelledby="title desc">
+  await writeFile(new URL(`curvednebula-emblem-${dark ? 'dark' : 'white'}-512.svg`, directory), `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 256 256" fill="none" color="${dark ? '#FFFFFF' : '#20263F'}" role="img" aria-labelledby="title desc">
   <title id="title">Curved Nebula logo${dark ? ' on dark grey' : ''}</title>
   <desc id="desc">A sideways rainbow horseshoe with straight arms, thin horizontal color separators, and an open center, with a four-point star to the right.</desc>
-${dark ? '  <rect width="256" height="256" fill="#242424"/>\n' : ''}${emblem}
+  <rect width="256" height="256" fill="${dark ? '#242424' : '#FFFFFF'}"/>
+${emblem}
 </svg>
 `);
 }
 
-const original = await readFile(new URL('curvednebula-retro.svg', directory), 'utf8');
+const original = await readFile(new URL('curvednebula-cn-horizontal.svg', directory), 'utf8');
 const wordmark = original.slice(original.indexOf('  <g stroke="currentColor"'));
 await writeFile(new URL('curvednebula-cn-horizontal.svg', directory), `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="256" viewBox="0 0 720 256" fill="none" color="#20263F" role="img" aria-labelledby="title desc">
   <title id="title">Curved Nebula logo</title>
