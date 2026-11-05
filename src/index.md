@@ -123,7 +123,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/photocurves/"><h3>Photo Curves</h3></a>
-      <p>Adjust colors in photos and videos to correct tones or create your own look.</p>
+      <p>Photo and video color grading tool and 3D LUT creator.</p>
     </div>
   </div>
   <div class="app-item">
