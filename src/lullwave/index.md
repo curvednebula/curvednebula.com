@@ -4,20 +4,8 @@ description: Create a calming sound environment with white, pink, brown, blue an
 permalink: /lullwave/
 canonicalUrl: https://curvednebula.com/lullwave/
 meta:
-  - name: keywords
-    content: Lullwave, sleep sounds, colored noise, white noise, brown noise, pink noise, relaxation sounds, ambient sounds Android
-  - property: og:title
-    content: Lullwave Sleep Sounds and Colored Noise for Android
-  - property: og:description
-    content: Listen to white, pink, brown, blue and purple noise plus rain, water, sea waves, train and fireplace sounds for sleep and relaxation.
-  - property: og:type
-    content: website
-  - property: og:url
-    content: https://curvednebula.com/lullwave/
   - property: og:image
     content: https://curvednebula.com/images/lullwave_icon_rounded_256x256.png
-  - name: twitter:card
-    content: summary
 ---
 
 # Lullwave Sleep Sounds and Colored Noise

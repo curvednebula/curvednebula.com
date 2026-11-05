@@ -49,6 +49,14 @@ npm run test:app-screenshots
 
 ## Publish
 
+Search and social metadata share each page's title and description. Set
+`canonicalUrl` in page frontmatter and add new public pages to
+`src/public/sitemap.xml`. Page-specific share images can override `og:image`
+through `meta`; other pages use the site emblem.
+
+After building, verify metadata, canonical URLs, sitemap coverage, and crawlable
+internal links with `npm run test:seo`.
+
 ```bash
 npm run deploy -- "Improve the screenshot editor"
 ```

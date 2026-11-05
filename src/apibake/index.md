@@ -3,17 +3,6 @@ title: ApiBake OpenAPI to PDF Generator
 description: Convert OpenAPI 3 JSON or YAML specifications into clean PDF API documentation with bookmarks, schema links and customizable colors.
 permalink: /apibake/
 canonicalUrl: https://curvednebula.com/apibake/
-meta:
-  - name: keywords
-    content: ApiBake, OpenAPI to PDF, API documentation generator, OpenAPI PDF, Swagger PDF, OpenAPI CLI
-  - property: og:title
-    content: ApiBake OpenAPI to PDF Generator
-  - property: og:description
-    content: Generate readable PDF API documentation from OpenAPI 3 JSON or YAML files with bookmarks and linked schemas.
-  - property: og:type
-    content: website
-  - property: og:url
-    content: https://curvednebula.com/apibake/
 ---
 
 # ApiBake OpenAPI to PDF Generator

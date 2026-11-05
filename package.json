@@ -19,6 +19,7 @@
     "deploy": "node scripts/deploy.mjs",
     "test:deploy": "node --test tests/deploy.test.mjs",
     "test:obfuscation": "node --test tests/obfuscation.test.mjs",
+    "test:seo": "node --test tests/seo.test.mjs",
     "test:app-screenshots": "node --test tests/app-screenshots.test.mjs"
   },
   "license": "MIT",

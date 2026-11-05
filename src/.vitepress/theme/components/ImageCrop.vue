@@ -103,11 +103,9 @@
             <div class="transform-buttons">
               <button class="transform-button" type="button" title="Rotate left 90°" aria-label="Rotate left 90 degrees" @click="rotateImage(-90)">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 10a8 8 0 1 1 1 7M4 4v6h6"/></svg>
-                <span>−90°</span>
               </button>
               <button class="transform-button" type="button" title="Rotate right 90°" aria-label="Rotate right 90 degrees" @click="rotateImage(90)">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10a8 8 0 1 0-1 7M20 4v6h-6"/></svg>
-                <span>+90°</span>
               </button>
               <button class="transform-button" type="button" title="Flip horizontally" aria-label="Flip horizontally" :aria-pressed="flipHorizontal" @click="toggleFlip('horizontal')">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M8 6 3 12l5 6V6Zm8 0 5 6-5 6V6Z"/></svg>

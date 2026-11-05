@@ -3,7 +3,7 @@ import { obfuscateTools } from '../../scripts/obfuscate-tools.mjs'
 
 export default defineConfig({
   title: 'Curved Nebula',
-  description: 'Creative apps and online tools for photo editing, color grading, relaxation, and everyday image tasks.',
+  description: 'Creative apps and free online tools for photo, video, and audio editing, app screenshots, color palettes, and relaxing sounds.',
   outDir: '../dist',
   appearance: false,
   vite: {
@@ -68,18 +68,38 @@ export default defineConfig({
     const frontmatter = pageData.frontmatter
     const pageHead: Array<[string, Record<string, string>]> = []
 
+    // Derive social previews from the same title and description used for search.
+    // Individual pages can override these defaults through frontmatter.meta.
+    const metadata = new Map<string, Record<string, string>>([
+      ['og:title', { property: 'og:title', content: `${pageData.title} | Curved Nebula` }],
+      ['og:description', { property: 'og:description', content: pageData.description }],
+      ['og:type', { property: 'og:type', content: 'website' }],
+      ['og:site_name', { property: 'og:site_name', content: 'Curved Nebula' }],
+      ['og:image', { property: 'og:image', content: 'https://curvednebula.com/images/curvednebula-emblem-white-512.png' }],
+      ['twitter:card', { name: 'twitter:card', content: 'summary' }],
+      ['twitter:title', { name: 'twitter:title', content: `${pageData.title} | Curved Nebula` }],
+      ['twitter:description', { name: 'twitter:description', content: pageData.description }]
+    ])
+
     if (frontmatter.canonicalUrl) {
       pageHead.push([
         'link',
         { rel: 'canonical', href: String(frontmatter.canonicalUrl) }
       ])
+      metadata.set('og:url', { property: 'og:url', content: String(frontmatter.canonicalUrl) })
     }
 
     if (Array.isArray(frontmatter.meta)) {
       for (const attributes of frontmatter.meta) {
-        pageHead.push(['meta', attributes])
+        metadata.set(attributes.property ?? attributes.name, attributes)
       }
     }
+
+    const image = metadata.get('og:image')?.content
+    if (image && !metadata.has('twitter:image')) {
+      metadata.set('twitter:image', { name: 'twitter:image', content: image })
+    }
+    for (const attributes of metadata.values()) pageHead.push(['meta', attributes])
 
     return pageHead
   }

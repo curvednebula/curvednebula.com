@@ -1,23 +1,11 @@
 ---
-title: Creative Tools
-description: Curved Nebula creates photo and video color grading app, and private browser-based tools for quick editing of images, sounds, and videos.
+title: Creative Apps and Online Tools
+description: Explore creative apps and free online tools for photo and video editing, audio trimming, app screenshots, color palettes, and relaxing sounds.
 permalink: /
 canonicalUrl: https://curvednebula.com/
 meta:
-  - name: keywords
-    content: Curved Nebula, Photo Curves, Lullwave, image tools, video tools, color grading app, video color grading, image crop and resize, video trim and resize, sleep sounds, UI color palette generator, CSS variables generator, design tokens, app store screenshot creator
-  - property: og:title
-    content: Curved Nebula Creative Tools
-  - property: og:description
-    content: Discover Photo Curves, Lullwave, and private browser-based creative tools for image and video editing, app store screenshots, audio trimming, and UI color palettes.
-  - property: og:type
-    content: website
-  - property: og:url
-    content: https://curvednebula.com/
   - property: og:image
     content: https://curvednebula.com/images/curvednebula-emblem-white-512.png
-  - name: twitter:card
-    content: summary
 ---
 
 <style>
@@ -125,7 +113,7 @@ meta:
   <div class="home-rainbow" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span><span></span>
   </div>
-  <h1>Creative Tools</h1>
+  <h1>Creative Apps and Online Tools</h1>
 </div>
 
 <div class="apps-container">
@@ -135,7 +123,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/photocurves/"><h3>Photo Curves</h3></a>
-      <p>Color grading app for photos and videos. 3D LUT creator. Available on Android, iOS, macOS, and Windows.</p>
+      <p>Adjust colors in photos and videos to correct tones or create your own look.</p>
     </div>
   </div>
   <div class="app-item">
@@ -147,7 +135,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/cropimage/"><h3>Crop and Resize Images Online</h3></a>
-      <p>Crop and resize images to exact dimensions or common aspect ratios, with square, round, squircle, and custom rounded-corner shapes.</p>
+      <p>Crop and resize images, round corners, and create icons or avatars.</p>
     </div>
   </div>
   <div class="app-item">
@@ -160,7 +148,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/cropvideo/"><h3>Crop, Trim, and Resize Videos Online</h3></a>
-      <p>Crop, trim, and resize MP4, WebM, MKV, MOV, and AVI videos locally. Export as WebM, MKV, or MP4.</p>
+      <p>Adjust video framing, duration, and output size, with controls for quality and frame rate.</p>
     </div>
   </div>
   <div class="app-item">
@@ -172,7 +160,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/trimaudio/"><h3>Trim Audio Online</h3></a>
-      <p>Navigate and trim MP3, WAV, M4A, Ogg, Opus, FLAC, and AAC files with an interactive waveform. Audio is processed privately in your browser.</p>
+      <p>Use a visual waveform for precise trimming, preview audio, adjust quality, and mix stereo to mono.</p>
     </div>
   </div>
   <div class="app-item">
@@ -197,7 +185,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/appscreenshots/"><h3>App Screenshot Creator</h3></a>
-      <p>Create App Store and Google Play screenshots with descriptions.</p>
+      <p>Create App Store and Google Play screenshots with descriptions and custom backgrounds.</p>
     </div>
   </div>
   <div class="app-item">
@@ -211,7 +199,7 @@ meta:
     </a>
     <div class="app-info">
       <a href="/colorpalette/"><h3>UI Color Palette Generator</h3></a>
-      <p>Build a complete UI color palette from a single color, preview it as a light and dark interface, and export CSS variables, design tokens, or JSON.</p>
+      <p>Create a color palette from one color and preview it in light and dark layouts.</p>
     </div>
   </div>
 </div>

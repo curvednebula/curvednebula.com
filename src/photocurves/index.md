@@ -1,30 +1,18 @@
 ---
 title: Photo Curves - Photo and Video Color Grading
-description: Edit photos and videos with RGB, CMYK, LAB, HSL curves and color wheels. Crop and resize images, trim videos, and create 3D LUTs.
+description: Color grade photos and videos with curves, color wheels, and selective adjustments. Crop, resize, and create custom looks. No subscription or registration.
 permalink: /photocurves/
 canonicalUrl: https://curvednebula.com/photocurves/
 meta:
-  - name: keywords
-    content: Photo Curves, color grading app, video color grading, photo editor, RAW photo editor, Windows photo editor, 3D LUT creator, RGB curves, color wheels, photo color correction, image crop and resize, video trim and resize
-  - property: og:title
-    content: Photo Curves Photo and Video Color Grading App and 3D LUT Creator
-  - property: og:description
-    content: Color grade photos and videos, crop and resize images, trim and resize videos, and export custom 3D LUTs on Android, iOS, macOS and Windows.
-  - property: og:type
-    content: website
-  - property: og:url
-    content: https://curvednebula.com/photocurves/
   - property: og:image
     content: https://curvednebula.com/images/photocurves_icon_rounded_256x256.png
-  - name: twitter:card
-    content: summary
 ---
 
 # Photo Curves - Color Grading App
 
 <img src="/images/photocurves_icon_rounded_256x256.png" alt="Photo Curves color grading app icon" height="100"/>
 
-**Photo Curves** is a tool for detailed color correction and creative photo and video color grading: correct or enhance colors, adjust white balance, replace color ranges, shift hue, or develop stylized cinematic looks. Crop and resize images, trim videos.
+**Photo Curves** is a tool for detailed color correction and creative photo and video color grading: correct or enhance colors, adjust white balance, replace color ranges, shift hue, or develop stylized cinematic looks. Crop and resize images, trim videos. No subscription or registration is required.
 
 The app is available for Android, iPhone, iPad, macOS, and Windows.
 
@@ -80,14 +68,3 @@ Create your own 3D LUTs and export them as `.cube` files for use in compatible p
 - **Image crop and resize** — crop images and resize them to suit your composition and output needs.
 
 - **Video trim and resize** — trim videos to keep the section you need and resize them for your final output.
-
-
-## Frequently asked questions
-
-### Can Photo Curves create `.cube` LUT files?
-
-Yes. You can export your color grading preset as a standard `.cube` 3D LUT file for compatible applications.
-
-### What is the difference between a preset and a LUT?
-
-A LUT applies a fixed color transformation. Photo Curves presets retain their individual adjustment settings, so curves, color wheels, and other controls can be edited after a preset is applied.
