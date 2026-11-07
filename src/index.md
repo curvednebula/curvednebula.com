@@ -113,7 +113,7 @@ meta:
   <div class="home-rainbow" aria-hidden="true">
     <span></span><span></span><span></span><span></span><span></span><span></span>
   </div>
-  <h1>Creative Apps and Online Tools</h1>
+  <h1>Creative Tools</h1>
 </div>
 
 <div class="apps-container">
