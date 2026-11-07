@@ -1,5 +1,5 @@
 ---
-title: Creative Apps and Online Tools
+title: Creative Tools
 description: Explore creative apps and free online tools for photo and video editing, audio trimming, app screenshots, color palettes, and relaxing sounds.
 permalink: /
 canonicalUrl: https://curvednebula.com/
