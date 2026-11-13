@@ -71,36 +71,36 @@
 
 .store-badges {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.35rem;
   max-width: 100%;
-  overflow-x: auto;
-  scrollbar-width: thin;
-  white-space: nowrap;
 }
 
 .store-badges a {
+  --badge-width: 150px;
+  /* Account for the transparent border baked into the PNG badges. */
+  --badge-inset: 9px;
   display: block;
   flex: 0 0 auto;
-}
-
-.store-badges a:nth-child(1),
-.store-badges a:nth-child(3) {
-  width: 150px;
+  width: calc(var(--badge-width) - 2 * var(--badge-inset));
 }
 
 .store-badges a:nth-child(2) {
-  width: 147px;
+  --badge-width: 147px;
+  --badge-inset: 0px;
 }
 
 .store-badges a:nth-child(4) {
-  width: 172px;
+  --badge-width: 172px;
 }
 
 .store-badges img {
   display: block;
-  width: 100%;
+  width: var(--badge-width);
+  max-width: none;
   height: auto;
+  margin: calc(0px - var(--badge-inset));
 }
 
 .vp-doc img[height="100"] {
@@ -110,4 +110,20 @@
 
 .vp-doc._photocurves_ h1 + img {
   margin-top: 1rem;
+}
+
+.vp-doc .contact-links {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.5rem 1rem;
+  margin: 1rem 0;
+}
+
+.vp-doc .contact-links dt,
+.vp-doc .contact-links dd {
+  margin: 0;
+}
+
+.vp-doc .contact-links dd {
+  overflow-wrap: anywhere;
 }

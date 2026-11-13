@@ -9,6 +9,11 @@ meta:
 
 # Contacts
 
-Contact Curved Nebula for questions about Photo Curves, Lullwave, or other enquiries.
+Contact Curved Nebula for questions about Photo Curves, online creative tools, or other enquiries.
 
-Email: **curvednebula@gmail.com**
+<dl class="contact-links">
+  <dt>Email:</dt>
+  <dd><a href="mailto:curvednebula@gmail.com">curvednebula@gmail.com</a></dd>
+  <dt>Discord:</dt>
+  <dd><a href="https://discord.gg/kSG3Bz4Rp">Join Server</a></dd>
+</dl>
