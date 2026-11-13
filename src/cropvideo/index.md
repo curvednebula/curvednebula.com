@@ -10,7 +10,7 @@ canonicalUrl: https://curvednebula.com/cropvideo/
 
 # Crop, Trim, and Resize Videos Online
 
-Crop, trim, resize, and convert videos without uploading them. Adjust the framing, duration, resolution, and output quality directly in your browser.
+Crop, trim, resize, and convert videos without uploading them. Adjust the framing, duration, resolution, and output quality. This tool is free to use, no registration required. All editing happens locally in your browser.
 
 ## Supported features
 

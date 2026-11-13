@@ -10,7 +10,7 @@ canonicalUrl: https://curvednebula.com/cropimage/
 
 # Crop and Resize Images Online
 
-Crop and resize photos, prepare app icons, or create avatars at exact pixel dimensions. Everything happens locally in your browser, so your images are never uploaded.
+Crop and resize photos, prepare app icons, or create avatars at exact pixel dimensions. This tool is free to use, no registration required. Everything happens locally in your browser, so your images are never uploaded.
 
 ## Supported features
 

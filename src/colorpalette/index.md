@@ -10,7 +10,7 @@ canonicalUrl: https://curvednebula.com/colorpalette/
 
 # Create a UI Color Palette from One Color
 
-Build a UI color palette from a single base color. Preview it in light and dark interfaces, then export ready-to-use color ramps and named design tokens.
+Build a UI color palette from a single base color. Preview it in light and dark interfaces, then export ready-to-use color ramps and named design tokens. This tool is free to use, no registration required. All editing and export happen locally in your browser.
 
 ## Supported features
 

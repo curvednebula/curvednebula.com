@@ -10,7 +10,7 @@ canonicalUrl: https://curvednebula.com/appscreenshots/
 
 # App Screenshot Creator
 
-Create a consistent set of screenshots for the App Store or Google Play with descriptions, custom layouts, and connected backgrounds. Editing and export happen locally in your browser.
+Create a consistent set of screenshots for the App Store or Google Play with descriptions, custom layouts, and connected backgrounds. This tool is free to use, no registration required. Editing and export happen locally in your browser.
 
 ## Supported features
 

@@ -10,7 +10,7 @@ canonicalUrl: https://curvednebula.com/trimaudio/
 
 # Trim Audio Online
 
-Trim and convert audio using an interactive waveform. Preview the part you want to keep, choose your output settings, and save it locally without uploading your file.
+Trim and convert audio using an interactive waveform. Preview the part you want to keep, choose your output settings, and save it without uploading your file. This tool is free to use, no registration required. All editing happens locally in your browser.
 
 ## Supported features
 
